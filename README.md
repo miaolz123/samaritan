@@ -1,0 +1,2 @@
+# samaritan
+A Good Samaritan?
