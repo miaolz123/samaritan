@@ -14,7 +14,13 @@ import (
 
 // API exchange api collection
 type API interface {
-	NewAPI(secrets []string) map[string]func(otto.FunctionCall) otto.Value
+	NewAPI(confStr ...string) map[string]func(otto.FunctionCall) otto.Value
+}
+
+type exchangeConf struct {
+	name   string
+	access string
+	secret string
 }
 
 func sign(params []string) string {
