@@ -12,9 +12,15 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
+// Option ...
+type Option struct {
+	AccessKey string
+	SecretKey string
+}
+
 // API exchange api collection
 type API interface {
-	NewAPI(confStr ...string) map[string]func(otto.FunctionCall) otto.Value
+	NewAPI(opt Option) map[string]func(otto.FunctionCall) otto.Value
 }
 
 type exchangeConf struct {
