@@ -60,7 +60,7 @@ func Run(opts []Option, scr interface{}) {
 		msgs := ""
 		for _, msg := range call.ArgumentList {
 			m, _ := msg.Export()
-			msgs += conver.StringMust(m, "null")
+			msgs += conver.StringMust(m, "undefined")
 		}
 		logger.Do("global", "info", msgs, 0.0, 0.0)
 		return otto.TrueValue()
@@ -77,7 +77,7 @@ func Run(opts []Option, scr interface{}) {
 				continue
 			}
 			m, _ := msg.Export()
-			msgs += conver.StringMust(m, "null")
+			msgs += conver.StringMust(m, "undefined")
 		}
 		logger.Do("global", "profit", msgs, pro, 0.0)
 		return otto.TrueValue()

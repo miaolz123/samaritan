@@ -35,7 +35,7 @@ func (e *OKCoinCn) GetMethods() map[string]func(otto.FunctionCall) otto.Value {
 			msgs := ""
 			for _, msg := range call.ArgumentList {
 				m, _ := msg.Export()
-				msgs += conver.StringMust(m, "null")
+				msgs += conver.StringMust(m, "undefined")
 			}
 			e.option.log.Do(e.option.Type, "info", msgs, 0.0, 0.0)
 			return otto.TrueValue()
@@ -84,8 +84,8 @@ func (e *OKCoinCn) getAccount() (map[string]interface{}, error) {
 		account["Stocks"] = account[e.mainStock]
 		account["FrozenStocks"] = account["Frozen"+e.mainStock]
 	} else {
-		err = fmt.Errorf("%s", fmt.Sprint("获取用户信息出错，错误代码：", json.Get("error_code").MustInt()))
-		fmt.Println("OKCoinCn GetAccount Err[74]:", err)
+		err = fmt.Errorf("%s", fmt.Sprint("GetAccount() error, the error number is ", json.Get("error_code").MustInt()))
+		e.option.log.Do(e.option.Type, "error", err.Error(), 0.0, 0.0)
 	}
 	return account, err
 }

@@ -14,6 +14,6 @@ func main() {
 		SecretKey: section.Key("SecretKey").MustString(""),
 	}
 	opts := []api.Option{opt}
-	src := "Log(exchange.GetAccount().BTC);LogProfit(1.2)"
+	src := "exchange.Log(exchange.GetAccount());LogProfit(1.2, 'test message')"
 	api.Run(opts, src)
 }
