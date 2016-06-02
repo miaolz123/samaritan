@@ -6,7 +6,6 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/miaolz123/conver"
-	"github.com/robertkrimen/otto"
 )
 
 // OKCoinCn : the exchange struct of okcoin.cn
@@ -28,30 +27,9 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 	return &e
 }
 
-// GetMethods : get all methods of the exchange
-func (e *OKCoinCn) GetMethods() map[string]func(otto.FunctionCall) otto.Value {
-	return map[string]func(otto.FunctionCall) otto.Value{
-		"Log": func(call otto.FunctionCall) otto.Value {
-			msgs := ""
-			for _, msg := range call.ArgumentList {
-				m, _ := msg.Export()
-				msgs += conver.StringMust(m, "undefined")
-			}
-			e.option.log.Do(e.option.Type, "info", 0.0, 0.0, msgs)
-			return otto.TrueValue()
-		},
-		"GetAccount": func(call otto.FunctionCall) otto.Value {
-			account, err := e.GetAccount()
-			if err != nil {
-				return otto.UndefinedValue()
-			}
-			accountVal, err := otto.New().ToValue(account)
-			if err != nil {
-				return otto.UndefinedValue()
-			}
-			return accountVal
-		},
-	}
+// Log : Log
+func (e *OKCoinCn) Log(msgs ...interface{}) {
+	e.option.log.Do(e.option.Type, "info", 0.0, 0.0, msgs...)
 }
 
 // GetAccount : GetAccount
@@ -64,12 +42,12 @@ func (e *OKCoinCn) GetAccount() (map[string]interface{}, error) {
 	params = append(params, "sign="+strings.ToUpper(sign(params)))
 	resp, err := post(e.host+"userinfo.do", params)
 	if err != nil {
-		fmt.Println("OKCoinCn GetAccount Err[55]:", err)
+		e.option.log.Do(e.option.Type, "error", 0.0, 0.0, err)
 		return account, err
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		fmt.Println("OKCoinCn GetAccount Err[60]:", err)
+		e.option.log.Do(e.option.Type, "error", 0.0, 0.0, err)
 		return account, err
 	}
 	result := json.Get("result").MustBool()

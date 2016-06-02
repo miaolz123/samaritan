@@ -14,6 +14,6 @@ func main() {
 		SecretKey: section.Key("SecretKey").MustString(""),
 	}
 	opts := []api.Option{opt}
-	scr := ""
+	scr := "exchange.Log('Net: ',exchange.GetAccount().Net)"
 	api.Run(opts, scr)
 }

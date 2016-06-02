@@ -11,7 +11,6 @@ import (
 
 	"github.com/miaolz123/go-duktape/candyjs"
 	"github.com/miaolz123/samaritan/log"
-	"github.com/robertkrimen/otto"
 )
 
 // Option : exchange option
@@ -24,7 +23,6 @@ type Option struct {
 
 // Exchange : exchange interface
 type Exchange interface {
-	GetMethods() map[string]func(otto.FunctionCall) otto.Value
 	GetAccount() (map[string]interface{}, error)
 }
 
@@ -39,8 +37,15 @@ func Run(opts []Option, scr string) {
 			exchanges = append(exchanges, NewOKCoinCn(opt))
 		}
 	}
-	exchanges[0].GetAccount()
 	ctx := candyjs.NewContext()
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Do("global", "error", 0.0, 0.0, err)
+		}
+	}()
+	if len(exchanges) < 1 {
+		panic("Please add at least one Exchange")
+	}
 	ctx.PushGlobalGoFunction("log", func(a ...interface{}) {
 		logger.Do("global", "info", 0.0, 0.0, a...)
 	})
@@ -50,6 +55,8 @@ func Run(opts []Option, scr string) {
 	if err != nil {
 		logger.Do("global", "error", 0.0, 0.0, err)
 	}
+	ctx.PushGlobalInterface("exchange", exchanges[0])
+	ctx.PushGlobalInterface("exchanges", exchanges)
 	ctx.EvalString(scr)
 }
 
