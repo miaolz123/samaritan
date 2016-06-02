@@ -37,11 +37,11 @@ func (e *OKCoinCn) GetMethods() map[string]func(otto.FunctionCall) otto.Value {
 				m, _ := msg.Export()
 				msgs += conver.StringMust(m, "undefined")
 			}
-			e.option.log.Do(e.option.Type, "info", msgs, 0.0, 0.0)
+			e.option.log.Do(e.option.Type, "info", 0.0, 0.0, msgs)
 			return otto.TrueValue()
 		},
 		"GetAccount": func(call otto.FunctionCall) otto.Value {
-			account, err := e.getAccount()
+			account, err := e.GetAccount()
 			if err != nil {
 				return otto.UndefinedValue()
 			}
@@ -54,7 +54,8 @@ func (e *OKCoinCn) GetMethods() map[string]func(otto.FunctionCall) otto.Value {
 	}
 }
 
-func (e *OKCoinCn) getAccount() (map[string]interface{}, error) {
+// GetAccount : GetAccount
+func (e *OKCoinCn) GetAccount() (map[string]interface{}, error) {
 	account := make(map[string]interface{})
 	params := []string{
 		"api_key=" + e.option.AccessKey,
@@ -85,7 +86,7 @@ func (e *OKCoinCn) getAccount() (map[string]interface{}, error) {
 		account["FrozenStocks"] = account["Frozen"+e.mainStock]
 	} else {
 		err = fmt.Errorf("%s", fmt.Sprint("GetAccount() error, the error number is ", json.Get("error_code").MustInt()))
-		e.option.log.Do(e.option.Type, "error", err.Error(), 0.0, 0.0)
+		e.option.log.Do(e.option.Type, "error", 0.0, 0.0, err)
 	}
 	return account, err
 }

@@ -8,9 +8,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 
-	"github.com/miaolz123/conver"
+	"github.com/miaolz123/go-duktape/candyjs"
 	"github.com/miaolz123/samaritan/log"
 	"github.com/robertkrimen/otto"
 )
@@ -26,10 +25,11 @@ type Option struct {
 // Exchange : exchange interface
 type Exchange interface {
 	GetMethods() map[string]func(otto.FunctionCall) otto.Value
+	GetAccount() (map[string]interface{}, error)
 }
 
 // Run : run a strategy from opts(options) & scr(script)
-func Run(opts []Option, scr interface{}) {
+func Run(opts []Option, scr string) {
 	exchanges := []Exchange{}
 	logger := log.New("test")
 	for _, opt := range opts {
@@ -39,70 +39,18 @@ func Run(opts []Option, scr interface{}) {
 			exchanges = append(exchanges, NewOKCoinCn(opt))
 		}
 	}
-	vm := otto.New()
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Do("global", "error", fmt.Sprint(r), 0.0, 0.0)
-		} else {
-			endScript, _ := vm.Get("end")
-			endScript.Call(endScript)
-			logger.Do("global", "info", "End succeed", 0.0, 0.0)
-		}
-	}()
-	if len(exchanges) < 1 {
-		panic("Please add at least one Exchange")
-	}
-	es := []map[string]func(otto.FunctionCall) otto.Value{}
-	for _, e := range exchanges {
-		es = append(es, e.GetMethods())
-	}
-	vm.Set("Log", func(call otto.FunctionCall) otto.Value {
-		msgs := ""
-		for _, msg := range call.ArgumentList {
-			m, _ := msg.Export()
-			msgs += conver.StringMust(m, "undefined")
-		}
-		logger.Do("global", "info", msgs, 0.0, 0.0)
-		return otto.TrueValue()
+	exchanges[0].GetAccount()
+	ctx := candyjs.NewContext()
+	ctx.PushGlobalGoFunction("log", func(a ...interface{}) {
+		logger.Do("global", "info", 0.0, 0.0, a...)
 	})
-	vm.Set("LogProfit", func(call otto.FunctionCall) otto.Value {
-		pro, err := call.Argument(0).ToFloat()
-		if err != nil {
-			logger.Do("global", "error", "The first argument of LogProfit() must be a number", 0.0, 0.0)
-			return otto.FalseValue()
-		}
-		msgs := ""
-		for i, msg := range call.ArgumentList {
-			if i == 0 {
-				continue
-			}
-			m, _ := msg.Export()
-			msgs += conver.StringMust(m, "undefined")
-		}
-		logger.Do("global", "profit", msgs, pro, 0.0)
-		return otto.TrueValue()
+	_, err := ctx.PushGlobalGoFunction("add", func(a, b float64) float64 {
+		return a + b
 	})
-	vm.Set("Sleep", func(call otto.FunctionCall) otto.Value {
-		sleeper, err := call.Argument(0).ToFloat()
-		if err != nil {
-			return otto.FalseValue()
-		}
-		time.Sleep(time.Duration(sleeper * 1000000))
-		return otto.TrueValue()
-	})
-	vm.Set("exchange", es[0])
-	vm.Set("exchanges", es)
-	if _, err := vm.Run(scr); err != nil {
-		panic(err)
-	}
-	mainScript, err := vm.Get("main")
-	if err != nil || mainScript.IsUndefined() {
-		panic("Can not find the function: main()")
-	}
-	_, err = mainScript.Call(mainScript)
 	if err != nil {
-		panic(err)
+		logger.Do("global", "error", 0.0, 0.0, err)
 	}
+	ctx.EvalString(scr)
 }
 
 func sign(params []string) string {
@@ -115,11 +63,13 @@ func sign(params []string) string {
 func post(url string, data []string) ([]byte, error) {
 	var ret []byte
 	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(strings.Join(data, "&")))
-	if resp.StatusCode == 200 {
+	if resp == nil {
+		err = fmt.Errorf("[POST %s] HTTP Error Info: %v", url, err)
+	} else if resp.StatusCode == 200 {
 		ret, _ = ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 	} else {
-		err = fmt.Errorf("HTTP Status: %d, Info: %v", resp.StatusCode, err)
+		err = fmt.Errorf("[POST %s] HTTP Status: %d, Info: %v", url, resp.StatusCode, err)
 	}
 	return ret, err
 }
@@ -127,11 +77,13 @@ func post(url string, data []string) ([]byte, error) {
 func get(url string) ([]byte, error) {
 	var ret []byte
 	resp, err := http.Get(url)
-	if resp.StatusCode == 200 {
+	if resp == nil {
+		err = fmt.Errorf("[GET %s] HTTP Error Info: %v", url, err)
+	} else if resp.StatusCode == 200 {
 		ret, _ = ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 	} else {
-		err = fmt.Errorf("HTTP Status: %d, Info: %v", resp.StatusCode, err)
+		err = fmt.Errorf("[GET %s] HTTP Status: %d, Info: %v", url, resp.StatusCode, err)
 	}
 	return ret, err
 }
