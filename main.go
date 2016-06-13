@@ -12,8 +12,13 @@ func main() {
 		Type:      section.Key("Type").MustString(""),
 		AccessKey: section.Key("AccessKey").MustString(""),
 		SecretKey: section.Key("SecretKey").MustString(""),
+		MainStock: section.Key("MainStock").MustString(""),
 	}
 	opts := []api.Option{opt}
-	scr := "exchange.Log('Net: ',exchange.GetAccount().Net)"
+	scr := `exchange.Log(exchange.SetMainStock());
+	var acc = exchange.Buy("BTC",-1,50,"test");
+	exchange.Log(202020, typeof(acc));
+	if (acc) exchange.Log(212121, acc);
+	Log(111);`
 	api.Run(opts, scr)
 }

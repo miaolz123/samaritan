@@ -16,7 +16,7 @@ func New(name string) Logger {
 }
 
 // Do : log a message
-func (logger Logger) Do(subject, action string, price, amount float64, msgs ...interface{}) {
+func (logger Logger) Do(action string, price, amount float64, msgs ...interface{}) {
 	now := time.Now().Format("01-02 15:04:05")
-	fmt.Printf("%s | %10s | %6s | %8.2f | %8.3f | %s\n", now, subject, action, price, amount, fmt.Sprint(msgs...))
+	fmt.Printf("%s | %10s | %6s | %8.2f | %8.3f | %s\n", now, logger.Name, action, price, amount, fmt.Sprint(msgs...))
 }
