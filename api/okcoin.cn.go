@@ -59,18 +59,18 @@ func (e *OKCoinCn) GetAccount() interface{} {
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
 	resp, err := post(e.host+"userinfo.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
 	}
 
 	if result := json.Get("result").MustBool(); !result {
 		err = fmt.Errorf("GetAccount() error, the error number is %v", json.Get("error_code").MustInt())
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
 	}
 	account["Total"] = conver.Float64Must(json.GetPath("info", "funds", "asset", "total").Interface())
@@ -105,15 +105,14 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 	}
 	params = append(params, typeParam, amountParam)
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	fmt.Println(params)
 	resp, err := post(e.host+"trade.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "Buy() error, ", err)
 		return
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "Buy() error, ", err)
 		return
 	}
 	if result := json.Get("result").MustBool(); !result {
@@ -121,6 +120,43 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 		return
 	}
 	e.log.Do("buy", price, amount, msgs...)
+	id = json.Get("order_id").MustInt()
+	return
+}
+
+// Sell ...
+func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interface{}) (id int) {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.log.Do("error", 0.0, 0.0, "Sell() error, unrecognized stockType")
+		return
+	}
+	params := []string{
+		"api_key=" + e.option.AccessKey,
+		"symbol=" + e.stockMap[stockType] + "_cny",
+		fmt.Sprint("amount=", amount),
+	}
+	typeParam := "type=sell_market"
+	if price > 0 {
+		typeParam = "type=sell"
+		params = append(params, fmt.Sprint("price=", price))
+	}
+	params = append(params, typeParam)
+	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
+	resp, err := post(e.host+"trade.do", params)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "Sell() error, ", err)
+		return
+	}
+	json, err := simplejson.NewJson(resp)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "Sell() error, ", err)
+		return
+	}
+	if result := json.Get("result").MustBool(); !result {
+		e.log.Do("error", 0.0, 0.0, "Sell() error, the error number is ", json.Get("error_code").MustInt())
+		return
+	}
+	e.log.Do("sell", price, amount, msgs...)
 	id = json.Get("order_id").MustInt()
 	return
 }

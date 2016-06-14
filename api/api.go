@@ -8,10 +8,23 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/miaolz123/samaritan/candyjs"
 	"github.com/miaolz123/samaritan/log"
 )
+
+// Robot ...
+type Robot struct {
+	ID         string
+	Name       string
+	CreateTime time.Time
+	UpdateTime time.Time
+	script     string
+	ctx        *candyjs.Context
+	waitGroup  sync.WaitGroup
+}
 
 // Option : exchange option
 type Option struct {
@@ -21,8 +34,16 @@ type Option struct {
 	MainStock string
 }
 
-// Run : run a strategy from opts(options) & scr(script)
-func Run(opts []Option, scr string) {
+// New : get a robot from opts(options) & scr(javascript code)
+func New(opts []Option, name, scr string) *Robot {
+	robot := &Robot{
+		Name:       name,
+		CreateTime: time.Now(),
+		UpdateTime: time.Now(),
+		script:     scr,
+		ctx:        candyjs.NewContext(),
+		waitGroup:  sync.WaitGroup{},
+	}
 	exchanges := []interface{}{}
 	logger := log.New("global")
 	for _, opt := range opts {
@@ -31,7 +52,6 @@ func Run(opts []Option, scr string) {
 			exchanges = append(exchanges, NewOKCoinCn(opt))
 		}
 	}
-	ctx := candyjs.NewContext()
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Do("error", 0.0, 0.0, err)
@@ -40,12 +60,27 @@ func Run(opts []Option, scr string) {
 	if len(exchanges) < 1 {
 		panic("Please add at least one exchange")
 	}
-	ctx.PushGlobalGoFunction("Log", func(a ...interface{}) {
-		logger.Do("info", 0.0, 0.0, a...)
+	robot.ctx.PushGlobalGoFunction("Log", func(msgs ...interface{}) {
+		logger.Do("info", 0.0, 0.0, msgs...)
 	})
-	ctx.PushGlobalInterface("exchange", exchanges[0])
-	ctx.PushGlobalInterface("exchanges", exchanges)
-	ctx.EvalString(scr)
+	robot.ctx.PushGlobalGoFunction("Sleep", func(t float64) {
+		time.Sleep(time.Duration(t * 1000000))
+	})
+	robot.ctx.PushGlobalInterface("exchange", exchanges[0])
+	robot.ctx.PushGlobalInterface("exchanges", exchanges)
+	return robot
+}
+
+// Run ...
+func (robot *Robot) Run() {
+	robot.waitGroup.Add(1)
+	go robot.ctx.EvalString(robot.script)
+	go robot.waitGroup.Wait()
+}
+
+// Stop ...
+func (robot *Robot) Stop() {
+	robot.waitGroup.Done()
 }
 
 func signMd5(params []string) string {
