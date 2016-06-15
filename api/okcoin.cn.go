@@ -161,7 +161,6 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 	}
 	if result := json.Get("result").MustBool(); !result {
 		e.log.Do("error", 0.0, 0.0, "Sell() error, the error number is ", json.Get("error_code").MustInt())
-		fmt.Println(string(resp))
 		return
 	}
 	e.log.Do("sell", price, amount, msgs...)

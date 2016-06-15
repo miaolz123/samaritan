@@ -7,11 +7,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/miaolz123/samaritan/candyjs"
 	"github.com/miaolz123/samaritan/log"
+	"github.com/miaolz123/samaritan/task"
 )
 
 // Robot ...
@@ -21,8 +21,9 @@ type Robot struct {
 	CreateTime time.Time
 	UpdateTime time.Time
 	script     string
+	log        log.Logger
 	ctx        *candyjs.Context
-	waitGroup  sync.WaitGroup
+	runner     *task.Task
 }
 
 // Option : exchange option
@@ -40,27 +41,22 @@ func New(opts []Option, name, scr string) *Robot {
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
 		script:     scr,
+		log:        log.New("global"),
 		ctx:        candyjs.NewContext(),
-		waitGroup:  sync.WaitGroup{},
+		runner:     task.New(),
 	}
 	exchanges := []interface{}{}
-	logger := log.New("global")
 	for _, opt := range opts {
 		switch opt.Type {
 		case "okcoin.cn":
 			exchanges = append(exchanges, NewOKCoinCn(opt))
 		}
 	}
-	defer func() {
-		if err := recover(); err != nil {
-			logger.Do("error", 0.0, 0.0, err)
-		}
-	}()
 	if len(exchanges) < 1 {
-		panic("Please add at least one exchange")
+		robot.log.Do("error", 0.0, 0.0, "Please add at least one exchange")
 	}
 	robot.ctx.PushGlobalGoFunction("Log", func(msgs ...interface{}) {
-		logger.Do("info", 0.0, 0.0, msgs...)
+		robot.log.Do("info", 0.0, 0.0, msgs...)
 	})
 	robot.ctx.PushGlobalGoFunction("Sleep", func(t float64) {
 		time.Sleep(time.Duration(t * 1000000))
@@ -72,14 +68,19 @@ func New(opts []Option, name, scr string) *Robot {
 
 // Run ...
 func (robot *Robot) Run() {
-	robot.waitGroup.Add(1)
-	go robot.ctx.EvalString(robot.script)
-	go robot.waitGroup.Wait()
+	robot.runner.Add(1)
+	defer robot.Stop()
+	robot.log.Do("info", 0.0, 0.0, "Start Running")
+	if err := robot.ctx.PevalString(robot.script); err != nil {
+		robot.log.Do("error", 0.0, 0.0, err)
+	}
 }
 
 // Stop ...
 func (robot *Robot) Stop() {
-	robot.waitGroup.Done()
+	if robot.runner.AllDone() {
+		robot.log.Do("info", 0.0, 0.0, "Stop Running")
+	}
 }
 
 func signMd5(params []string) string {
