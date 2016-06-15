@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bitly/go-simplejson"
@@ -88,7 +89,7 @@ func (e *OKCoinCn) GetAccount() interface{} {
 	return account
 }
 
-// Buy ...
+// Buy : buy stocks
 func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interface{}) (id int) {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.log.Do("error", 0.0, 0.0, "Buy() error, unrecognized stockType")
@@ -106,6 +107,8 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 		params = append(params, fmt.Sprint("price=", price))
 	}
 	params = append(params, typeParam, amountParam)
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
 	resp, err := post(e.host+"trade.do", params)
 	if err != nil {
@@ -126,7 +129,7 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 	return
 }
 
-// Sell ...
+// Sell : sell stocks
 func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interface{}) (id int) {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.log.Do("error", 0.0, 0.0, "Sell() error, unrecognized stockType")
@@ -143,6 +146,8 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 		params = append(params, fmt.Sprint("price=", price))
 	}
 	params = append(params, typeParam)
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
 	resp, err := post(e.host+"trade.do", params)
 	if err != nil {
@@ -156,11 +161,51 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 	}
 	if result := json.Get("result").MustBool(); !result {
 		e.log.Do("error", 0.0, 0.0, "Sell() error, the error number is ", json.Get("error_code").MustInt())
+		fmt.Println(string(resp))
 		return
 	}
 	e.log.Do("sell", price, amount, msgs...)
 	id = json.Get("order_id").MustInt()
 	return
+}
+
+// GetOrder : get details of an order
+func (e *OKCoinCn) GetOrder(order map[string]interface{}) interface{} {
+	params := []string{
+		"api_key=" + e.option.AccessKey,
+		"symbol=" + e.stockMap[fmt.Sprint(order["StockType"])] + "_cny",
+		fmt.Sprint("order_id=", conver.IntMust(order["Id"])),
+	}
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
+	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
+	resp, err := post(e.host+"order_info.do", params)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
+		return nil
+	}
+	json, err := simplejson.NewJson(resp)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
+		return nil
+	}
+	if result := json.Get("result").MustBool(); !result {
+		e.log.Do("error", 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
+		return nil
+	}
+	ordersJSON := json.Get("orders")
+	if len(ordersJSON.MustArray()) > 0 {
+		orderJSON := ordersJSON.GetIndex(0)
+		return map[string]interface{}{
+			"Id":         orderJSON.Get("order_id").MustInt(),
+			"Price":      orderJSON.Get("price").MustFloat64(),
+			"Amount":     orderJSON.Get("amount").MustFloat64(),
+			"DealAmount": orderJSON.Get("deal_amount").MustFloat64(),
+			"OrderType":  e.orderTypeMap[orderJSON.Get("type").MustString()],
+			"StockType":  order["StockType"],
+		}
+	}
+	return nil
 }
 
 // CancelOrder ...
@@ -170,6 +215,8 @@ func (e *OKCoinCn) CancelOrder(order map[string]interface{}) bool {
 		"symbol=" + e.stockMap[fmt.Sprint(order["StockType"])] + "_cny",
 		fmt.Sprint("order_id=", conver.IntMust(order["Id"])),
 	}
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
 	resp, err := post(e.host+"cancel_order.do", params)
 	if err != nil {
@@ -194,12 +241,12 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []map[string]interface{})
 	params := []string{
 		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
-		"status=0",
-		"current_page=1",
-		"page_length=200",
+		"order_id=-1",
 	}
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"order_history.do", params)
+	resp, err := post(e.host+"order_info.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
 		return
@@ -230,10 +277,45 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []map[string]interface{})
 	return orders
 }
 
-// GetOrder ...
-func (e *OKCoinCn) GetOrder() map[string]interface{} {
-	return map[string]interface{}{
-		"Id":        123456789,
-		"StockType": "BTC",
+// GetTrades ...
+func (e *OKCoinCn) GetTrades(stockType string) (orders []map[string]interface{}) {
+	params := []string{
+		"api_key=" + e.option.AccessKey,
+		"symbol=" + e.stockMap[stockType] + "_cny",
+		"status=1",
+		"current_page=1",
+		"page_length=200",
 	}
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
+	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
+	resp, err := post(e.host+"order_history.do", params)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetTrades() error, ", err)
+		return
+	}
+	json, err := simplejson.NewJson(resp)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetTrades() error, ", err)
+		return
+	}
+	if result := json.Get("result").MustBool(); !result {
+		e.log.Do("error", 0.0, 0.0, "GetTrades() error, the error number is ", json.Get("error_code").MustInt())
+		return
+	}
+	ordersJSON := json.Get("orders")
+	count := len(ordersJSON.MustArray())
+	for i := 0; i < count; i++ {
+		orderJSON := ordersJSON.GetIndex(i)
+		order := map[string]interface{}{
+			"Id":         orderJSON.Get("order_id").MustInt(),
+			"Price":      orderJSON.Get("price").MustFloat64(),
+			"Amount":     orderJSON.Get("amount").MustFloat64(),
+			"DealAmount": orderJSON.Get("deal_amount").MustFloat64(),
+			"OrderType":  e.orderTypeMap[orderJSON.Get("type").MustString()],
+			"StockType":  stockType,
+		}
+		orders = append(orders, order)
+	}
+	return orders
 }

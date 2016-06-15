@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -84,7 +83,6 @@ func (robot *Robot) Stop() {
 }
 
 func signMd5(params []string) string {
-	sort.Strings(params)
 	m := md5.New()
 	m.Write([]byte(strings.Join(params, "&")))
 	return hex.EncodeToString(m.Sum(nil))
