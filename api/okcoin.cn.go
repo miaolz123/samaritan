@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bitly/go-simplejson"
 	"github.com/miaolz123/conver"
@@ -14,6 +15,8 @@ import (
 type OKCoinCn struct {
 	stockMap     map[string]string
 	orderTypeMap map[string]int
+	periodMap    map[string]string
+	records      map[string][]map[string]float64
 	host         string
 	log          log.Logger
 	option       Option
@@ -24,6 +27,8 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 	e := OKCoinCn{
 		stockMap:     map[string]string{"BTC": "btc", "LTC": "ltc"},
 		orderTypeMap: map[string]int{"buy": 1, "sell": -1, "buy_market": 2, "sell_market": -2},
+		periodMap:    map[string]string{"M": "1min", "M5": "5min", "M15": "15min", "M30": "30min", "H": "1hour", "D": "1day", "W": "1week"},
+		records:      make(map[string][]map[string]float64),
 		host:         "https://www.okcoin.cn/api/v1/",
 		log:          log.New(opt.Type),
 		option:       opt,
@@ -92,7 +97,7 @@ func (e *OKCoinCn) GetAccount() interface{} {
 // Buy : buy stocks
 func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interface{}) (id int) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "Buy() error, unrecognized stockType")
+		e.log.Do("error", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
 		return
 	}
 	params := []string{
@@ -132,7 +137,7 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 // Sell : sell stocks
 func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interface{}) (id int) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "Sell() error, unrecognized stockType")
+		e.log.Do("error", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
 		return
 	}
 	params := []string{
@@ -207,7 +212,7 @@ func (e *OKCoinCn) GetOrder(order map[string]interface{}) interface{} {
 	return nil
 }
 
-// CancelOrder ...
+// CancelOrder : cancel an order
 func (e *OKCoinCn) CancelOrder(order map[string]interface{}) bool {
 	params := []string{
 		"api_key=" + e.option.AccessKey,
@@ -235,8 +240,12 @@ func (e *OKCoinCn) CancelOrder(order map[string]interface{}) bool {
 	return true
 }
 
-// GetOrders ...
+// GetOrders : get all unfilled orders
 func (e *OKCoinCn) GetOrders(stockType string) (orders []map[string]interface{}) {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.log.Do("error", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
+		return
+	}
 	params := []string{
 		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
@@ -276,8 +285,12 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []map[string]interface{})
 	return orders
 }
 
-// GetTrades ...
+// GetTrades : get all filled orders recently
 func (e *OKCoinCn) GetTrades(stockType string) (orders []map[string]interface{}) {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.log.Do("error", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
+		return
+	}
 	params := []string{
 		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
@@ -317,4 +330,119 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []map[string]interface{})
 		orders = append(orders, order)
 	}
 	return orders
+}
+
+// GetTicker : get market ticker & depth
+func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.log.Do("error", 0.0, 0.0, "GetTicker() error, unrecognized stockType: ", stockType)
+		return nil
+	}
+	size := 20
+	if len(sizes) > 0 && sizes[0] > 20 {
+		size = sizes[0]
+	}
+	resp, err := get(fmt.Sprint(e.host, "depth.do?symbol=", e.stockMap[stockType], "_cny&size=", size))
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetTicker() error, ", err)
+		return nil
+	}
+	json, err := simplejson.NewJson(resp)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetTicker() error, ", err)
+		return nil
+	}
+	bids := []map[string]float64{}
+	depthsJSON := json.Get("bids")
+	for i := 0; i < len(depthsJSON.MustArray()); i++ {
+		depthJSON := depthsJSON.GetIndex(i)
+		bids = append(bids, map[string]float64{
+			"Price":  depthJSON.GetIndex(0).MustFloat64(),
+			"Amount": depthJSON.GetIndex(1).MustFloat64(),
+		})
+	}
+	asks := []map[string]float64{}
+	depthsJSON = json.Get("asks")
+	for i := len(depthsJSON.MustArray()); i > 0; i-- {
+		depthJSON := depthsJSON.GetIndex(i - 1)
+		asks = append(asks, map[string]float64{
+			"Price":  depthJSON.GetIndex(0).MustFloat64(),
+			"Amount": depthJSON.GetIndex(1).MustFloat64(),
+		})
+	}
+	if len(bids) < 1 || len(asks) < 1 {
+		e.log.Do("error", 0.0, 0.0, "GetTicker() error, can not get enough Bids or Asks")
+		return nil
+	}
+	buy := bids[0]["Price"]
+	sell := asks[0]["Price"]
+	mid := (buy + sell) / 2
+	return map[string]interface{}{
+		"Mid":  mid,
+		"Buy":  buy,
+		"Sell": sell,
+		"Bids": bids,
+		"Asks": asks,
+	}
+}
+
+// GetRecords : get candlestick data
+func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...int) interface{} {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.log.Do("error", 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
+		return nil
+	}
+	if _, ok := e.periodMap[period]; !ok {
+		e.log.Do("error", 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
+		return nil
+	}
+	size := 200
+	if len(sizes) > 0 && sizes[0] > 200 {
+		size = sizes[0]
+	}
+	resp, err := get(fmt.Sprint(e.host, "kline.do?symbol=", e.stockMap[stockType], "_cny&type=", e.periodMap[period], "&size=", size))
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetRecords() error, ", err)
+		return nil
+	}
+	json, err := simplejson.NewJson(resp)
+	if err != nil {
+		e.log.Do("error", 0.0, 0.0, "GetRecords() error, ", err)
+		return nil
+	}
+	timeLast := 0.0
+	if len(e.records[period]) > 0 {
+		timeLast = e.records[period][len(e.records[period])-1]["Time"]
+	}
+	recordsNew := []map[string]float64{}
+	for i := len(json.MustArray()); i > 0; i-- {
+		recordJSON := json.GetIndex(i - 1)
+		record := map[string]float64{
+			"Time": conver.Float64Must(time.Unix(recordJSON.GetIndex(0).MustInt64()/1000, 0).Format("20060102150405")),
+		}
+		if record["Time"] > timeLast {
+			record["Open"] = recordJSON.GetIndex(1).MustFloat64()
+			record["High"] = recordJSON.GetIndex(2).MustFloat64()
+			record["Low"] = recordJSON.GetIndex(3).MustFloat64()
+			record["Close"] = recordJSON.GetIndex(4).MustFloat64()
+			record["Volume"] = recordJSON.GetIndex(5).MustFloat64()
+			recordsNew = append([]map[string]float64{record}, recordsNew...)
+		} else if record["Time"] == timeLast {
+			e.records[period][len(e.records[period])-1] = map[string]float64{
+				"Time":   timeLast,
+				"Open":   recordJSON.GetIndex(1).MustFloat64(),
+				"High":   recordJSON.GetIndex(2).MustFloat64(),
+				"Low":    recordJSON.GetIndex(3).MustFloat64(),
+				"Close":  recordJSON.GetIndex(4).MustFloat64(),
+				"Volume": recordJSON.GetIndex(5).MustFloat64(),
+			}
+		} else {
+			break
+		}
+	}
+	e.records[period] = append(e.records[period], recordsNew...)
+	if len(e.records[period]) > size {
+		e.records[period] = e.records[period][len(e.records[period])-size:]
+	}
+	return e.records[period]
 }

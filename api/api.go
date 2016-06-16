@@ -36,6 +36,17 @@ type Option struct {
 
 // New : get a robot from opts(options) & scr(javascript code)
 func New(opts []Option, name, scr string) *Robot {
+	constants := []string{
+		"BTC",
+		"LTC",
+		"M",
+		"M5",
+		"M15",
+		"M30",
+		"H",
+		"D",
+		"W",
+	}
 	robot := &Robot{
 		Name:       name,
 		CreateTime: time.Now(),
@@ -54,6 +65,9 @@ func New(opts []Option, name, scr string) *Robot {
 	}
 	if len(exchanges) < 1 {
 		robot.log.Do("error", 0.0, 0.0, "Please add at least one exchange")
+	}
+	for _, cons := range constants {
+		robot.ctx.PushGlobalInterface(cons, cons)
 	}
 	robot.ctx.PushGlobalGoFunction("Log", func(msgs ...interface{}) {
 		robot.log.Do("info", 0.0, 0.0, msgs...)

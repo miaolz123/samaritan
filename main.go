@@ -22,17 +22,27 @@ func main() {
 		MainStock: section.Key("MainStock").MustString(""),
 	}
 	opts := []api.Option{opt}
-	scr := `exchange.Log(exchange.SetMainStock("LTC"));
-	Sleep(500);
+	scr := `exchange.Log(exchange.SetMainStock(LTC));
 	if (exchange.GetAccount()) exchange.Log(exchange.GetAccount().Net);
-	exchange.Sell("BTC",4650,0.4);
-	var acc = exchange.GetOrders("BTC");
+	// exchange.Sell(BTC,4650,0.4);
+	var acc = exchange.GetOrders(BTC);
 	exchange.Log(212121, acc);
 	if (acc) {
 		Log(exchange.GetOrder(acc[0]));
 		exchange.CancelOrder(acc[0]);
 	} else Log("all done");
-	Log(111);`
+	Log(exchange.GetTicker(BTC).Mid);
+	Log(exchange.GetRecords(BTC, M, 9999).length);
+	while (true) {
+		var rs = exchange.GetRecords(BTC, M, 9999);
+		Log(rs.length);
+		Log(rs[rs.length-3].Time)
+		Log(rs[rs.length-2].Time)
+		Log(rs[rs.length-1].Time)
+		Log(rs[rs.length-1])
+		break;
+		Sleep(30000);
+	}`
 	r := api.New(opts, "ceshi001", scr)
 	r.Run()
 	time.Sleep(time.Second * 2)
