@@ -24,7 +24,8 @@ func main() {
 	opts := []api.Option{opt}
 	scr := `exchange.Log(exchange.SetMainStock(LTC));
 	if (exchange.GetAccount()) exchange.Log(exchange.GetAccount().Net);
-	// exchange.Sell(BTC,4650,0.4);
+	exchange.Buy(BTC,5050,0.4);
+	exchange.Sell(BTC,5100,0.4);
 	var acc = exchange.GetOrders(BTC);
 	exchange.Log(212121, acc);
 	if (acc) {

@@ -57,25 +57,28 @@ func (e *OKCoinCn) SetMainStock(stock string) string {
 	return e.option.MainStock
 }
 
+func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Json, err error) {
+	sort.Strings(params)
+	params = append(params, "secret_key="+e.option.SecretKey)
+	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
+	resp, err := post(url, params)
+	if err != nil {
+		return
+	}
+	return simplejson.NewJson(resp)
+}
+
 // GetAccount : get the account detail of this exchange
 func (e *OKCoinCn) GetAccount() interface{} {
 	account := make(map[string]float64)
 	params := []string{
 		"api_key=" + e.option.AccessKey,
-		"secret_key=" + e.option.SecretKey,
 	}
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"userinfo.do", params)
+	json, err := e.getAuthJSON(e.host+"userinfo.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
 	}
-	json, err := simplejson.NewJson(resp)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
-		return nil
-	}
-
 	if result := json.Get("result").MustBool(); !result {
 		err = fmt.Errorf("GetAccount() error, the error number is %v", json.Get("error_code").MustInt())
 		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
@@ -112,15 +115,7 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 		params = append(params, fmt.Sprint("price=", price))
 	}
 	params = append(params, typeParam, amountParam)
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"trade.do", params)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "Buy() error, ", err)
-		return
-	}
-	json, err := simplejson.NewJson(resp)
+	json, err := e.getAuthJSON(e.host+"trade.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "Buy() error, ", err)
 		return
@@ -151,15 +146,7 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 		params = append(params, fmt.Sprint("price=", price))
 	}
 	params = append(params, typeParam)
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"trade.do", params)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "Sell() error, ", err)
-		return
-	}
-	json, err := simplejson.NewJson(resp)
+	json, err := e.getAuthJSON(e.host+"trade.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "Sell() error, ", err)
 		return
@@ -180,15 +167,7 @@ func (e *OKCoinCn) GetOrder(order map[string]interface{}) interface{} {
 		"symbol=" + e.stockMap[fmt.Sprint(order["StockType"])] + "_cny",
 		fmt.Sprint("order_id=", conver.IntMust(order["Id"])),
 	}
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"order_info.do", params)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
-		return nil
-	}
-	json, err := simplejson.NewJson(resp)
+	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
 		return nil
@@ -219,15 +198,7 @@ func (e *OKCoinCn) CancelOrder(order map[string]interface{}) bool {
 		"symbol=" + e.stockMap[fmt.Sprint(order["StockType"])] + "_cny",
 		fmt.Sprint("order_id=", conver.IntMust(order["Id"])),
 	}
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"cancel_order.do", params)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "CancelOrder() error, ", err)
-		return false
-	}
-	json, err := simplejson.NewJson(resp)
+	json, err := e.getAuthJSON(e.host+"cancel_order.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "CancelOrder() error, ", err)
 		return false
@@ -251,15 +222,7 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []map[string]interface{})
 		"symbol=" + e.stockMap[stockType] + "_cny",
 		"order_id=-1",
 	}
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"order_info.do", params)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
-		return
-	}
-	json, err := simplejson.NewJson(resp)
+	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
 		return
@@ -298,15 +261,7 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []map[string]interface{})
 		"current_page=1",
 		"page_length=200",
 	}
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(e.host+"order_history.do", params)
-	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetTrades() error, ", err)
-		return
-	}
-	json, err := simplejson.NewJson(resp)
+	json, err := e.getAuthJSON(e.host+"order_history.do", params)
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "GetTrades() error, ", err)
 		return
