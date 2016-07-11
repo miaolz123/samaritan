@@ -1,16 +1,11 @@
 package main
 
 import (
-	"runtime"
 	"time"
 
 	"github.com/go-ini/ini"
 	"github.com/miaolz123/samaritan/api"
 )
-
-func init() {
-	runtime.LockOSThread()
-}
 
 func main() {
 	cfg, _ := ini.Load("app.ini")
@@ -24,8 +19,8 @@ func main() {
 	opts := []api.Option{opt}
 	scr := `exchange.Log(exchange.SetMainStock(LTC));
 	if (exchange.GetAccount()) exchange.Log(exchange.GetAccount().Net);
-	exchange.Buy(BTC,5050,0.4);
-	exchange.Sell(BTC,5100,0.4);
+	// exchange.Buy(BTC,4300,0.04);
+	// exchange.Sell(BTC,4350,0.04);
 	var acc = exchange.GetOrders(BTC);
 	exchange.Log(212121, acc);
 	if (acc) {
