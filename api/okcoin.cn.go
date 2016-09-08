@@ -58,6 +58,7 @@ func (e *OKCoinCn) SetMainStock(stock string) string {
 }
 
 func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Json, err error) {
+	params = append(params, "api_key="+e.option.AccessKey)
 	sort.Strings(params)
 	params = append(params, "secret_key="+e.option.SecretKey)
 	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
@@ -71,10 +72,7 @@ func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Js
 // GetAccount : get the account detail of this exchange
 func (e *OKCoinCn) GetAccount() interface{} {
 	account := make(map[string]float64)
-	params := []string{
-		"api_key=" + e.option.AccessKey,
-	}
-	json, err := e.getAuthJSON(e.host+"userinfo.do", params)
+	json, err := e.getAuthJSON(e.host+"userinfo.do", []string{})
 	if err != nil {
 		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
@@ -104,7 +102,6 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 		return
 	}
 	params := []string{
-		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
 	}
 	typeParam := "type=buy_market"
@@ -136,7 +133,6 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 		return
 	}
 	params := []string{
-		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
 		fmt.Sprint("amount=", amount),
 	}
@@ -163,7 +159,6 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 // GetOrder : get details of an order
 func (e *OKCoinCn) GetOrder(order map[string]interface{}) interface{} {
 	params := []string{
-		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[fmt.Sprint(order["StockType"])] + "_cny",
 		fmt.Sprint("order_id=", conver.IntMust(order["Id"])),
 	}
@@ -194,7 +189,6 @@ func (e *OKCoinCn) GetOrder(order map[string]interface{}) interface{} {
 // CancelOrder : cancel an order
 func (e *OKCoinCn) CancelOrder(order map[string]interface{}) bool {
 	params := []string{
-		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[fmt.Sprint(order["StockType"])] + "_cny",
 		fmt.Sprint("order_id=", conver.IntMust(order["Id"])),
 	}
@@ -218,7 +212,6 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []map[string]interface{})
 		return
 	}
 	params := []string{
-		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
 		"order_id=-1",
 	}
@@ -255,7 +248,6 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []map[string]interface{})
 		return
 	}
 	params := []string{
-		"api_key=" + e.option.AccessKey,
 		"symbol=" + e.stockMap[stockType] + "_cny",
 		"status=1",
 		"current_page=1",
