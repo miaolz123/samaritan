@@ -14,7 +14,7 @@ import (
 // Huobi : the exchange struct of okcoin.cn
 type Huobi struct {
 	stockMap     map[string]string
-	orderTypeMap map[string]int
+	orderTypeMap map[int]int
 	periodMap    map[string]string
 	records      map[string][]Record
 	host         string
@@ -26,7 +26,7 @@ type Huobi struct {
 func NewHuobi(opt Option) *Huobi {
 	e := Huobi{
 		stockMap:     map[string]string{"BTC": "1", "LTC": "2"},
-		orderTypeMap: map[string]int{"1": 1, "2": -1, "3": 2, "4": -2},
+		orderTypeMap: map[int]int{1: 1, 2: -1, 3: 2, 4: -2},
 		periodMap:    map[string]string{"M": "001", "M5": "005", "M15": "015", "M30": "030", "H": "060", "D": "100", "W": "200"},
 		records:      make(map[string][]Record),
 		host:         "https://api.huobi.com/apiv3",
@@ -83,8 +83,7 @@ func (e *Huobi) GetAccount() interface{} {
 		return nil
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("GetAccount() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return nil
 	}
 	account := Account{
@@ -130,8 +129,7 @@ func (e *Huobi) Buy(stockType string, price, amount float64, msgs ...interface{}
 		return
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("Buy() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "Buy() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return
 	}
 	e.log.Do("buy", price, amount, msgs...)
@@ -161,8 +159,7 @@ func (e *Huobi) Sell(stockType string, price, amount float64, msgs ...interface{
 		return
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("Sell() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "Sell() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return
 	}
 	e.log.Do("sell", price, amount, msgs...)
@@ -183,16 +180,15 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 		return nil
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("GetOrders() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return nil
 	}
 	return Order{
 		ID:         fmt.Sprint(json.Get("id").Interface()),
-		Price:      json.Get("order_price").MustFloat64(),
-		Amount:     json.Get("order_amount").MustFloat64(),
-		DealAmount: json.Get("processed_amount").MustFloat64(),
-		OrderType:  e.orderTypeMap[json.Get("type").MustString()],
+		Price:      conver.Float64Must(json.Get("order_price").Interface()),
+		Amount:     conver.Float64Must(json.Get("order_amount").Interface()),
+		DealAmount: conver.Float64Must(json.Get("processed_amount").Interface()),
+		OrderType:  e.orderTypeMap[json.Get("type").MustInt()],
 		StockType:  stockType,
 	}
 }
@@ -210,8 +206,7 @@ func (e *Huobi) CancelOrder(order Order) bool {
 		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("CancelOrder() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "CancelOrder() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return false
 	}
 	if json.Get("result").MustString() == "success" {
@@ -238,8 +233,7 @@ func (e *Huobi) GetOrders(stockType string) (orders []Order) {
 		return
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("GetOrders() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return
 	}
 	count := len(json.MustArray())
@@ -247,10 +241,10 @@ func (e *Huobi) GetOrders(stockType string) (orders []Order) {
 		orderJSON := json.GetIndex(i)
 		orders = append(orders, Order{
 			ID:         fmt.Sprint(orderJSON.Get("id").Interface()),
-			Price:      orderJSON.Get("order_price").MustFloat64(),
-			Amount:     orderJSON.Get("order_amount").MustFloat64(),
-			DealAmount: orderJSON.Get("processed_amount").MustFloat64(),
-			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustString()],
+			Price:      conver.Float64Must(orderJSON.Get("order_price").Interface()),
+			Amount:     conver.Float64Must(orderJSON.Get("order_amount").Interface()),
+			DealAmount: conver.Float64Must(orderJSON.Get("processed_amount").Interface()),
+			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		})
 	}
@@ -273,8 +267,7 @@ func (e *Huobi) GetTrades(stockType string) (orders []Order) {
 		return
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		err = fmt.Errorf("GetTrades() error, the error number is %v", code)
-		e.log.Do("error", 0.0, 0.0, err)
+		e.log.Do("error", 0.0, 0.0, "GetTrades() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return
 	}
 	count := len(json.MustArray())
@@ -282,10 +275,10 @@ func (e *Huobi) GetTrades(stockType string) (orders []Order) {
 		orderJSON := json.GetIndex(i)
 		orders = append(orders, Order{
 			ID:         fmt.Sprint(orderJSON.Get("id").Interface()),
-			Price:      orderJSON.Get("order_price").MustFloat64(),
-			Amount:     orderJSON.Get("order_amount").MustFloat64(),
-			DealAmount: orderJSON.Get("processed_amount").MustFloat64(),
-			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustString()],
+			Price:      conver.Float64Must(orderJSON.Get("order_price").Interface()),
+			Amount:     conver.Float64Must(orderJSON.Get("order_amount").Interface()),
+			DealAmount: conver.Float64Must(orderJSON.Get("processed_amount").Interface()),
+			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		})
 	}

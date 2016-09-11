@@ -21,7 +21,9 @@ func main() {
 		}
 	}
 	scr := `
-	Log(exchanges[1].GetRecords(BTC, M, 10));
+	var orders = exchanges[1].GetOrders(BTC);
+	Log(exchanges[1].CancelOrder(orders[0]));
+	Log(exchanges[1].Sell(BTC, 0, 0.02));
 	`
 	r := api.New(opts, "ceshi001", scr)
 	r.Run()
