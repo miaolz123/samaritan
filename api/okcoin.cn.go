@@ -60,10 +60,8 @@ func (e *OKCoinCn) SetMainStock(stock string) string {
 func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Json, err error) {
 	params = append(params, "api_key="+e.option.AccessKey)
 	sort.Strings(params)
-	params = append(params, []string{
-		"secret_key=" + e.option.SecretKey,
-		"sign=" + strings.ToUpper(signMd5(params)),
-	}...)
+	params = append(params, "secret_key="+e.option.SecretKey)
+	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
 	resp, err := post(url, params)
 	if err != nil {
 		return
