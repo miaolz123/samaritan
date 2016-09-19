@@ -7,7 +7,6 @@ import (
 	"github.com/miaolz123/samaritan/api"
 	"github.com/miaolz123/samaritan/candyjs"
 	"github.com/miaolz123/samaritan/log"
-	"github.com/miaolz123/samaritan/task"
 )
 
 // Trader struct
@@ -22,12 +21,10 @@ type Trader struct {
 	strategy Strategy
 	log      log.Logger
 	ctx      *candyjs.Context
-	runner   *task.Task
 }
 
 func (t *Trader) run() error {
 	t.Status = 1
-	t.runner.Add(1)
 	defer t.stop()
 	t.log.Do("info", 0.0, 0.0, "Start Running")
 	if err := t.ctx.PevalString(t.strategy.Script); err != nil {
@@ -37,13 +34,8 @@ func (t *Trader) run() error {
 	return nil
 }
 
-func (t *Trader) stop() bool {
-	if t.runner.AllDone() {
-		t.log.Do("info", 0.0, 0.0, "Stop Running")
-		t.Status = 0
-		return true
-	}
-	return false
+func (t *Trader) stop() {
+	t.ctx.DestroyHeap()
 }
 
 // TraderExchange struct
@@ -98,7 +90,6 @@ func RunTrader(trader Trader) (err error) {
 	}
 	trader.log = log.New("global")
 	trader.ctx = candyjs.NewContext()
-	trader.runner = task.New()
 	constants := []string{
 		"BTC",
 		"LTC",
@@ -145,9 +136,8 @@ func RunTrader(trader Trader) (err error) {
 }
 
 // StopTrader ...
-func StopTrader(trader Trader) bool {
+func StopTrader(trader Trader) {
 	if TraderMap[trader.ID] != nil {
-		return TraderMap[trader.ID].stop()
+		TraderMap[trader.ID].stop()
 	}
-	return true
 }

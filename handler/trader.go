@@ -100,8 +100,6 @@ func traderStop(c *iris.Context) {
 		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
 		return
 	}
-	if model.StopTrader(req) {
-		c.JSON(iris.StatusOK, req)
-	}
-	c.Error("", iris.StatusServiceUnavailable)
+	model.StopTrader(req)
+	c.JSON(iris.StatusOK, req)
 }
