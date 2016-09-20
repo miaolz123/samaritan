@@ -15,7 +15,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	db.AutoMigrate(&User{}, &Exchange{}, &Strategy{}, &Trader{}, &TraderExchange{})
+	db.AutoMigrate(&User{}, &Exchange{}, &Strategy{}, &TraderExchange{}, &Trader{})
 	users := []User{}
 	db.Find(&users)
 	if len(users) == 0 {
