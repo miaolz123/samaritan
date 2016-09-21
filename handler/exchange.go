@@ -14,68 +14,77 @@ type exchangeHandler struct {
 
 // Get /exchange
 func (c exchangeHandler) Get() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	exchanges, err := model.GetExchanges(self)
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	c.JSON(iris.StatusOK, exchanges)
+	resp["success"] = true
+	resp["data"] = exchanges
+	c.JSON(iris.StatusOK, resp)
 }
 
 // Post /exchange
 func (c exchangeHandler) Post() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	db, err := model.NewOrm()
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	req := model.Exchange{}
 	if err := c.ReadJSON(&req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if req.ID > 0 {
+		exchange := model.Exchange{}
+		if err := db.First(&exchange, req.ID).Error; err != nil {
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		exchange.Name = req.Name
+		exchange.Type = req.Type
+		exchange.AccessKey = req.AccessKey
+		exchange.SecretKey = req.SecretKey
+		if err := db.Save(&exchange).Error; err != nil {
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		resp["success"] = true
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	req.UserID = self.ID
 	if err := db.Create(&req).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	c.JSON(iris.StatusOK, req)
-}
-
-// Put /exchange
-func (c exchangeHandler) Put() {
-	db, err := model.NewOrm()
-	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	req := model.Exchange{}
-	if err := c.ReadJSON(&req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
-		return
-	}
-	exchange := model.Exchange{}
-	if err := db.First(&exchange, req.ID).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	exchange.Name = req.Name
-	exchange.Type = req.Type
-	exchange.AccessKey = req.AccessKey
-	exchange.SecretKey = req.SecretKey
-	if err := db.Save(&exchange).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	c.JSON(iris.StatusOK, exchange)
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
 }

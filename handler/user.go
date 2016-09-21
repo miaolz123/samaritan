@@ -55,79 +55,88 @@ func userLogin(c *iris.Context) {
 
 // Get /user
 func (c userHandler) Get() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	users, err := model.GetUsers(self)
+	order := c.URLParam("order")
+	users, err := model.GetUsers(self, order)
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	c.JSON(iris.StatusOK, users)
-}
-
-// GetBy /user/:name
-func (c userHandler) GetBy(name string) {
-	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
-	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	user, err := model.GetUser(name)
-	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	if self.Level > user.Level || self.Name == user.Name {
-		c.JSON(iris.StatusOK, user)
-		return
-	}
-	c.Error("", iris.StatusForbidden)
+	resp["success"] = true
+	resp["data"] = users
+	c.JSON(iris.StatusOK, resp)
 }
 
 // Post /user
 func (c userHandler) Post() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	db, err := model.NewOrm()
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	req := struct {
-		Name     string
-		Password string
-		Level    int
-	}{}
+	req := model.User{}
 	if err := c.ReadJSON(&req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	count := int64(0)
-	if err := db.Model(&model.User{}).Where("name = ?", req.Name).Count(&count).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+	if req.ID > 0 {
+		user := model.User{}
+		if err := db.First(&user, req.ID).Error; err != nil {
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		user.Name = req.Name
+		user.Level = req.Level
+		if user.Level >= self.Level {
+			if req.ID == self.ID {
+				req.Level = self.Level
+			} else {
+				req.Level = self.Level - 1
+			}
+		}
+		if req.Password != "" {
+			user.Password = req.Password
+		}
+		if err := db.Save(&user).Error; err != nil {
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		resp["success"] = true
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if count > 0 {
-		c.Error("Name exists", iris.StatusBadRequest)
+	if req.Level >= self.Level {
+		req.Level = self.Level - 1
+	}
+	if err := db.Create(&req).Error; err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	user := model.User{
-		Name:     req.Name,
-		Password: req.Password,
-		Level:    req.Level,
-	}
-	if user.Level >= self.Level {
-		user.Level = self.Level - 1
-	}
-	if err := db.Create(&user).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	c.JSON(iris.StatusOK, user)
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
 }

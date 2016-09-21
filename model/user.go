@@ -21,12 +21,16 @@ func GetUser(name interface{}) (user User, err error) {
 }
 
 // GetUsers ...
-func GetUsers(self User) (users []User, err error) {
+func GetUsers(self User, order ...string) (users []User, err error) {
 	db, err := NewOrm()
 	if err != nil {
 		return
 	}
-	err = db.Where("level < ?", self.Level).Find(&users).Error
+	orderKey := "ID"
+	if len(order) > 0 && order[0] != "" {
+		orderKey = order[0]
+	}
+	err = db.Order(orderKey).Where("level < ?", self.Level).Find(&users).Error
 	users = append([]User{self}, users...)
 	return
 }
