@@ -10,6 +10,16 @@ type User struct {
 	Level    int
 }
 
+// GetUserByID ...
+func GetUserByID(id interface{}) (user User, err error) {
+	db, err := NewOrm()
+	if err != nil {
+		return
+	}
+	err = db.Where("id = ?", id).First(&user).Error
+	return
+}
+
 // GetUser ...
 func GetUser(name interface{}) (user User, err error) {
 	db, err := NewOrm()

@@ -2,9 +2,13 @@ package handler
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
+	"github.com/miaolz123/samaritan/api"
+	"github.com/miaolz123/samaritan/candyjs"
+	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
 )
 
@@ -81,16 +85,87 @@ func (c traderHandler) Put() {
 
 // Post /run
 func traderRun(c *iris.Context) {
-	req := model.Trader{}
-	if err := c.ReadJSON(&req); err != nil {
+	fmt.Println(888888)
+	trader := model.Trader{}
+	if err := c.ReadJSON(&trader); err != nil {
 		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
 		return
 	}
-	if err := model.RunTrader(req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+	fmt.Println(949494)
+	db, err := model.NewOrm()
+	if err != nil {
 		return
 	}
-	c.JSON(iris.StatusOK, req)
+	if err = db.First(&trader, trader.ID).Error; err != nil {
+		return
+	}
+	if err = db.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
+		return
+	}
+	if err = db.Model(&trader).Association("Exchanges").Find(&trader.Exchanges).Error; err != nil {
+		return
+	}
+	fmt.Println(108108)
+	trader.Logger = model.Logger{
+		TraderID:     trader.ID,
+		ExchangeType: "",
+	}
+	trader.Ctx = candyjs.NewContext()
+	constants := []string{
+		"BTC",
+		"LTC",
+		"M",
+		"M5",
+		"M15",
+		"M30",
+		"H",
+		"D",
+		"W",
+	}
+	fmt.Println(125125)
+	exchanges := []interface{}{}
+	for _, e := range trader.Exchanges {
+		opt := api.Option{
+			TraderID:  trader.ID,
+			Type:      e.Type,
+			AccessKey: e.AccessKey,
+			SecretKey: e.SecretKey,
+			MainStock: "BTC",
+		}
+		switch opt.Type {
+		case "okcoin.cn":
+			exchanges = append(exchanges, api.NewOKCoinCn(opt))
+		case "huobi":
+			exchanges = append(exchanges, api.NewHuobi(opt))
+		}
+	}
+	fmt.Println(142142)
+	if len(exchanges) == 0 {
+		trader.Logger.Log(constant.ERROR, 0.0, 0.0, "Please add at least one exchange")
+	}
+	for _, c := range constants {
+		trader.Ctx.PushGlobalInterface(c, c)
+	}
+	trader.Ctx.PushGlobalGoFunction("Log", func(msgs ...interface{}) {
+		trader.Logger.Log(constant.INFO, 0.0, 0.0, msgs...)
+	})
+	trader.Ctx.PushGlobalGoFunction("Sleep", func(t float64) {
+		time.Sleep(time.Duration(t * 1000000))
+	})
+	fmt.Println(155155)
+	trader.Ctx.PushGlobalInterface("exchange", exchanges[0])
+	trader.Ctx.PushGlobalInterface("exchanges", exchanges)
+	model.TraderMap[trader.ID] = &trader
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Println(err)
+			}
+		}()
+		model.TraderMap[trader.ID].Run()
+	}()
+	fmt.Println(167167)
+	c.JSON(iris.StatusOK, trader)
 }
 
 // Post /stop

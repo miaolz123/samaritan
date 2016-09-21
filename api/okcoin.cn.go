@@ -8,7 +8,8 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/miaolz123/conver"
-	"github.com/miaolz123/samaritan/log"
+	"github.com/miaolz123/samaritan/constant"
+	"github.com/miaolz123/samaritan/model"
 )
 
 // OKCoinCn : the exchange struct of okcoin.cn
@@ -18,7 +19,7 @@ type OKCoinCn struct {
 	periodMap    map[string]string
 	records      map[string][]Record
 	host         string
-	log          log.Logger
+	logger       model.Logger
 	option       Option
 }
 
@@ -30,7 +31,7 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 		periodMap:    map[string]string{"M": "1min", "M5": "5min", "M15": "15min", "M30": "30min", "H": "1hour", "D": "1day", "W": "1week"},
 		records:      make(map[string][]Record),
 		host:         "https://www.okcoin.cn/api/v1/",
-		log:          log.New(opt.Type),
+		logger:       model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:       opt,
 	}
 	if _, ok := e.stockMap[e.option.MainStock]; !ok {
@@ -41,7 +42,7 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 
 // Log : print something to console
 func (e *OKCoinCn) Log(msgs ...interface{}) {
-	e.log.Do("info", 0.0, 0.0, msgs...)
+	e.logger.Log(constant.INFO, 0.0, 0.0, msgs...)
 }
 
 // GetMainStock : get the MainStock of this exchange
@@ -73,12 +74,12 @@ func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Js
 func (e *OKCoinCn) GetAccount() interface{} {
 	json, err := e.getAuthJSON(e.host+"userinfo.do", []string{})
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
 	}
 	if result := json.Get("result").MustBool(); !result {
 		err = fmt.Errorf("GetAccount() error, the error number is %v", json.Get("error_code").MustInt())
-		e.log.Do("error", 0.0, 0.0, "GetAccount() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
 		return nil
 	}
 	return Account{
@@ -98,7 +99,7 @@ func (e *OKCoinCn) GetAccount() interface{} {
 // Buy : buy stocks
 func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interface{}) (id string) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
 		return
 	}
 	params := []string{
@@ -114,14 +115,14 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 	params = append(params, typeParam, amountParam)
 	json, err := e.getAuthJSON(e.host+"trade.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "Buy() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
 		return
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.log.Do("error", 0.0, 0.0, "Buy() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, the error number is ", json.Get("error_code").MustInt())
 		return
 	}
-	e.log.Do("buy", price, amount, msgs...)
+	e.logger.Log(constant.BUY, price, amount, msgs...)
 	id = json.Get("order_id").MustString()
 	return
 }
@@ -129,7 +130,7 @@ func (e *OKCoinCn) Buy(stockType string, price, amount float64, msgs ...interfac
 // Sell : sell stocks
 func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interface{}) (id string) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
 		return
 	}
 	params := []string{
@@ -144,14 +145,14 @@ func (e *OKCoinCn) Sell(stockType string, price, amount float64, msgs ...interfa
 	params = append(params, typeParam)
 	json, err := e.getAuthJSON(e.host+"trade.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "Sell() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
 		return
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.log.Do("error", 0.0, 0.0, "Sell() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, the error number is ", json.Get("error_code").MustInt())
 		return
 	}
-	e.log.Do("sell", price, amount, msgs...)
+	e.logger.Log(constant.SELL, price, amount, msgs...)
 	id = json.Get("order_id").MustString()
 	return
 }
@@ -164,11 +165,11 @@ func (e *OKCoinCn) GetOrder(stockType, id string) interface{} {
 	}
 	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
 		return nil
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
 		return nil
 	}
 	ordersJSON := json.Get("orders")
@@ -194,21 +195,21 @@ func (e *OKCoinCn) CancelOrder(order Order) bool {
 	}
 	json, err := e.getAuthJSON(e.host+"cancel_order.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "CancelOrder() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", err)
 		return false
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.log.Do("error", 0.0, 0.0, "CancelOrder() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, the error number is ", json.Get("error_code").MustInt())
 		return false
 	}
-	e.log.Do("cancel", 0.0, 0.0, fmt.Sprintf("%+v", order))
+	e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, fmt.Sprintf("%+v", order))
 	return true
 }
 
 // GetOrders : get all unfilled orders
 func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
 		return
 	}
 	params := []string{
@@ -217,11 +218,11 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
 	}
 	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
 		return
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.log.Do("error", 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
 		return
 	}
 	ordersJSON := json.Get("orders")
@@ -243,7 +244,7 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
 // GetTrades : get all filled orders recently
 func (e *OKCoinCn) GetTrades(stockType string) (orders []Order) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
 		return
 	}
 	params := []string{
@@ -254,11 +255,11 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []Order) {
 	}
 	json, err := e.getAuthJSON(e.host+"order_history.do", params)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetTrades() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", err)
 		return
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.log.Do("error", 0.0, 0.0, "GetTrades() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, the error number is ", json.Get("error_code").MustInt())
 		return
 	}
 	ordersJSON := json.Get("orders")
@@ -280,7 +281,7 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []Order) {
 // GetTicker : get market ticker & depth
 func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "GetTicker() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, unrecognized stockType: ", stockType)
 		return nil
 	}
 	size := 20
@@ -289,12 +290,12 @@ func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
 	}
 	resp, err := get(fmt.Sprint(e.host, "depth.do?symbol=", e.stockMap[stockType], "_cny&size=", size))
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetTicker() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, ", err)
 		return nil
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetTicker() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, ", err)
 		return nil
 	}
 	ticker := Ticker{}
@@ -315,7 +316,7 @@ func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
 		})
 	}
 	if len(ticker.Bids) < 1 || len(ticker.Asks) < 1 {
-		e.log.Do("error", 0.0, 0.0, "GetTicker() error, can not get enough Bids or Asks")
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, can not get enough Bids or Asks")
 		return nil
 	}
 	ticker.Buy = ticker.Bids[0].Price
@@ -327,11 +328,11 @@ func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
 // GetRecords : get candlestick data
 func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...int) (records []Record) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.log.Do("error", 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
 		return
 	}
 	if _, ok := e.periodMap[period]; !ok {
-		e.log.Do("error", 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
 		return
 	}
 	size := 200
@@ -340,12 +341,12 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...int) (records [
 	}
 	resp, err := get(fmt.Sprint(e.host, "kline.do?symbol=", e.stockMap[stockType], "_cny&type=", e.periodMap[period], "&size=", size))
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetRecords() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
 		return
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		e.log.Do("error", 0.0, 0.0, "GetRecords() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
 		return
 	}
 	timeLast := int64(0)

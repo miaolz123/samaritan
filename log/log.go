@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Logger : logger struct
+// Logger struct
 type Logger struct {
 	Name string
 }
