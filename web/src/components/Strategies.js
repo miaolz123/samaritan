@@ -1,19 +1,18 @@
 import React from 'react';
-import { Tag, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
+import { Tag, Button, Table, Modal, Form, Input, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
 
 const FormItem = Form.Item;
-const Option = Select.Option;
 
-class Exchanges extends React.Component {
+class Strategies extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       token: localStorage.getItem('token'),
-      fetchExchangesUrl: '/exchange',
+      fetchStrategiesUrl: '/strategy',
       loading: false,
       pagination: {
         pageSize: 12,
@@ -26,8 +25,8 @@ class Exchanges extends React.Component {
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
-    this.fetchExchanges = this.fetchExchanges.bind(this);
-    this.postExchange = this.postExchange.bind(this);
+    this.fetchStrategies = this.fetchStrategies.bind(this);
+    this.postStrategy = this.postStrategy.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
@@ -36,14 +35,14 @@ class Exchanges extends React.Component {
   }
 
   componentWillMount() {
-    this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+    this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
   }
 
   handleRefresh() {
-    this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+    this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
   }
 
-  fetchExchanges(url) {
+  fetchStrategies(url) {
     this.setState({ loading: true });
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
@@ -72,13 +71,13 @@ class Exchanges extends React.Component {
       });
   }
 
-  postExchange(exchange) {
-    axios.post(`${config.api}/exchange`, exchange, { headers: { Authorization: `Bearer ${this.state.token}` } })
+  postStrategy(strategy) {
+    axios.post(`${config.api}/strategy`, strategy, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           this.setState({ infoModal: false });
           this.props.form.resetFields();
-          this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+          this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
         } else {
           notification['error']({
             message: 'Error',
@@ -96,7 +95,7 @@ class Exchanges extends React.Component {
   }
 
   handleTableChange(pagination, filters, sorter) {
-    let url = '/exchange?';
+    let url = '/strategy?';
     const sorterMap = {
       'CreatedAt': 'created_at',
       'UpdatedAt': 'updated_at',
@@ -110,10 +109,10 @@ class Exchanges extends React.Component {
     }
 
     this.setState({
-      fetchExchangesUrl: url,
+      fetchStrategiesUrl: url,
       pagination: pagination,
     });
-    this.fetchExchanges(config.api + url);
+    this.fetchStrategies(config.api + url);
   }
 
   handleInfoShow(info) {
@@ -130,9 +129,8 @@ class Exchanges extends React.Component {
       info: {
         ID: 0,
         Name: '',
-        Type: '',
-        AccessKey: '',
-        SecretKey: '',
+        Description: '',
+        Script: '',
       },
       infoModal: true,
     });
@@ -144,15 +142,14 @@ class Exchanges extends React.Component {
         return;
       }
 
-      const exchange = {
+      const strategy = {
         ID: this.state.info.ID,
         Name: values.Name,
-        Type: values.Type,
-        AccessKey: values.AccessKey,
-        SecretKey: values.SecretKey,
+        Description: values.Description,
+        Script: values.Script,
       };
 
-      this.postExchange(exchange);
+      this.postStrategy(strategy);
     });
   }
 
@@ -169,14 +166,9 @@ class Exchanges extends React.Component {
       dataIndex: 'Name',
       render: (text, record) => <a onClick={this.handleInfoShow.bind(this, record)}>{text}</a>,
     }, {
-      title: 'Type',
-      dataIndex: 'Type',
-    }, {
-      title: 'AccessKey',
-      dataIndex: 'AccessKey',
-    }, {
-      title: 'SecretKey',
-      dataIndex: 'SecretKey',
+      title: 'Description',
+      dataIndex: 'Description',
+      render: text => text.substr(0, 36),
     }, {
       title: 'CreatedAt',
       dataIndex: 'CreatedAt',
@@ -209,7 +201,7 @@ class Exchanges extends React.Component {
         <Modal closable
           maskClosable={false}
           width="50%"
-          title={info.Name || 'New Exchange'}
+          title={info.Name || 'New Strategy'}
           visible={this.state.infoModal}
           onOk={this.handleInfoOk}
           onCancel={this.handleInfoCancel}
@@ -226,31 +218,20 @@ class Exchanges extends React.Component {
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Type"
+              label="Description"
             >
-              <Select {...getFieldProps('Type', {
+              <Input {...getFieldProps('Description', {
                 rules: [{ required: true }],
-                initialValue: info.Type,
-              })}>
-                {config.exchangeTypes.map(t => <Option key={t} value={t}>{t}</Option>)}
-              </Select>
-            </FormItem>
-            <FormItem
-              {...formItemLayout}
-              label="AccessKey"
-            >
-              <Input {...getFieldProps('AccessKey', {
-                rules: [{ required: true }],
-                initialValue: info.AccessKey,
+                initialValue: info.Description,
               })} />
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="SecretKey"
+              label="Script"
             >
-              <Input {...getFieldProps('SecretKey', {
+              <Input {...getFieldProps('Script', {
                 rules: [{ required: true }],
-                initialValue: info.SecretKey,
+                initialValue: info.Script,
               })} />
             </FormItem>
           </Form>
@@ -260,4 +241,4 @@ class Exchanges extends React.Component {
   }
 }
 
-export default Form.create()(Exchanges);
+export default Form.create()(Strategies);

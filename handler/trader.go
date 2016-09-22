@@ -2,14 +2,11 @@ package handler
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
-	"github.com/miaolz123/samaritan/api"
-	"github.com/miaolz123/samaritan/candyjs"
-	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
+	"github.com/miaolz123/samaritan/trader"
 )
 
 type traderHandler struct {
@@ -18,163 +15,123 @@ type traderHandler struct {
 
 // Get /trader
 func (c traderHandler) Get() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	traders, err := model.GetTraders(self)
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	c.JSON(iris.StatusOK, traders)
+	for i := range traders {
+		if t := trader.Executor[traders[i].ID]; t != nil {
+			traders[i].Status = t.Status
+		}
+	}
+	resp["success"] = true
+	resp["data"] = traders
+	c.JSON(iris.StatusOK, resp)
 }
 
 // Post /trader
 func (c traderHandler) Post() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	db, err := model.NewOrm()
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	req := model.Trader{}
 	if err := c.ReadJSON(&req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if req.ID > 0 {
+		trader := model.Trader{}
+		if err := db.First(&trader, req.ID).Error; err != nil {
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		trader.Name = req.Name
+		trader.Status = req.Status
+		trader.Exchanges = req.Exchanges
+		if err := db.Save(&trader).Error; err != nil {
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		resp["success"] = true
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	req.UserID = self.ID
 	if err := db.Create(&req).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	c.JSON(iris.StatusOK, req)
-}
-
-// Put /trader
-func (c traderHandler) Put() {
-	db, err := model.NewOrm()
-	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	req := model.Trader{}
-	if err := c.ReadJSON(&req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
-		return
-	}
-	trader := model.Trader{}
-	if err := db.First(&trader, req.ID).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	trader.Name = req.Name
-	trader.Status = req.Status
-	trader.Exchanges = req.Exchanges
-	if err := db.Save(&trader).Error; err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	c.JSON(iris.StatusOK, trader)
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
 }
 
 // Post /run
 func traderRun(c *iris.Context) {
-	fmt.Println(888888)
-	trader := model.Trader{}
-	if err := c.ReadJSON(&trader); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
+	req := model.Trader{}
+	if err := c.ReadJSON(&req); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	fmt.Println(949494)
-	db, err := model.NewOrm()
-	if err != nil {
+	if err := trader.Run(req); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if err = db.First(&trader, trader.ID).Error; err != nil {
-		return
-	}
-	if err = db.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
-		return
-	}
-	if err = db.Model(&trader).Association("Exchanges").Find(&trader.Exchanges).Error; err != nil {
-		return
-	}
-	fmt.Println(108108)
-	trader.Logger = model.Logger{
-		TraderID:     trader.ID,
-		ExchangeType: "",
-	}
-	trader.Ctx = candyjs.NewContext()
-	constants := []string{
-		"BTC",
-		"LTC",
-		"M",
-		"M5",
-		"M15",
-		"M30",
-		"H",
-		"D",
-		"W",
-	}
-	fmt.Println(125125)
-	exchanges := []interface{}{}
-	for _, e := range trader.Exchanges {
-		opt := api.Option{
-			TraderID:  trader.ID,
-			Type:      e.Type,
-			AccessKey: e.AccessKey,
-			SecretKey: e.SecretKey,
-			MainStock: "BTC",
-		}
-		switch opt.Type {
-		case "okcoin.cn":
-			exchanges = append(exchanges, api.NewOKCoinCn(opt))
-		case "huobi":
-			exchanges = append(exchanges, api.NewHuobi(opt))
-		}
-	}
-	fmt.Println(142142)
-	if len(exchanges) == 0 {
-		trader.Logger.Log(constant.ERROR, 0.0, 0.0, "Please add at least one exchange")
-	}
-	for _, c := range constants {
-		trader.Ctx.PushGlobalInterface(c, c)
-	}
-	trader.Ctx.PushGlobalGoFunction("Log", func(msgs ...interface{}) {
-		trader.Logger.Log(constant.INFO, 0.0, 0.0, msgs...)
-	})
-	trader.Ctx.PushGlobalGoFunction("Sleep", func(t float64) {
-		time.Sleep(time.Duration(t * 1000000))
-	})
-	fmt.Println(155155)
-	trader.Ctx.PushGlobalInterface("exchange", exchanges[0])
-	trader.Ctx.PushGlobalInterface("exchanges", exchanges)
-	model.TraderMap[trader.ID] = &trader
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				fmt.Println(err)
-			}
-		}()
-		model.TraderMap[trader.ID].Run()
-	}()
-	fmt.Println(167167)
-	c.JSON(iris.StatusOK, trader)
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
 }
 
 // Post /stop
 func traderStop(c *iris.Context) {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	req := model.Trader{}
 	if err := c.ReadJSON(&req); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	model.StopTrader(req)
-	c.JSON(iris.StatusOK, req)
+	if err := trader.Stop(req); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
 }

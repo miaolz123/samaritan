@@ -7,13 +7,13 @@ import config from '../config';
 const FormItem = Form.Item;
 const Option = Select.Option;
 
-class Exchanges extends React.Component {
+class Traders extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       token: localStorage.getItem('token'),
-      fetchExchangesUrl: '/exchange',
+      fetchTradersUrl: '/trader',
       loading: false,
       pagination: {
         pageSize: 12,
@@ -23,27 +23,31 @@ class Exchanges extends React.Component {
       tableData: [],
       info: {},
       infoModal: false,
+      strategies: [],
+      exchanges: [],
+      selectedExchanges: [],
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
-    this.fetchExchanges = this.fetchExchanges.bind(this);
-    this.postExchange = this.postExchange.bind(this);
+    this.fetchTraders = this.fetchTraders.bind(this);
+    this.postTrader = this.postTrader.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
+    this.handleExchangeChange = this.handleExchangeChange.bind(this);
     this.handleInfoOk = this.handleInfoOk.bind(this);
     this.handleInfoCancel = this.handleInfoCancel.bind(this);
   }
 
   componentWillMount() {
-    this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+    this.fetchTraders(config.api + this.state.fetchTradersUrl);
   }
 
   handleRefresh() {
-    this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+    this.fetchTraders(config.api + this.state.fetchTradersUrl);
   }
 
-  fetchExchanges(url) {
+  fetchTraders(url) {
     this.setState({ loading: true });
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
@@ -72,13 +76,13 @@ class Exchanges extends React.Component {
       });
   }
 
-  postExchange(exchange) {
-    axios.post(`${config.api}/exchange`, exchange, { headers: { Authorization: `Bearer ${this.state.token}` } })
+  postTrader(trader) {
+    axios.post(`${config.api}/trader`, trader, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           this.setState({ infoModal: false });
           this.props.form.resetFields();
-          this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+          this.fetchTraders(config.api + this.state.fetchTradersUrl);
         } else {
           notification['error']({
             message: 'Error',
@@ -96,7 +100,7 @@ class Exchanges extends React.Component {
   }
 
   handleTableChange(pagination, filters, sorter) {
-    let url = '/exchange?';
+    let url = '/trader?';
     const sorterMap = {
       'CreatedAt': 'created_at',
       'UpdatedAt': 'updated_at',
@@ -110,14 +114,66 @@ class Exchanges extends React.Component {
     }
 
     this.setState({
-      fetchExchangesUrl: url,
+      fetchTradersUrl: url,
       pagination: pagination,
     });
-    this.fetchExchanges(config.api + url);
+    this.fetchTraders(config.api + url);
   }
 
   handleInfoShow(info) {
+    axios.get(`${config.api}/strategy`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        if (response.data.success) {
+          const { data } = response.data;
+
+          if (data) {
+            this.setState({ strategies: data });
+          }
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        }
+      });
+
+    axios.get(`${config.api}/exchange`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        if (response.data.success) {
+          const { data } = response.data;
+
+          if (data) {
+            this.setState({ exchanges: data });
+          }
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        }
+      });
+
     if (info) {
+      if (info.Exchanges) {
+        info.ExchangeIDs = info.Exchanges.map(e => String(e.ID));
+      } else {
+        info.ExchangeIDs = [];
+      }
+
       this.setState({
         info: info,
         infoModal: true,
@@ -130,12 +186,15 @@ class Exchanges extends React.Component {
       info: {
         ID: 0,
         Name: '',
-        Type: '',
-        AccessKey: '',
-        SecretKey: '',
+        StrategyID: '',
+        ExchangeIDs: [],
       },
       infoModal: true,
     });
+  }
+
+  handleExchangeChange(value) {
+    console.log(202202, value);
   }
 
   handleInfoOk() {
@@ -144,39 +203,38 @@ class Exchanges extends React.Component {
         return;
       }
 
-      const exchange = {
+      const trader = {
         ID: this.state.info.ID,
         Name: values.Name,
-        Type: values.Type,
-        AccessKey: values.AccessKey,
-        SecretKey: values.SecretKey,
+        StrategyID: parseInt(values.StrategyID, 0),
+        Exchanges: this.state.selectedExchanges,
       };
 
-      this.postExchange(exchange);
+      this.postTrader(trader);
     });
   }
 
   handleInfoCancel() {
-    this.setState({ infoModal: false });
+    this.setState({
+      infoModal: false,
+      strategies: [],
+      exchanges: [],
+      selectedExchanges: [],
+    });
     this.props.form.resetFields();
   }
 
   render() {
-    const { info, tableData } = this.state;
+    const { info, tableData, strategies, exchanges } = this.state;
     const { getFieldProps } = this.props.form;
     const columns = [{
       title: 'Name',
       dataIndex: 'Name',
       render: (text, record) => <a onClick={this.handleInfoShow.bind(this, record)}>{text}</a>,
     }, {
-      title: 'Type',
-      dataIndex: 'Type',
-    }, {
-      title: 'AccessKey',
-      dataIndex: 'AccessKey',
-    }, {
-      title: 'SecretKey',
-      dataIndex: 'SecretKey',
+      title: 'Strategy',
+      dataIndex: 'Strategy',
+      render: text => text.Name,
     }, {
       title: 'CreatedAt',
       dataIndex: 'CreatedAt',
@@ -209,7 +267,7 @@ class Exchanges extends React.Component {
         <Modal closable
           maskClosable={false}
           width="50%"
-          title={info.Name || 'New Exchange'}
+          title={info.Name || 'New Trader'}
           visible={this.state.infoModal}
           onOk={this.handleInfoOk}
           onCancel={this.handleInfoCancel}
@@ -226,32 +284,22 @@ class Exchanges extends React.Component {
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Type"
+              label="Strategy"
             >
-              <Select {...getFieldProps('Type', {
+              <Select {...getFieldProps('StrategyID', {
                 rules: [{ required: true }],
-                initialValue: info.Type,
+                initialValue: info.StrategyID,
               })}>
-                {config.exchangeTypes.map(t => <Option key={t} value={t}>{t}</Option>)}
+                {strategies.map(s => <Option key={String(s.ID)} value={String(s.ID)}>{s.Name}</Option>)}
               </Select>
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="AccessKey"
+              label="Exchanges"
             >
-              <Input {...getFieldProps('AccessKey', {
-                rules: [{ required: true }],
-                initialValue: info.AccessKey,
-              })} />
-            </FormItem>
-            <FormItem
-              {...formItemLayout}
-              label="SecretKey"
-            >
-              <Input {...getFieldProps('SecretKey', {
-                rules: [{ required: true }],
-                initialValue: info.SecretKey,
-              })} />
+              <Select onChange={this.handleExchangeChange}>
+                {exchanges.map(e => <Option key={String(e.ID)} value={String(e.ID)}>{e.Name}</Option>)}
+              </Select>
             </FormItem>
           </Form>
         </Modal>
@@ -260,4 +308,4 @@ class Exchanges extends React.Component {
   }
 }
 
-export default Form.create()(Exchanges);
+export default Form.create()(Traders);

@@ -10,6 +10,8 @@ import config from './config';
 import Home from './components/Home';
 import Users from './components/Users';
 import Exchanges from './components/Exchanges';
+import Strategies from './components/Strategies';
+import Traders from './components/Traders';
 
 const SubMenu = Menu.SubMenu;
 const FormItem = Form.Item;
@@ -43,6 +45,10 @@ class Example extends React.Component {
         return <Users style={{ height: '100%' }} reLogin={this.reLogin} />;
       case 'exchanges':
         return <Exchanges style={{ height: '100%' }} reLogin={this.reLogin} />;
+      case 'strategies':
+        return <Strategies style={{ height: '100%' }} reLogin={this.reLogin} />;
+      case 'traders':
+        return <Traders style={{ height: '100%' }} reLogin={this.reLogin} />;
       case 'logout':
         localStorage.removeItem('token');
         window.location.href = window.location.href;
@@ -102,6 +108,8 @@ class Example extends React.Component {
               <SubMenu key="manage" title={<span><Icon type="appstore" /><span>Manage</span></span>}>
                 <Menu.Item key="users">Users</Menu.Item>
                 <Menu.Item key="exchanges">Exchanges</Menu.Item>
+                <Menu.Item key="strategies">Strategies</Menu.Item>
+                <Menu.Item key="traders">Traders</Menu.Item>
               </SubMenu>
             </Menu>
           </aside>

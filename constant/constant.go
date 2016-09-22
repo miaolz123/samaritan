@@ -9,3 +9,7 @@ const (
 	SELL   = 3
 	CANCEL = 4
 )
+
+var (
+	CONSTS = []string{"BTC", "LTC", "M", "M5", "M15", "M30", "H", "D", "W"}
+)

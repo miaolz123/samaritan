@@ -6,9 +6,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-// TraderMap ...
-var TraderMap = make(map[uint]*Trader)
-
 func init() {
 	var err error
 	db, err := gorm.Open("sqlite3", "data.db")
