@@ -35,8 +35,10 @@ class Traders extends React.Component {
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
     this.handleExchangeChange = this.handleExchangeChange.bind(this);
+    this.handleExchangeClose = this.handleExchangeClose.bind(this);
     this.handleInfoOk = this.handleInfoOk.bind(this);
     this.handleInfoCancel = this.handleInfoCancel.bind(this);
+    this.handleTraderAction = this.handleTraderAction.bind(this);
   }
 
   componentWillMount() {
@@ -168,14 +170,11 @@ class Traders extends React.Component {
       });
 
     if (info) {
-      if (info.Exchanges) {
-        info.ExchangeIDs = info.Exchanges.map(e => String(e.ID));
-      } else {
-        info.ExchangeIDs = [];
-      }
+      const selectedExchanges = info.Exchanges.map(e => e);
 
       this.setState({
-        info: info,
+        info,
+        selectedExchanges,
         infoModal: true,
       });
     }
@@ -187,14 +186,28 @@ class Traders extends React.Component {
         ID: 0,
         Name: '',
         StrategyID: '',
-        ExchangeIDs: [],
       },
       infoModal: true,
     });
   }
 
   handleExchangeChange(value) {
-    console.log(202202, value);
+    const { selectedExchanges, exchanges } = this.state;
+
+    if (exchanges[value]) {
+      selectedExchanges.push(exchanges[value]);
+      this.setState({ selectedExchanges });
+    }
+  }
+
+  handleExchangeClose(i, event) {
+    const { selectedExchanges } = this.state;
+
+    if (i < selectedExchanges.length) {
+      selectedExchanges.splice(i, 1);
+      this.setState({ selectedExchanges });
+    }
+    event.preventDefault();
   }
 
   handleInfoOk() {
@@ -224,8 +237,34 @@ class Traders extends React.Component {
     this.props.form.resetFields();
   }
 
+  handleTraderAction(action, id) {
+    axios.post(`${config.api}/${action}`, {ID: id}, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        if (response.data.success) {
+          notification['success']({
+            message: 'Success',
+            description: `${action} the trader success`,
+            duration: 2,
+          });
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+        this.handleRefresh();
+      }, (response) => {
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        }
+      });
+  }
+
   render() {
-    const { info, tableData, strategies, exchanges } = this.state;
+    const { info, tableData, strategies, exchanges, selectedExchanges } = this.state;
     const { getFieldProps } = this.props.form;
     const columns = [{
       title: 'Name',
@@ -245,6 +284,12 @@ class Traders extends React.Component {
       dataIndex: 'UpdatedAt',
       render: text => text.substr(0, 19),
       sorter: true,
+    }, {
+      title: 'Action',
+      dataIndex: 'Status',
+      render: (status, record) => status > 0
+      ? <Button type="" size="small" onClick={this.handleTraderAction.bind(this, 'stop', record.ID)}>Stop</Button>
+      : <Button type="" size="small" onClick={this.handleTraderAction.bind(this, 'run', record.ID)}>Run</Button>,
     }];
     const formItemLayout = {
       labelCol: { span: 7 },
@@ -288,7 +333,7 @@ class Traders extends React.Component {
             >
               <Select {...getFieldProps('StrategyID', {
                 rules: [{ required: true }],
-                initialValue: info.StrategyID,
+                initialValue: String(info.StrategyID),
               })}>
                 {strategies.map(s => <Option key={String(s.ID)} value={String(s.ID)}>{s.Name}</Option>)}
               </Select>
@@ -297,9 +342,21 @@ class Traders extends React.Component {
               {...formItemLayout}
               label="Exchanges"
             >
-              <Select onChange={this.handleExchangeChange}>
-                {exchanges.map(e => <Option key={String(e.ID)} value={String(e.ID)}>{e.Name}</Option>)}
+              <Select onSelect={this.handleExchangeChange}
+                {...getFieldProps('Exchange', {
+                  rules: [{ required: true }],
+                  initialValue: selectedExchanges ? '0' : '',
+                })}>
+                {exchanges.map((e, i) => <Option key={String(i)} value={String(i)}>{e.Name}</Option>)}
               </Select>
+              <div style={{ marginTop: 8 }}>
+                {selectedExchanges.map((e, i) => <Tag closable
+                  color={i > 0 ? '' : 'blue'}
+                  key={String(i)}
+                  style={{ marginRight: 5 }}
+                  onClose={this.handleExchangeClose.bind(this, i)}
+                >{e.Name}</Tag>)}
+              </div>
             </FormItem>
           </Form>
         </Modal>

@@ -83,12 +83,13 @@ func Run(trader model.Trader) (err error) {
 	trader.Ctx.Set("exchanges", exchanges)
 	go func() {
 		defer func() {
-			if err := recover(); err != errHalt {
+			if err := recover(); err != nil && err != errHalt {
 				Executor[trader.ID].Logger.Log(constant.ERROR, 0.0, 0.0, err)
 			}
 			trader.Status = 0
 			Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader stop running")
 		}()
+		trader.Status = 1
 		Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader us running")
 		trader.Ctx.Run(trader.Strategy.Script)
 	}()

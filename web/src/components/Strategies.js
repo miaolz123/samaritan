@@ -229,7 +229,8 @@ class Strategies extends React.Component {
               {...formItemLayout}
               label="Script"
             >
-              <Input {...getFieldProps('Script', {
+              <Input type="textarea"
+              {...getFieldProps('Script', {
                 rules: [{ required: true }],
                 initialValue: info.Script,
               })} />
