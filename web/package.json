@@ -16,6 +16,7 @@
     "codemirror": "^5.19.0",
     "react": "*",
     "react-chartjs-2": "^1.2.3",
+    "react-code-mirror": "^3.1.0",
     "react-dom": "*"
   },
   "devDependencies": {

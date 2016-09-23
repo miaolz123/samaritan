@@ -172,12 +172,6 @@ class Exchanges extends React.Component {
       title: 'Type',
       dataIndex: 'Type',
     }, {
-      title: 'AccessKey',
-      dataIndex: 'AccessKey',
-    }, {
-      title: 'SecretKey',
-      dataIndex: 'SecretKey',
-    }, {
       title: 'CreatedAt',
       dataIndex: 'CreatedAt',
       render: text => text.substr(0, 19),

@@ -81,11 +81,11 @@ func (e *Huobi) GetAccount() interface{} {
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
-		return nil
+		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", strings.TrimSpace(json.Get("msg").MustString()))
-		return nil
+		return false
 	}
 	account := Account{
 		Total:         conver.Float64Must(json.Get("total").Interface()),
@@ -109,10 +109,10 @@ func (e *Huobi) GetAccount() interface{} {
 }
 
 // Buy : buy stocks
-func (e *Huobi) Buy(stockType string, price, amount float64, msgs ...interface{}) (id string) {
+func (e *Huobi) Buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	params := []string{
 		"coin_type=" + e.stockMap[stockType],
@@ -127,22 +127,21 @@ func (e *Huobi) Buy(stockType string, price, amount float64, msgs ...interface{}
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
-		return
+		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", strings.TrimSpace(json.Get("msg").MustString()))
-		return
+		return false
 	}
 	e.logger.Log(constant.BUY, price, amount, msgs...)
-	id = fmt.Sprint(json.Get("id").Interface())
-	return
+	return fmt.Sprint(json.Get("id").Interface())
 }
 
 // Sell : sell stocks
-func (e *Huobi) Sell(stockType string, price, amount float64, msgs ...interface{}) (id string) {
+func (e *Huobi) Sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	params := []string{
 		"coin_type=" + e.stockMap[stockType],
@@ -157,15 +156,14 @@ func (e *Huobi) Sell(stockType string, price, amount float64, msgs ...interface{
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
-		return
+		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", strings.TrimSpace(json.Get("msg").MustString()))
-		return
+		return false
 	}
 	e.logger.Log(constant.SELL, price, amount, msgs...)
-	id = fmt.Sprint(json.Get("id").Interface())
-	return
+	return fmt.Sprint(json.Get("id").Interface())
 }
 
 // GetOrder : get details of an order
@@ -178,11 +176,11 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
-		return nil
+		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", strings.TrimSpace(json.Get("msg").MustString()))
-		return nil
+		return false
 	}
 	return Order{
 		ID:         fmt.Sprint(json.Get("id").Interface()),
@@ -290,7 +288,7 @@ func (e *Huobi) GetTrades(stockType string) (orders []Order) {
 func (e *Huobi) GetTicker(stockType string, sizes ...int) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, unrecognized stockType: ", stockType)
-		return nil
+		return false
 	}
 	size := 20
 	if len(sizes) > 0 && sizes[0] > 20 {
@@ -300,12 +298,12 @@ func (e *Huobi) GetTicker(stockType string, sizes ...int) interface{} {
 	resp, err := get(fmt.Sprint("http://api.huobi.com/staticmarket/depth_", strings.ToLower(stockType), "_", size, ".js"))
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, ", err)
-		return nil
+		return false
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, ", err)
-		return nil
+		return false
 	}
 	ticker := Ticker{}
 	depthsJSON := json.Get("bids")
@@ -326,7 +324,7 @@ func (e *Huobi) GetTicker(stockType string, sizes ...int) interface{} {
 	}
 	if len(ticker.Bids) < 1 || len(ticker.Asks) < 1 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, can not get enough Bids or Asks")
-		return nil
+		return false
 	}
 	ticker.Buy = ticker.Bids[0].Price
 	ticker.Sell = ticker.Asks[0].Price

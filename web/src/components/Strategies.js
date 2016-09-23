@@ -1,6 +1,10 @@
 import React from 'react';
 import { Tag, Button, Table, Modal, Form, Input, notification } from 'antd';
 import axios from 'axios';
+import CodeMirror from 'react-code-mirror';
+require('codemirror/mode/javascript/javascript');
+require('codemirror/lib/codemirror.css');
+require('codemirror/theme/solarized.css');
 
 import config from '../config';
 
@@ -28,6 +32,7 @@ class Strategies extends React.Component {
     this.fetchStrategies = this.fetchStrategies.bind(this);
     this.postStrategy = this.postStrategy.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
+    this.handleScriptChange = this.handleScriptChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
     this.handleInfoOk = this.handleInfoOk.bind(this);
@@ -115,6 +120,13 @@ class Strategies extends React.Component {
     this.fetchStrategies(config.api + url);
   }
 
+  handleScriptChange(e) {
+    const { info } = this.state;
+
+    info.Script = e.target.value;
+    this.setState({ info });
+  }
+
   handleInfoShow(info) {
     if (info) {
       this.setState({
@@ -142,11 +154,12 @@ class Strategies extends React.Component {
         return;
       }
 
+      const { info } = this.state;
       const strategy = {
-        ID: this.state.info.ID,
+        ID: info.ID,
         Name: values.Name,
         Description: values.Description,
-        Script: values.Script,
+        Script: info.Script,
       };
 
       this.postStrategy(strategy);
@@ -228,12 +241,14 @@ class Strategies extends React.Component {
               {...formItemLayout}
               label="Script"
             >
-              <Input autosize
-              type="textarea"
-              rows={16}
-              {...getFieldProps('Script', {
-                initialValue: info.Script,
-              })} />
+              <CodeMirror
+                style={{border: '1px solid #d9d9d9'}}
+                mode="javascript"
+                theme="solarized"
+                value={info.Script}
+                onChange={this.handleScriptChange}
+                lineNumbers={true}
+              />
             </FormItem>
           </Form>
         </Modal>

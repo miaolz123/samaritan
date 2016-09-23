@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
+import { Tag, Tooltip, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
@@ -430,12 +430,16 @@ class Traders extends React.Component {
                 {exchanges.map((e, i) => <Option key={String(i)} value={String(i)}>{e.Name}</Option>)}
               </Select>
               <div style={{ marginTop: 8 }}>
-                {selectedExchanges.map((e, i) => <Tag closable
-                  color={i > 0 ? '' : 'blue'}
+                {selectedExchanges.map((e, i) => <Tooltip
                   key={String(i)}
-                  style={{ marginRight: 5 }}
-                  onClose={this.handleExchangeClose.bind(this, i)}
-                >{e.Name}</Tag>)}
+                  title={`${i > 0 ? '' : 'Exchange / '}Exchanges[${i}]`}>
+                  <Tag closable
+                    color={i > 0 ? '' : 'blue'}
+                    style={{ marginRight: 5 }}
+                    onClose={this.handleExchangeClose.bind(this, i)}>
+                    {e.Name}
+                  </Tag>
+                </Tooltip>)}
               </div>
             </FormItem>
           </Form>

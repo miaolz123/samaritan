@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -59,7 +58,7 @@ func (l Logger) Log(method int, price, amount float64, messages ...interface{}) 
 		}
 		message := ""
 		for _, m := range messages {
-			message += fmt.Sprintf("%+v, ", m)
+			message += fmt.Sprintf("%+v", m)
 		}
 		log := Log{
 			TraderID:     l.TraderID,
@@ -68,7 +67,7 @@ func (l Logger) Log(method int, price, amount float64, messages ...interface{}) 
 			Type:         method,
 			Price:        price,
 			Amount:       amount,
-			Message:      strings.TrimSuffix(message, ", "),
+			Message:      message,
 		}
 		fmt.Println(log)
 		db.Create(&log)

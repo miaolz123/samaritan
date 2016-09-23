@@ -48,7 +48,7 @@ func Run(trader model.Trader) (err error) {
 	for _, c := range constant.CONSTS {
 		trader.Ctx.Set(c, c)
 	}
-	exchanges := []interface{}{}
+	exchanges := []api.Exchange{}
 	for _, e := range es {
 		opt := api.Option{
 			TraderID:  trader.ID,
@@ -56,6 +56,7 @@ func Run(trader model.Trader) (err error) {
 			AccessKey: e.AccessKey,
 			SecretKey: e.SecretKey,
 			MainStock: "BTC",
+			Ctx:       trader.Ctx,
 		}
 		switch opt.Type {
 		case "okcoin.cn":
@@ -84,8 +85,8 @@ func Run(trader model.Trader) (err error) {
 		}
 		return otto.UndefinedValue()
 	})
-	trader.Ctx.Set("exchange", exchanges[0])
-	trader.Ctx.Set("exchanges", exchanges)
+	trader.Ctx.Set("Exchange", exchanges[0])
+	trader.Ctx.Set("Exchanges", exchanges)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil && err != errHalt {
