@@ -28,10 +28,15 @@ func Run(trader model.Trader) (err error) {
 	if err = db.First(&trader, trader.ID).Error; err != nil {
 		return
 	}
+	self, err := model.GetUserByID(trader.UserID)
+	if err != nil {
+		return
+	}
 	if err = db.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
 		return
 	}
-	if err = db.Model(&trader).Association("Exchanges").Find(&trader.Exchanges).Error; err != nil {
+	es, err := model.GetTraderExchanges(self, trader.ID)
+	if err != nil {
 		return
 	}
 	trader.Logger = model.Logger{
@@ -44,7 +49,7 @@ func Run(trader model.Trader) (err error) {
 		trader.Ctx.Set(c, c)
 	}
 	exchanges := []interface{}{}
-	for _, e := range trader.Exchanges {
+	for _, e := range es {
 		opt := api.Option{
 			TraderID:  trader.ID,
 			Type:      e.Type,

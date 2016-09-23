@@ -23,12 +23,20 @@ var jwtmid = jwtmiddleware.New(jwtmiddleware.Config{
 })
 
 func init() {
-	Server.Use(cors.New(cors.Options{AllowedHeaders: []string{
-		"Origin",
-		"X-Requested-With",
-		"Content-Type",
-		"Accept",
-		"Authorization"}}))
+	Server.Use(cors.New(cors.Options{
+		AllowedHeaders: []string{
+			"Origin",
+			"X-Requested-With",
+			"Content-Type",
+			"Accept",
+			"Authorization",
+		},
+		AllowedMethods: []string{
+			"Get",
+			"Post",
+			"Delete",
+		},
+	}))
 	Server.Use(logger.New(iris.Logger))
 	Server.Use(recovery.New(iris.Logger))
 	Server.Post("/login", userLogin)

@@ -26,7 +26,7 @@ type Logger struct {
 
 // GetLogs ...
 func GetLogs(self User, traderID interface{}, page, amount int64) (logs []Log, err error) {
-	trader, err := GetTrader(traderID)
+	trader, err := GetTrader(self, traderID)
 	if err != nil {
 		return
 	}

@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 	"github.com/robertkrimen/otto"
 )
@@ -8,31 +10,46 @@ import (
 // Trader struct
 type Trader struct {
 	gorm.Model
-	UserID     uint       `gorm:"index"`
-	StrategyID uint       `gorm:"index"`
-	Name       string     `gorm:"type:varchar(200)"`
-	Exchanges  []Exchange `gorm:"many2many:trader_exchanges"`
+	UserID     uint   `gorm:"index"`
+	StrategyID uint   `gorm:"index"`
+	Name       string `gorm:"type:varchar(200)"`
 
-	Status   int        `gorm:"-"`
-	Logger   Logger     `gorm:"-" json:"-"`
-	Strategy Strategy   `gorm:"-"`
-	Ctx      *otto.Otto `gorm:"-" json:"-"`
+	Exchanges []Exchange `gorm:"-"`
+	Status    int        `gorm:"-"`
+	Logger    Logger     `gorm:"-" json:"-"`
+	Strategy  Strategy   `gorm:"-"`
+	Ctx       *otto.Otto `gorm:"-" json:"-"`
 }
 
 // TraderExchange struct
 type TraderExchange struct {
-	gorm.Model
-	TraderID   uint `gorm:"index"`
-	ExchangeID uint `gorm:"index"`
+	ID         int64 `gorm:"primary_key;AUTO_INCREMENT"`
+	TraderID   uint  `gorm:"index"`
+	ExchangeID uint  `gorm:"index"`
+	Exchange   `gorm:"-"`
 }
 
 // GetTrader ...
-func GetTrader(id interface{}) (trader Trader, err error) {
+func GetTrader(self User, id interface{}) (trader Trader, err error) {
 	db, err := NewOrm()
 	if err != nil {
 		return
 	}
-	err = db.Where("id = ?", id).First(&trader).Error
+	if err = db.Where("id = ?", id).First(&trader).Error; err != nil {
+		return
+	}
+	user, err := GetUserByID(trader.UserID)
+	if err != nil {
+		return
+	}
+	if user.Level > self.Level || user.ID != self.ID {
+		err = fmt.Errorf("Insufficient permissions")
+	}
+	if trader.StrategyID > 0 {
+		if err = db.Where("id = ?", trader.StrategyID).First(&trader.Strategy).Error; err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -59,7 +76,24 @@ func GetTraders(self User) (traders []Trader, err error) {
 				return
 			}
 		}
-		if err = db.Model(&t).Association("Exchanges").Find(&traders[i].Exchanges).Error; err != nil {
+	}
+	return
+}
+
+// GetTraderExchanges ...
+func GetTraderExchanges(self User, id interface{}) (traderExchanges []TraderExchange, err error) {
+	if _, err = GetTrader(self, id); err != nil {
+		return
+	}
+	db, err := NewOrm()
+	if err != nil {
+		return
+	}
+	if err = db.Where("trader_id = ?", id).Find(&traderExchanges).Error; err != nil {
+		return
+	}
+	for i, r := range traderExchanges {
+		if err = db.Where("id = ?", r.ExchangeID).Find(&traderExchanges[i].Exchange).Error; err != nil {
 			return
 		}
 	}

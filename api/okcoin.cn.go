@@ -383,6 +383,5 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...int) (records [
 	if len(e.records[period]) > size {
 		e.records[period] = e.records[period][:size]
 	}
-	fmt.Println(len(e.records[period]))
 	return e.records[period]
 }

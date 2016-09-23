@@ -200,7 +200,7 @@ class Strategies extends React.Component {
         />
         <Modal closable
           maskClosable={false}
-          width="50%"
+          width="85%"
           title={info.Name || 'New Strategy'}
           visible={this.state.infoModal}
           onOk={this.handleInfoOk}
@@ -221,7 +221,6 @@ class Strategies extends React.Component {
               label="Description"
             >
               <Input {...getFieldProps('Description', {
-                rules: [{ required: true }],
                 initialValue: info.Description,
               })} />
             </FormItem>
@@ -229,9 +228,10 @@ class Strategies extends React.Component {
               {...formItemLayout}
               label="Script"
             >
-              <Input type="textarea"
+              <Input autosize
+              type="textarea"
+              rows={16}
               {...getFieldProps('Script', {
-                rules: [{ required: true }],
                 initialValue: info.Script,
               })} />
             </FormItem>
