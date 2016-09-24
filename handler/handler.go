@@ -37,8 +37,8 @@ func init() {
 			"Delete",
 		},
 	}))
-	Server.Use(logger.New(iris.Logger))
-	Server.Use(recovery.New(iris.Logger))
+	Server.Use(logger.New())
+	Server.Use(recovery.New())
 	Server.Post("/login", userLogin)
 	Server.API("/user", userHandler{}, jwtmid.Serve)
 	Server.API("/exchange", exchangeHandler{}, jwtmid.Serve)
