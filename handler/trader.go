@@ -76,6 +76,7 @@ func (c traderHandler) Post() {
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
+	defer db.Close()
 	db = db.Begin()
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
@@ -143,12 +144,6 @@ func (c traderHandler) PostBy(id string) {
 		"success": false,
 		"msg":     "",
 	}
-	db, err := model.NewOrm()
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
 		resp["msg"] = fmt.Sprint(err)
@@ -172,7 +167,7 @@ func (c traderHandler) PostBy(id string) {
 			TraderID:   td.ID,
 			ExchangeID: req.ID,
 		}
-		if err := db.Create(&traderExchange).Error; err != nil {
+		if err := model.DB.Create(&traderExchange).Error; err != nil {
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
@@ -188,12 +183,6 @@ func (c traderHandler) DeleteBy(id string) {
 		"success": false,
 		"msg":     "",
 	}
-	db, err := model.NewOrm()
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
 		resp["msg"] = fmt.Sprint(err)
@@ -207,7 +196,7 @@ func (c traderHandler) DeleteBy(id string) {
 	}
 	traderExchange := model.TraderExchange{}
 	traderExchange.ID, _ = c.URLParamInt64("id")
-	if err := db.Unscoped().Delete(&traderExchange).Error; err != nil {
+	if err := model.DB.Unscoped().Delete(&traderExchange).Error; err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return

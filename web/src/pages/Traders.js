@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Tooltip, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
+import { Spin, Tag, Tooltip, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
@@ -26,6 +26,7 @@ class Traders extends React.Component {
       strategies: [],
       exchanges: [],
       selectedExchanges: [],
+      exchangesLoading: false,
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
@@ -81,8 +82,10 @@ class Traders extends React.Component {
   }
 
   fetchSelectedExchanges(id) {
+    this.setState({ exchangesLoading: true });
     axios.get(`${config.api}/trader/${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
+        this.setState({ exchangesLoading: false });
         if (response.data.success) {
           const { data } = response.data;
 
@@ -99,7 +102,10 @@ class Traders extends React.Component {
           });
         }
       }, (response) => {
-        this.setState({ selectedExchanges: [] });
+        this.setState({
+          exchangesLoading: false,
+          selectedExchanges: [],
+        });
         if (String(response).indexOf('401') > 0) {
           this.setState({ token: '' });
           localStorage.removeItem('token');
@@ -231,9 +237,11 @@ class Traders extends React.Component {
 
     if (exchanges[value] && exchanges[value].ID > 0) {
       if (info.ID > 0) {
+        this.setState({ exchangesLoading: true });
         axios.post(`${config.api}/trader/${info.ID}`, exchanges[value],
         { headers: { Authorization: `Bearer ${this.state.token}` } })
           .then((response) => {
+            this.setState({ exchangesLoading: false });
             if (response.data.success) {
               this.fetchSelectedExchanges(info.ID);
             } else {
@@ -244,6 +252,7 @@ class Traders extends React.Component {
               });
             }
           }, (response) => {
+            this.setState({ exchangesLoading: false });
             if (String(response).indexOf('401') > 0) {
               this.setState({ token: '' });
               localStorage.removeItem('token');
@@ -262,9 +271,11 @@ class Traders extends React.Component {
 
     if (i < selectedExchanges.length) {
       if (info.ID > 0) {
+        this.setState({ exchangesLoading: true });
         axios.delete(`${config.api}/trader/${info.ID}?id=${selectedExchanges[i].ID}`,
         { headers: { Authorization: `Bearer ${this.state.token}` } })
           .then((response) => {
+            this.setState({ exchangesLoading: false });
             if (response.data.success) {
               this.fetchSelectedExchanges(info.ID);
             } else {
@@ -275,6 +286,7 @@ class Traders extends React.Component {
               });
             }
           }, (response) => {
+            this.setState({ exchangesLoading: false });
             if (String(response).indexOf('401') > 0) {
               this.setState({ token: '' });
               localStorage.removeItem('token');
@@ -387,7 +399,8 @@ class Traders extends React.Component {
           <Button style={{ marginRight: 10 }} onClick={this.handleRefresh}>Refresh</Button>
           <Tag>Total: {this.state.pagination.total}</Tag>
         </div>
-        <Table columns={columns}
+        <Table
+          columns={columns}
           dataSource={tableData}
           pagination={this.state.pagination}
           loading={this.state.loading}
@@ -429,18 +442,20 @@ class Traders extends React.Component {
               <Select onSelect={this.handleExchangeChange}>
                 {exchanges.map((e, i) => <Option key={String(i)} value={String(i)}>{e.Name}</Option>)}
               </Select>
-              <div style={{ marginTop: 8 }}>
-                {selectedExchanges.map((e, i) => <Tooltip
-                  key={String(i)}
-                  title={`${i > 0 ? '' : 'Exchange / '}Exchanges[${i}]`}>
-                  <Tag closable
-                    color={i > 0 ? '' : 'blue'}
-                    style={{ marginRight: 5 }}
-                    onClose={this.handleExchangeClose.bind(this, i)}>
-                    {e.Name}
-                  </Tag>
-                </Tooltip>)}
-              </div>
+              {selectedExchanges.length > 0 ? <Spin spinning={this.state.exchangesLoading} tip="  ">
+                <div style={{ marginTop: 8 }}>
+                  {selectedExchanges.map((e, i) => <Tooltip
+                    key={String(i)}
+                    title={`${i > 0 ? '' : 'Exchange / '}Exchanges[${i}]`}>
+                    <Tag closable
+                      color={i > 0 ? '' : 'blue'}
+                      style={{ marginRight: 5 }}
+                      onClose={this.handleExchangeClose.bind(this, i)}>
+                      {e.Name}
+                    </Tag>
+                  </Tooltip>)}
+                </div>
+              </Spin> : ''}
             </FormItem>
           </Form>
         </Modal>

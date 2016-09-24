@@ -15,30 +15,31 @@ type userHandler struct {
 
 // Post /login
 func userLogin(c *iris.Context) {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
 	req := struct {
 		Name     string
 		Password string
 	}{}
-	resp := struct {
-		Token string
-	}{}
-	err := c.ReadJSON(&req)
-	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusBadRequest)
+	if err := c.ReadJSON(&req); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if req.Name == "" || req.Password == "" {
-		c.Error("Name and Password can not be empty", iris.StatusBadRequest)
+	user := model.User{
+		Name:     req.Name,
+		Password: req.Password,
+	}
+	if user.Name == "" || user.Password == "" {
+		resp["msg"] = "Username and Password can not be empty"
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	db, err := model.NewOrm()
-	if err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusServiceUnavailable)
-		return
-	}
-	user := model.User{}
-	if err := db.Where(&model.User{Name: req.Name, Password: req.Password}).First(&user).Error; err != nil {
-		c.Error("Name or Password wrong", iris.StatusUnauthorized)
+	if err := model.DB.Where(&user).First(&user).Error; err != nil {
+		resp["msg"] = "Username or Password wrong"
+		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	claims := jwt.StandardClaims{
@@ -46,9 +47,13 @@ func userLogin(c *iris.Context) {
 		Subject:   user.Name,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	if resp.Token, err = token.SignedString(signKey); err != nil {
-		c.Error(fmt.Sprint(err), iris.StatusInternalServerError)
+	if t, err := token.SignedString(signKey); err != nil {
+		resp["msg"] = "Username or Password wrong"
+		c.JSON(iris.StatusOK, resp)
 		return
+	} else if t != "" {
+		resp["success"] = true
+		resp["data"] = t
 	}
 	c.JSON(iris.StatusOK, resp)
 }
@@ -83,27 +88,30 @@ func (c userHandler) Post() {
 		"success": false,
 		"msg":     "",
 	}
-	db, err := model.NewOrm()
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	req := model.User{}
+	req := struct {
+		ID       uint
+		Name     string
+		Password string
+		Level    int
+	}{}
 	if err := c.ReadJSON(&req); err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
+	user := model.User{
+		Name:     req.Name,
+		Password: req.Password,
+		Level:    req.Level,
+	}
 	if req.ID > 0 {
-		user := model.User{}
-		if err := db.First(&user, req.ID).Error; err != nil {
+		if err := model.DB.First(&user, req.ID).Error; err != nil {
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
@@ -120,7 +128,7 @@ func (c userHandler) Post() {
 		if req.Password != "" {
 			user.Password = req.Password
 		}
-		if err := db.Save(&user).Error; err != nil {
+		if err := model.DB.Save(&user).Error; err != nil {
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
@@ -129,10 +137,10 @@ func (c userHandler) Post() {
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if req.Level >= self.Level {
-		req.Level = self.Level - 1
+	if user.Level >= self.Level {
+		user.Level = self.Level - 1
 	}
-	if err := db.Create(&req).Error; err != nil {
+	if err := model.DB.Create(&user).Error; err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return

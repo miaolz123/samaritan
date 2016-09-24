@@ -12,35 +12,23 @@ type User struct {
 
 // GetUserByID ...
 func GetUserByID(id interface{}) (user User, err error) {
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	err = db.Where("id = ?", id).First(&user).Error
+	err = DB.Where("id = ?", id).First(&user).Error
 	return
 }
 
 // GetUser ...
 func GetUser(name interface{}) (user User, err error) {
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	err = db.Where("name = ?", name).First(&user).Error
+	err = DB.Where("name = ?", name).First(&user).Error
 	return
 }
 
 // GetUsers ...
 func GetUsers(self User, order ...string) (users []User, err error) {
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	orderKey := "ID"
+	orderKey := "id"
 	if len(order) > 0 && order[0] != "" {
 		orderKey = order[0]
 	}
-	err = db.Order(orderKey).Where("level < ?", self.Level).Find(&users).Error
+	err = DB.Order(orderKey).Where("level < ?", self.Level).Find(&users).Error
 	users = append([]User{self}, users...)
 	return
 }

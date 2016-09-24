@@ -31,11 +31,7 @@ type TraderExchange struct {
 
 // GetTrader ...
 func GetTrader(self User, id interface{}) (trader Trader, err error) {
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	if err = db.Where("id = ?", id).First(&trader).Error; err != nil {
+	if err = DB.Where("id = ?", id).First(&trader).Error; err != nil {
 		return
 	}
 	user, err := GetUserByID(trader.UserID)
@@ -46,7 +42,7 @@ func GetTrader(self User, id interface{}) (trader Trader, err error) {
 		err = fmt.Errorf("Insufficient permissions")
 	}
 	if trader.StrategyID > 0 {
-		if err = db.Where("id = ?", trader.StrategyID).First(&trader.Strategy).Error; err != nil {
+		if err = DB.Where("id = ?", trader.StrategyID).First(&trader.Strategy).Error; err != nil {
 			return
 		}
 	}
@@ -63,16 +59,12 @@ func GetTraders(self User) (traders []Trader, err error) {
 	for _, u := range users {
 		userIDs = append(userIDs, u.ID)
 	}
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	if err = db.Where("user_id in (?)", userIDs).Find(&traders).Error; err != nil {
+	if err = DB.Where("user_id in (?)", userIDs).Find(&traders).Error; err != nil {
 		return
 	}
 	for i, t := range traders {
 		if t.StrategyID > 0 {
-			if err = db.Where("id = ?", t.StrategyID).First(&traders[i].Strategy).Error; err != nil {
+			if err = DB.Where("id = ?", t.StrategyID).First(&traders[i].Strategy).Error; err != nil {
 				return
 			}
 		}
@@ -85,15 +77,11 @@ func GetTraderExchanges(self User, id interface{}) (traderExchanges []TraderExch
 	if _, err = GetTrader(self, id); err != nil {
 		return
 	}
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	if err = db.Where("trader_id = ?", id).Find(&traderExchanges).Error; err != nil {
+	if err = DB.Where("trader_id = ?", id).Find(&traderExchanges).Error; err != nil {
 		return
 	}
 	for i, r := range traderExchanges {
-		if err = db.Where("id = ?", r.ExchangeID).Find(&traderExchanges[i].Exchange).Error; err != nil {
+		if err = DB.Where("id = ?", r.ExchangeID).Find(&traderExchanges[i].Exchange).Error; err != nil {
 			return
 		}
 	}

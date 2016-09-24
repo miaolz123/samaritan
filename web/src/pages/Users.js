@@ -1,22 +1,18 @@
 import React from 'react';
-import { Tag, Button, Table, Modal, Form, Input, notification } from 'antd';
+import { Tag, Button, Table, Modal, Form, Input, InputNumber, notification } from 'antd';
 import axios from 'axios';
-import CodeMirror from 'react-code-mirror';
-require('codemirror/mode/javascript/javascript');
-require('codemirror/lib/codemirror.css');
-require('codemirror/theme/solarized.css');
 
 import config from '../config';
 
 const FormItem = Form.Item;
 
-class Strategies extends React.Component {
+class Users extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       token: localStorage.getItem('token'),
-      fetchStrategiesUrl: '/strategy',
+      fetchUsersUrl: '/user',
       loading: false,
       pagination: {
         pageSize: 12,
@@ -29,10 +25,9 @@ class Strategies extends React.Component {
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
-    this.fetchStrategies = this.fetchStrategies.bind(this);
-    this.postStrategy = this.postStrategy.bind(this);
+    this.fetchUsers = this.fetchUsers.bind(this);
+    this.postUser = this.postUser.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
-    this.handleScriptChange = this.handleScriptChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
     this.handleInfoOk = this.handleInfoOk.bind(this);
@@ -40,14 +35,14 @@ class Strategies extends React.Component {
   }
 
   componentWillMount() {
-    this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
+    this.fetchUsers(config.api + this.state.fetchUsersUrl);
   }
 
   handleRefresh() {
-    this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
+    this.fetchUsers(config.api + this.state.fetchUsersUrl);
   }
 
-  fetchStrategies(url) {
+  fetchUsers(url) {
     this.setState({ loading: true });
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
@@ -76,13 +71,13 @@ class Strategies extends React.Component {
       });
   }
 
-  postStrategy(strategy) {
-    axios.post(`${config.api}/strategy`, strategy, { headers: { Authorization: `Bearer ${this.state.token}` } })
+  postUser(user) {
+    axios.post(`${config.api}/user`, user, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           this.setState({ infoModal: false });
           this.props.form.resetFields();
-          this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
+          this.fetchUsers(config.api + this.state.fetchUsersUrl);
         } else {
           notification['error']({
             message: 'Error',
@@ -100,8 +95,9 @@ class Strategies extends React.Component {
   }
 
   handleTableChange(pagination, filters, sorter) {
-    let url = '/strategy?';
+    let url = '/user?';
     const sorterMap = {
+      'Level': 'level',
       'CreatedAt': 'created_at',
       'UpdatedAt': 'updated_at',
     };
@@ -114,17 +110,10 @@ class Strategies extends React.Component {
     }
 
     this.setState({
-      fetchStrategiesUrl: url,
+      fetchUsersUrl: url,
       pagination: pagination,
     });
-    this.fetchStrategies(config.api + url);
-  }
-
-  handleScriptChange(e) {
-    const { info } = this.state;
-
-    info.Script = e.target.value;
-    this.setState({ info });
+    this.fetchUsers(config.api + url);
   }
 
   handleInfoShow(info) {
@@ -141,8 +130,7 @@ class Strategies extends React.Component {
       info: {
         ID: 0,
         Name: '',
-        Description: '',
-        Script: '',
+        Level: 0,
       },
       infoModal: true,
     });
@@ -154,15 +142,14 @@ class Strategies extends React.Component {
         return;
       }
 
-      const { info } = this.state;
-      const strategy = {
-        ID: info.ID,
+      const user = {
+        ID: this.state.info.ID,
         Name: values.Name,
-        Description: values.Description,
-        Script: info.Script,
+        Password: values.Password,
+        Level: values.Level,
       };
 
-      this.postStrategy(strategy);
+      this.postUser(user);
     });
   }
 
@@ -173,15 +160,15 @@ class Strategies extends React.Component {
 
   render() {
     const { info, tableData } = this.state;
-    const { getFieldProps } = this.props.form;
+    const { getFieldProps, getFieldValue } = this.props.form;
     const columns = [{
-      title: 'Name',
+      title: 'Username',
       dataIndex: 'Name',
       render: (text, record) => <a onClick={this.handleInfoShow.bind(this, record)}>{text}</a>,
     }, {
-      title: 'Description',
-      dataIndex: 'Description',
-      render: text => text.substr(0, 36),
+      title: 'Level',
+      dataIndex: 'Level',
+      sorter: true,
     }, {
       title: 'CreatedAt',
       dataIndex: 'CreatedAt',
@@ -197,6 +184,29 @@ class Strategies extends React.Component {
       labelCol: { span: 7 },
       wrapperCol: { span: 12 },
     };
+    const checkPassword = (rule, value, callback) => {
+      if (value && value !== getFieldValue('Password')) {
+        callback('Confirm fail');
+      } else {
+        callback();
+      }
+    };
+    const passwdProps = info.ID ? getFieldProps('Password', {
+      rules: [{ required: false, whitespace: true }],
+    }) : getFieldProps('Password', {
+      rules: [{ required: true, whitespace: true }],
+    });
+    const repasswdProps = info.ID && !getFieldValue('Password') ? getFieldProps('rePassword', {
+      rules: [
+        { required: false, whitespace: true },
+        { validator: checkPassword },
+      ],
+    }) : getFieldProps('rePassword', {
+      rules: [
+        { required: true, whitespace: true },
+        { validator: checkPassword },
+      ],
+    });
 
     return (
       <div>
@@ -213,8 +223,8 @@ class Strategies extends React.Component {
         />
         <Modal closable
           maskClosable={false}
-          width="85%"
-          title={info.Name || 'New Strategy'}
+          width="50%"
+          title={info.Name || 'New User'}
           visible={this.state.infoModal}
           onOk={this.handleInfoOk}
           onCancel={this.handleInfoCancel}
@@ -222,33 +232,37 @@ class Strategies extends React.Component {
           <Form horizontal>
             <FormItem
               {...formItemLayout}
-              label="Name"
+              label="Username"
             >
-              <Input {...getFieldProps('Name', {
+              <Input
+                disabled={info.ID > 0}
+                {...getFieldProps('Name', {
+                  rules: [{ required: true }],
+                  initialValue: info.Name,
+                })} />
+            </FormItem>
+            <FormItem
+              {...formItemLayout}
+              label="Level"
+            >
+              <InputNumber
+              max={tableData.length > 0 ? tableData[0].Level : 99}
+              {...getFieldProps('Level', {
                 rules: [{ required: true }],
-                initialValue: info.Name,
+                initialValue: info.Level,
               })} />
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Description"
+              label="Password"
             >
-              <Input {...getFieldProps('Description', {
-                initialValue: info.Description,
-              })} />
+              <Input type="Password" {...passwdProps} />
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Script"
+              label="Password Confirm"
             >
-              <CodeMirror
-                style={{border: '1px solid #d9d9d9'}}
-                mode="javascript"
-                theme="solarized"
-                value={info.Script}
-                onChange={this.handleScriptChange}
-                lineNumbers={true}
-              />
+              <Input type="Password" {...repasswdProps} />
             </FormItem>
           </Form>
         </Modal>
@@ -257,4 +271,4 @@ class Strategies extends React.Component {
   }
 }
 
-export default Form.create()(Strategies);
+export default Form.create()(Users);

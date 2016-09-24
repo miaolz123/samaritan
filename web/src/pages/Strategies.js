@@ -1,18 +1,23 @@
 import React from 'react';
-import { Tag, Button, Table, Modal, Form, Input, InputNumber, notification } from 'antd';
+import { Tag, Button, Table, Modal, Form, Input, notification } from 'antd';
 import axios from 'axios';
+import CodeMirror from 'react-code-mirror';
+require('codemirror/mode/javascript/javascript');
+require('codemirror/lib/codemirror.css');
+require('codemirror/theme/solarized.css');
 
 import config from '../config';
 
 const FormItem = Form.Item;
 
-class Users extends React.Component {
+class Strategies extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       token: localStorage.getItem('token'),
-      fetchUsersUrl: '/user',
+      windowHeight: window.innerHeight || 720,
+      fetchStrategiesUrl: '/strategy',
       loading: false,
       pagination: {
         pageSize: 12,
@@ -21,29 +26,30 @@ class Users extends React.Component {
       },
       tableData: [],
       info: {},
+      script: '',
       infoModal: false,
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
-    this.fetchUsers = this.fetchUsers.bind(this);
-    this.postUser = this.postUser.bind(this);
+    this.fetchStrategies = this.fetchStrategies.bind(this);
+    this.postStrategy = this.postStrategy.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
+    this.handleScriptChange = this.handleScriptChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
     this.handleInfoOk = this.handleInfoOk.bind(this);
     this.handleInfoCancel = this.handleInfoCancel.bind(this);
-    this.handleInfoResetPasswd = this.handleInfoResetPasswd.bind(this);
   }
 
   componentWillMount() {
-    this.fetchUsers(config.api + this.state.fetchUsersUrl);
+    this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
   }
 
   handleRefresh() {
-    this.fetchUsers(config.api + this.state.fetchUsersUrl);
+    this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
   }
 
-  fetchUsers(url) {
+  fetchStrategies(url) {
     this.setState({ loading: true });
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
@@ -72,13 +78,13 @@ class Users extends React.Component {
       });
   }
 
-  postUser(user) {
-    axios.post(`${config.api}/user`, user, { headers: { Authorization: `Bearer ${this.state.token}` } })
+  postStrategy(strategy) {
+    axios.post(`${config.api}/strategy`, strategy, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           this.setState({ infoModal: false });
           this.props.form.resetFields();
-          this.fetchUsers(config.api + this.state.fetchUsersUrl);
+          this.fetchStrategies(config.api + this.state.fetchStrategiesUrl);
         } else {
           notification['error']({
             message: 'Error',
@@ -96,9 +102,8 @@ class Users extends React.Component {
   }
 
   handleTableChange(pagination, filters, sorter) {
-    let url = '/user?';
+    let url = '/strategy?';
     const sorterMap = {
-      'Level': 'level',
       'CreatedAt': 'created_at',
       'UpdatedAt': 'updated_at',
     };
@@ -111,16 +116,21 @@ class Users extends React.Component {
     }
 
     this.setState({
-      fetchUsersUrl: url,
+      fetchStrategiesUrl: url,
       pagination: pagination,
     });
-    this.fetchUsers(config.api + url);
+    this.fetchStrategies(config.api + url);
+  }
+
+  handleScriptChange(e) {
+    this.setState({ script: e.target.value });
   }
 
   handleInfoShow(info) {
     if (info) {
       this.setState({
         info: info,
+        script: info.Script,
         infoModal: true,
       });
     }
@@ -131,7 +141,8 @@ class Users extends React.Component {
       info: {
         ID: 0,
         Name: '',
-        Level: 0,
+        Description: '',
+        Script: '',
       },
       infoModal: true,
     });
@@ -143,16 +154,15 @@ class Users extends React.Component {
         return;
       }
 
-      const user = {
-        ID: this.state.info.ID,
+      const { info, script } = this.state;
+      const strategy = {
+        ID: info.ID,
         Name: values.Name,
-        Level: values.Level,
+        Description: values.Description,
+        Script: script,
       };
 
-      if (!user.ID) {
-        user.Password = values.Password;
-      }
-      this.postUser(user);
+      this.postStrategy(strategy);
     });
   }
 
@@ -161,36 +171,17 @@ class Users extends React.Component {
     this.props.form.resetFields();
   }
 
-  handleInfoResetPasswd() {
-    Modal.confirm({
-      title: 'Confirm password reset ?',
-      content: 'Click OK to reset the password and the password will be set to same as the username !',
-      iconType: 'question-circle-o',
-      onOk: () => {
-        const { info } = this.state;
-        const user = {
-          ID: info.ID,
-          Name: info.Name,
-          Password: info.Name,
-          Level: info.Level,
-        };
-
-        this.postUser(user);
-      },
-    });
-  }
-
   render() {
-    const { info, tableData } = this.state;
+    const { windowHeight, info, tableData, script } = this.state;
     const { getFieldProps } = this.props.form;
     const columns = [{
-      title: 'Username',
+      title: 'Name',
       dataIndex: 'Name',
       render: (text, record) => <a onClick={this.handleInfoShow.bind(this, record)}>{text}</a>,
     }, {
-      title: 'Level',
-      dataIndex: 'Level',
-      sorter: true,
+      title: 'Description',
+      dataIndex: 'Description',
+      render: text => text.substr(0, 36),
     }, {
       title: 'CreatedAt',
       dataIndex: 'CreatedAt',
@@ -203,30 +194,9 @@ class Users extends React.Component {
       sorter: true,
     }];
     const formItemLayout = {
-      labelCol: { span: 7 },
-      wrapperCol: { span: 12 },
+      labelCol: { span: 3 },
+      wrapperCol: { span: 18 },
     };
-    const checkPassword = (rule, value, callback) => {
-      const { getFieldValue } = this.props.form;
-      if (value && value !== getFieldValue('Password')) {
-        callback('Confirm fail');
-      } else {
-        callback();
-      }
-    };
-    const passwdProps = info.ID ? getFieldProps('Password', {
-      rules: [{ required: false }],
-    }) : getFieldProps('Password', {
-      rules: [{ required: true, whitespace: true }],
-    });
-    const repasswdProps = info.ID ? getFieldProps('rePassword', {
-      rules: [{ required: false }],
-    }) : getFieldProps('rePassword', {
-      rules: [
-        { required: true, whitespace: true },
-        { validator: checkPassword },
-      ],
-    });
 
     return (
       <div>
@@ -242,9 +212,10 @@ class Users extends React.Component {
           onChange={this.handleTableChange}
         />
         <Modal closable
+          width="85%"
+          style={{top: windowHeight > 590 ? (windowHeight - 590) / 2 : 20}}
           maskClosable={false}
-          width="50%"
-          title={info.Name || 'New User'}
+          title={info.Name || 'New Strategy'}
           visible={this.state.infoModal}
           onOk={this.handleInfoOk}
           onCancel={this.handleInfoCancel}
@@ -252,7 +223,7 @@ class Users extends React.Component {
           <Form horizontal>
             <FormItem
               {...formItemLayout}
-              label="Username"
+              label="Name"
             >
               <Input {...getFieldProps('Name', {
                 rules: [{ required: true }],
@@ -261,29 +232,26 @@ class Users extends React.Component {
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Level"
+              label="Description"
             >
-              <InputNumber {...getFieldProps('Level', {
-                initialValue: info.Level,
+              <Input type="textarea"
+              {...getFieldProps('Description', {
+                initialValue: info.Description,
               })} />
             </FormItem>
-            {info.ID
-            ? <FormItem wrapperCol={{ span: 16, offset: 6 }} style={{ marginTop: 24 }}>
-                <Button type="dashed" size="default" onClick={this.handleInfoResetPasswd}>Reset Password</Button>
-              </FormItem>
-            : <div><FormItem
-                {...formItemLayout}
-                label="Password"
-              >
-                <Input type="Password" {...passwdProps} />
-              </FormItem>
-              <FormItem
-                {...formItemLayout}
-                label="Confirm"
-              >
-                <Input type="Password" {...repasswdProps} />
-              </FormItem></div>
-            }
+            <FormItem
+              {...formItemLayout}
+              label="Script"
+            >
+              <CodeMirror
+                style={{border: '1px solid #d9d9d9'}}
+                mode="javascript"
+                theme="solarized"
+                value={script}
+                onChange={this.handleScriptChange}
+                lineNumbers={true}
+              />
+            </FormItem>
           </Form>
         </Modal>
       </div>
@@ -291,4 +259,4 @@ class Users extends React.Component {
   }
 }
 
-export default Form.create()(Users);
+export default Form.create()(Strategies);

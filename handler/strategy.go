@@ -41,12 +41,6 @@ func (c strategyHandler) Post() {
 		"success": false,
 		"msg":     "",
 	}
-	db, err := model.NewOrm()
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
 		resp["msg"] = fmt.Sprint(err)
@@ -61,7 +55,7 @@ func (c strategyHandler) Post() {
 	}
 	if req.ID > 0 {
 		strategy := model.Strategy{}
-		if err := db.First(&strategy, req.ID).Error; err != nil {
+		if err := model.DB.First(&strategy, req.ID).Error; err != nil {
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
@@ -69,7 +63,7 @@ func (c strategyHandler) Post() {
 		strategy.Name = req.Name
 		strategy.Description = req.Description
 		strategy.Script = req.Script
-		if err := db.Save(&strategy).Error; err != nil {
+		if err := model.DB.Save(&strategy).Error; err != nil {
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
@@ -79,7 +73,7 @@ func (c strategyHandler) Post() {
 		return
 	}
 	req.UserID = self.ID
-	if err := db.Create(&req).Error; err != nil {
+	if err := model.DB.Create(&req).Error; err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return

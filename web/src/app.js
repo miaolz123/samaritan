@@ -2,18 +2,17 @@ import './styles/app.css';
 
 import React from 'react';
 import { render } from 'react-dom';
-import { LocaleProvider, Menu, Icon, Modal, Form, Input } from 'antd';
+import { LocaleProvider, Menu, Icon, Modal, Form, Input, notification } from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
 import axios from 'axios';
 
 import config from './config';
-import Home from './components/Home';
-import Users from './components/Users';
-import Exchanges from './components/Exchanges';
-import Strategies from './components/Strategies';
-import Traders from './components/Traders';
+import Home from './pages/Home';
+import Users from './pages/Users';
+import Exchanges from './pages/Exchanges';
+import Strategies from './pages/Strategies';
+import Traders from './pages/Traders';
 
-const SubMenu = Menu.SubMenu;
 const FormItem = Form.Item;
 
 class Example extends React.Component {
@@ -21,7 +20,8 @@ class Example extends React.Component {
     super(props);
 
     this.state = {
-      current: 'home',
+      collapse: false,
+      current: 'traders',
       loginModalShow: false,
     };
 
@@ -29,6 +29,7 @@ class Example extends React.Component {
     this.renderMain = this.renderMain.bind(this);
     this.handleLoginOk = this.handleLoginOk.bind(this);
     this.reLogin = this.reLogin.bind(this);
+    this.onCollapseChange = this.onCollapseChange.bind(this);
   }
 
   handleClick(e) {
@@ -66,9 +67,17 @@ class Example extends React.Component {
 
       axios.post(`${config.api}/login`, values)
         .then((response) => {
-          localStorage.setItem('token', response.data.Token);
-          this.setState({ loginModalShow: false });
-          window.location.href = window.location.href;
+          if (response.data.success) {
+            localStorage.setItem('token', response.data.data);
+            this.setState({ loginModalShow: false });
+            window.location.href = window.location.href;
+          } else {
+            notification['error']({
+              message: 'Error',
+              description: String(response.data.msg),
+              duration: null,
+            });
+          }
         }, () => {});
     });
   }
@@ -77,7 +86,14 @@ class Example extends React.Component {
     this.setState({ loginModalShow: true });
   }
 
+  onCollapseChange() {
+    this.setState({
+      collapse: !this.state.collapse,
+    });
+  }
+
   render() {
+    const { collapse } = this.state;
     const { getFieldProps } = this.props.form;
     const formItemLayout = {
       labelCol: { span: 7 },
@@ -86,41 +102,36 @@ class Example extends React.Component {
 
     return (
       <LocaleProvider locale={enUS}>
-        <div className="ant-layout-aside">
+        <div className={collapse ? 'ant-layout-aside ant-layout-aside-collapse' : 'ant-layout-aside'}>
           <aside className="ant-layout-sider">
-            <div
-              className="ant-layout-logo"
-              style={{
-                background: "url('http://120.27.103.15:8922/images/logo.png')",
-                backgroundSize: '64px 30px',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center',
-              }}
-            >
-            </div>
+            {collapse ? '' : <div className="ant-layout-logo"></div>}
             <Menu theme="dark"
               onClick={this.handleClick}
-              defaultOpenKeys={['home']}
+              defaultOpenKeys={['traders']}
               selectedKeys={[this.state.current]}
               mode="inline"
             >
-              <Menu.Item key="home"><span><Icon type="pie-chart" /><span>Home</span></span></Menu.Item>
-              <SubMenu key="manage" title={<span><Icon type="appstore" /><span>Manage</span></span>}>
-                <Menu.Item key="users">Users</Menu.Item>
-                <Menu.Item key="exchanges">Exchanges</Menu.Item>
-                <Menu.Item key="strategies">Strategies</Menu.Item>
-                <Menu.Item key="traders">Traders</Menu.Item>
-              </SubMenu>
+              <Menu.Item key="traders">
+                <Icon type="appstore-o" /><span className="nav-text">Traders</span>
+              </Menu.Item>
+              <Menu.Item key="strategies">
+                <Icon type="copy" /><span className="nav-text">Strategies</span>
+              </Menu.Item>
+              <Menu.Item key="exchanges">
+                <Icon type="solution" /><span className="nav-text">Exchanges</span>
+              </Menu.Item>
+              <Menu.Item key="users">
+                <Icon type="team" /><span className="nav-text">Users</span>
+              </Menu.Item>
+              <Menu.Item key="logout">
+                <Icon type="logout" /><span className="nav-text">Logout</span>
+              </Menu.Item>
             </Menu>
+            <div className="ant-aside-action" onClick={this.onCollapseChange}>
+              {collapse ? <Icon type="right" /> : <Icon type="left" />}
+            </div>
           </aside>
           <div className="ant-layout-main">
-            <Menu theme="dark"
-              onClick={this.handleClick}
-              selectedKeys={[this.state.current]}
-              mode="horizontal"
-            >
-              <Menu.Item key="logout" style={{ float: 'right' }}><Icon type="logout" />Logout</Menu.Item>
-            </Menu>
             <div className="ant-layout-container">
               <div className="ant-layout-content">
                 {this.renderMain()}

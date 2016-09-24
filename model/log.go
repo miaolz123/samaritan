@@ -36,26 +36,18 @@ func GetLogs(self User, traderID interface{}, page, amount int64) (logs []Log, e
 	if user.ID != self.ID && user.Level >= self.Level {
 		return
 	}
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
 	if amount < 1 {
 		amount = 20
 	} else if amount > 1000 {
 		amount = 1000
 	}
-	err = db.Where("trader_id = ?", traderID).Order("timestamp DESC").Limit(amount).Offset(page * amount).Find(&logs).Error
+	err = DB.Where("trader_id = ?", traderID).Order("timestamp DESC").Limit(amount).Offset(page * amount).Find(&logs).Error
 	return
 }
 
 // Log ...
 func (l Logger) Log(method int, price, amount float64, messages ...interface{}) {
 	go func() {
-		db, err := NewOrm()
-		if err != nil {
-			return
-		}
 		message := ""
 		for _, m := range messages {
 			message += fmt.Sprintf("%+v", m)
@@ -70,6 +62,6 @@ func (l Logger) Log(method int, price, amount float64, messages ...interface{}) 
 			Message:      message,
 		}
 		fmt.Println(log)
-		db.Create(&log)
+		DB.Create(&log)
 	}()
 }

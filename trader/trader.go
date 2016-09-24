@@ -21,18 +21,14 @@ func Run(trader model.Trader) (err error) {
 	if t := Executor[trader.ID]; t != nil && t.Status > 0 {
 		return
 	}
-	db, err := model.NewOrm()
-	if err != nil {
-		return
-	}
-	if err = db.First(&trader, trader.ID).Error; err != nil {
+	if err = model.DB.First(&trader, trader.ID).Error; err != nil {
 		return
 	}
 	self, err := model.GetUserByID(trader.UserID)
 	if err != nil {
 		return
 	}
-	if err = db.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
+	if err = model.DB.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
 		return
 	}
 	es, err := model.GetTraderExchanges(self, trader.ID)

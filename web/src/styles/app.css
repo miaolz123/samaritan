@@ -7,23 +7,92 @@
 .ant-layout-aside .ant-layout-logo {
   width: 150px;
   height: 32px;
-  background: #333;
+  background: url('./assets/logo.png');
+  background-size: 135px 24px;
+  background-repeat: no-repeat;
+  background-position: center;
   border-radius: 6px;
-  margin: 16px 24px 16px 28px;
+  margin: 16px 0px;
+  transition: all 0.3s ease;
 }
 
 .ant-layout-aside .ant-layout-sider {
-  width: 224px;
+  width: 160px;
   background: #404040;
   position: absolute;
-  overflow: auto;
+  overflow: visible;
   padding-bottom: 24px;
   height: 100%;
-  z-index: 999;
+  transition: all 0.3s ease;
+}
+
+.ant-layout-aside-collapse .ant-layout-sider {
+  width: 64px;
+  transition: all 0.3s ease;
 }
 
 .ant-layout-aside .ant-layout-sider > .ant-menu {
   margin-bottom: 20px;
+}
+
+.ant-layout-aside .ant-layout-sider > .ant-menu > .ant-menu-item {
+  margin: 16px 0;
+}
+
+.ant-layout-aside .ant-layout-sider > .ant-menu > .ant-menu-item .nav-text {
+  vertical-align: baseline;
+  display: inline-block;
+}
+
+.ant-layout-aside .ant-layout-sider > .ant-menu > .ant-menu-item > .anticon {
+  transition: font-size .3s;
+}
+
+.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item {
+  transition: all 0s ease;
+}
+
+.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item > .anticon {
+  font-size: 16px;
+  display: inline-block;
+}
+
+.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item .nav-text {
+  display: none;
+}
+
+.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item:hover {
+  background: #2db7f5;
+  color: #fff;
+  transition: all 0s ease;
+}
+
+.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item:hover .nav-text {
+  display: inline-block;
+  vertical-align: top;
+  background: #2db7f5;
+  color: #fff;
+  padding-right: 16px;
+  border-radius: 0 5px 5px 0;
+}
+
+/* 实际使用中需要改成 position: fixed */
+.ant-layout-aside .ant-aside-action {
+  height: 42px;
+  width: 160px;
+  position: absolute;
+  bottom: 0;
+  background: #656565;
+  color: #fff;
+  text-align: center;
+  line-height: 42px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ant-layout-aside-collapse .ant-aside-action {
+  width: 64px;
+  transition: all 0.3s ease;
 }
 
 .ant-layout-aside .ant-layout-header {
@@ -37,13 +106,17 @@
 }
 
 .ant-layout-aside .ant-layout-main {
-  overflow: auto;
-  height: 100%;
-  margin-left: 224px;
+  margin-left: 160px;
+  transition: all 0.3s ease;
+}
+
+.ant-layout-aside-collapse .ant-layout-main {
+  margin-left: 64px;
+  transition: all 0.3s ease;
 }
 
 .ant-layout-aside .ant-layout-container {
-  margin: 36px 16px;
+  margin: 24px 16px;
 }
 
 .ant-layout-aside .ant-layout-content {
@@ -60,11 +133,4 @@
   background: #fff;
   border-top: 1px solid #e9e9e9;
   width: 100%;
-}
-
-.ant-menu.ant-menu-horizontal.ant-menu-dark.ant-menu-root {
-  position: fixed;
-  margin-left: -224px;
-  width: 100%;
-  z-index: 998;
 }

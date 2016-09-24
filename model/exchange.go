@@ -22,10 +22,6 @@ func GetExchanges(self User) (exchanges []Exchange, err error) {
 	for _, u := range users {
 		userIDs = append(userIDs, u.ID)
 	}
-	db, err := NewOrm()
-	if err != nil {
-		return
-	}
-	err = db.Where("user_id in (?)", userIDs).Find(&exchanges).Error
+	err = DB.Where("user_id in (?)", userIDs).Find(&exchanges).Error
 	return
 }
