@@ -46,4 +46,6 @@ func init() {
 	Server.API("/trader", traderHandler{}, jwtmid.Serve)
 	Server.Post("/run", jwtmid.Serve, traderRun)
 	Server.Post("/stop", jwtmid.Serve, traderStop)
+	Server.Post("/logs", jwtmid.Serve, logs)
+	Server.StaticWeb("/web", "web/dist", 1)
 }

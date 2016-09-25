@@ -19,8 +19,8 @@
 .ant-layout-aside .ant-layout-sider {
   width: 160px;
   background: #404040;
-  position: absolute;
-  overflow: visible;
+  position: fixed;
+  overflow: auto;
   padding-bottom: 24px;
   height: 100%;
   transition: all 0.3s ease;
@@ -67,20 +67,10 @@
   transition: all 0s ease;
 }
 
-.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item:hover .nav-text {
-  display: inline-block;
-  vertical-align: top;
-  background: #2db7f5;
-  color: #fff;
-  padding-right: 16px;
-  border-radius: 0 5px 5px 0;
-}
-
-/* 实际使用中需要改成 position: fixed */
 .ant-layout-aside .ant-aside-action {
   height: 42px;
   width: 160px;
-  position: absolute;
+  position: fixed;
   bottom: 0;
   background: #656565;
   color: #fff;
@@ -115,13 +105,9 @@
   transition: all 0.3s ease;
 }
 
-.ant-layout-aside .ant-layout-container {
-  margin: 24px 16px;
-}
-
 .ant-layout-aside .ant-layout-content {
   background: #fff;
-  padding: 24px;
+  padding: 16px 24px;
 }
 
 .ant-layout-aside .ant-layout-footer {

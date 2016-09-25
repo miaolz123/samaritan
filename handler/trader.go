@@ -41,29 +41,6 @@ func (c traderHandler) Get() {
 	c.JSON(iris.StatusOK, resp)
 }
 
-// Get /trader/:id
-func (c traderHandler) GetBy(id string) {
-	resp := iris.Map{
-		"success": false,
-		"msg":     "",
-	}
-	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	rs, err := model.GetTraderExchanges(self, id)
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	resp["success"] = true
-	resp["data"] = rs
-	c.JSON(iris.StatusOK, resp)
-}
-
 // Post /trader
 func (c traderHandler) Post() {
 	resp := iris.Map{
@@ -93,23 +70,70 @@ func (c traderHandler) Post() {
 		return
 	}
 	if req.ID > 0 {
-		trader := model.Trader{}
-		if err := db.First(&trader, req.ID).Error; err != nil {
+		td, err := model.GetTrader(self, req.ID)
+		if err != nil {
 			db.Rollback()
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
 		}
-		trader.Name = req.Name
-		trader.Status = req.Status
-		trader.Exchanges = req.Exchanges
-		if err := db.Save(&trader).Error; err != nil {
+		td.Name = req.Name
+		td.StrategyID = req.StrategyID
+		rs, err := model.GetTraderExchanges(self, td.ID)
+		if err != nil {
 			db.Rollback()
 			resp["msg"] = fmt.Sprint(err)
 			c.JSON(iris.StatusOK, resp)
 			return
 		}
-		db.Commit()
+		for i, r := range rs {
+			if i >= len(req.Exchanges) {
+				if err := db.Delete(&r).Error; err != nil {
+					db.Rollback()
+					resp["msg"] = fmt.Sprint(err)
+					c.JSON(iris.StatusOK, resp)
+					return
+				}
+				continue
+			}
+			if r.Exchange.ID == req.Exchanges[i].ID {
+				continue
+			}
+			r.ExchangeID = req.Exchanges[i].ID
+			if err := db.Save(&r).Error; err != nil {
+				db.Rollback()
+				resp["msg"] = fmt.Sprint(err)
+				c.JSON(iris.StatusOK, resp)
+				return
+			}
+		}
+		for i, e := range req.Exchanges {
+			if i < len(rs) {
+				continue
+			}
+			r := model.TraderExchange{
+				TraderID:   td.ID,
+				ExchangeID: e.ID,
+			}
+			if err := db.Create(&r).Error; err != nil {
+				db.Rollback()
+				resp["msg"] = fmt.Sprint(err)
+				c.JSON(iris.StatusOK, resp)
+				return
+			}
+		}
+		if err := db.Save(&td).Error; err != nil {
+			db.Rollback()
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		if err := db.Commit().Error; err != nil {
+			db.Rollback()
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
 		resp["success"] = true
 		c.JSON(iris.StatusOK, resp)
 		return
@@ -133,70 +157,59 @@ func (c traderHandler) Post() {
 			return
 		}
 	}
-	db.Commit()
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
 	resp["success"] = true
 	c.JSON(iris.StatusOK, resp)
 }
 
-// PostBy /trader/:id
-func (c traderHandler) PostBy(id string) {
+// Delete /trader
+func (c traderHandler) Delete() {
 	resp := iris.Map{
 		"success": false,
 		"msg":     "",
 	}
+	id := c.URLParam("id")
+	db, err := model.NewOrm()
+	if err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	defer db.Close()
+	db = db.Begin()
 	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
 	if err != nil {
+		db.Rollback()
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
 	td, err := model.GetTrader(self, id)
 	if err != nil {
+		db.Rollback()
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	req := model.Exchange{}
-	if err := c.ReadJSON(&req); err != nil {
+	if err := db.Delete(&td).Error; err != nil {
+		db.Rollback()
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if req.ID > 0 {
-		traderExchange := model.TraderExchange{
-			TraderID:   td.ID,
-			ExchangeID: req.ID,
-		}
-		if err := model.DB.Create(&traderExchange).Error; err != nil {
-			resp["msg"] = fmt.Sprint(err)
-			c.JSON(iris.StatusOK, resp)
-			return
-		}
-	}
-	resp["success"] = true
-	c.JSON(iris.StatusOK, resp)
-}
-
-// DeleteBy /trader/:id
-func (c traderHandler) DeleteBy(id string) {
-	resp := iris.Map{
-		"success": false,
-		"msg":     "",
-	}
-	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
-	if err != nil {
+	if err := db.Where("trader_id = ?", id).Delete(&model.TraderExchange{}).Error; err != nil {
+		db.Rollback()
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if _, err := model.GetTrader(self, id); err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	traderExchange := model.TraderExchange{}
-	traderExchange.ID, _ = c.URLParamInt64("id")
-	if err := model.DB.Unscoped().Delete(&traderExchange).Error; err != nil {
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return

@@ -1,8 +1,9 @@
 import React from 'react';
-import { Spin, Tag, Tooltip, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
+import { Tag, Tooltip, Button, Table, Modal, Form, Input, Select, Popconfirm, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
+import Logs from './Logs';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -26,13 +27,13 @@ class Traders extends React.Component {
       strategies: [],
       exchanges: [],
       selectedExchanges: [],
-      exchangesLoading: false,
+      showLogs: false,
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
     this.fetchTraders = this.fetchTraders.bind(this);
-    this.fetchSelectedExchanges = this.fetchSelectedExchanges.bind(this);
     this.postTrader = this.postTrader.bind(this);
+    this.deleteTrader = this.deleteTrader.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
     this.getStrategyAndExchange = this.getStrategyAndExchange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
@@ -81,39 +82,6 @@ class Traders extends React.Component {
       });
   }
 
-  fetchSelectedExchanges(id) {
-    this.setState({ exchangesLoading: true });
-    axios.get(`${config.api}/trader/${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
-      .then((response) => {
-        this.setState({ exchangesLoading: false });
-        if (response.data.success) {
-          const { data } = response.data;
-
-          if (data) {
-            this.setState({ selectedExchanges: response.data.data });
-          } else {
-            this.setState({ selectedExchanges: [] });
-          }
-        } else {
-          notification['error']({
-            message: 'Error',
-            description: String(response.data.msg),
-            duration: null,
-          });
-        }
-      }, (response) => {
-        this.setState({
-          exchangesLoading: false,
-          selectedExchanges: [],
-        });
-        if (String(response).indexOf('401') > 0) {
-          this.setState({ token: '' });
-          localStorage.removeItem('token');
-          this.props.reLogin();
-        }
-      });
-  }
-
   postTrader(trader) {
     axios.post(`${config.api}/trader`, trader, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
@@ -123,6 +91,27 @@ class Traders extends React.Component {
             selectedExchanges: [],
           });
           this.props.form.resetFields();
+          this.fetchTraders(config.api + this.state.fetchTradersUrl);
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        }
+      });
+  }
+
+  deleteTrader(id) {
+    axios.delete(`${config.api}/trader?id=${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        if (response.data.success) {
           this.fetchTraders(config.api + this.state.fetchTradersUrl);
         } else {
           notification['error']({
@@ -161,8 +150,8 @@ class Traders extends React.Component {
     this.fetchTraders(config.api + url);
   }
 
-  getStrategyAndExchange() {
-    axios.get(`${config.api}/strategy`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+  getStrategyAndExchange(id) {
+    axios.get(`${config.api}/strategy?id=${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           const { data } = response.data;
@@ -185,7 +174,7 @@ class Traders extends React.Component {
         }
       });
 
-    axios.get(`${config.api}/exchange`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+    axios.get(`${config.api}/exchange?id=${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           const { data } = response.data;
@@ -211,17 +200,17 @@ class Traders extends React.Component {
 
   handleInfoShow(info) {
     if (info) {
-      this.fetchSelectedExchanges(info.ID);
-      this.getStrategyAndExchange();
+      this.getStrategyAndExchange(info.ID);
       this.setState({
         info,
+        selectedExchanges: info.Exchanges.map(e => e),
         infoModal: true,
       });
     }
   }
 
   handleInfoAddShow() {
-    this.getStrategyAndExchange();
+    this.getStrategyAndExchange(0);
     this.setState({
       info: {
         ID: 0,
@@ -233,70 +222,20 @@ class Traders extends React.Component {
   }
 
   handleExchangeChange(value) {
-    const { info, selectedExchanges, exchanges } = this.state;
+    const { selectedExchanges, exchanges } = this.state;
 
     if (exchanges[value] && exchanges[value].ID > 0) {
-      if (info.ID > 0) {
-        this.setState({ exchangesLoading: true });
-        axios.post(`${config.api}/trader/${info.ID}`, exchanges[value],
-        { headers: { Authorization: `Bearer ${this.state.token}` } })
-          .then((response) => {
-            this.setState({ exchangesLoading: false });
-            if (response.data.success) {
-              this.fetchSelectedExchanges(info.ID);
-            } else {
-              notification['error']({
-                message: 'Error',
-                description: String(response.data.msg),
-                duration: null,
-              });
-            }
-          }, (response) => {
-            this.setState({ exchangesLoading: false });
-            if (String(response).indexOf('401') > 0) {
-              this.setState({ token: '' });
-              localStorage.removeItem('token');
-              this.props.reLogin();
-            }
-          });
-      } else {
-        selectedExchanges.push(exchanges[value]);
-        this.setState({ selectedExchanges });
-      }
+      selectedExchanges.push(exchanges[value]);
+      this.setState({ selectedExchanges });
     }
   }
 
   handleExchangeClose(i, event) {
-    const { info, selectedExchanges } = this.state;
+    const { selectedExchanges } = this.state;
 
     if (i < selectedExchanges.length) {
-      if (info.ID > 0) {
-        this.setState({ exchangesLoading: true });
-        axios.delete(`${config.api}/trader/${info.ID}?id=${selectedExchanges[i].ID}`,
-        { headers: { Authorization: `Bearer ${this.state.token}` } })
-          .then((response) => {
-            this.setState({ exchangesLoading: false });
-            if (response.data.success) {
-              this.fetchSelectedExchanges(info.ID);
-            } else {
-              notification['error']({
-                message: 'Error',
-                description: String(response.data.msg),
-                duration: null,
-              });
-            }
-          }, (response) => {
-            this.setState({ exchangesLoading: false });
-            if (String(response).indexOf('401') > 0) {
-              this.setState({ token: '' });
-              localStorage.removeItem('token');
-              this.props.reLogin();
-            }
-          });
-      } else {
-        selectedExchanges.splice(i, 1);
-        this.setState({ selectedExchanges });
-      }
+      selectedExchanges.splice(i, 1);
+      this.setState({ selectedExchanges });
     }
     event.preventDefault();
   }
@@ -310,7 +249,7 @@ class Traders extends React.Component {
       const trader = {
         ID: this.state.info.ID,
         Name: values.Name,
-        StrategyID: parseInt(values.StrategyID, 0),
+        StrategyID: parseInt(values.Strategy, 0),
         Exchanges: this.state.selectedExchanges,
       };
 
@@ -360,7 +299,12 @@ class Traders extends React.Component {
   }
 
   render() {
-    const { info, tableData, strategies, exchanges, selectedExchanges } = this.state;
+    const { info, tableData, strategies, exchanges, selectedExchanges, showLogs } = this.state;
+
+    if (showLogs) {
+      return <Logs trader={info} />;
+    }
+
     const { getFieldProps } = this.props.form;
     const columns = [{
       title: 'Name',
@@ -383,9 +327,30 @@ class Traders extends React.Component {
     }, {
       title: 'Action',
       dataIndex: 'Status',
-      render: (status, record) => status > 0
-      ? <Button type="" size="small" onClick={this.handleTraderAction.bind(this, 'stop', record.ID)}>Stop</Button>
-      : <Button type="" size="small" onClick={this.handleTraderAction.bind(this, 'run', record.ID)}>Run</Button>,
+      render: (status, record) => (<Button.Group>
+        <Button
+          type="primary"
+          icon="message"
+          title="Logs"
+          onClick={() => this.setState({ showLogs: true, info: record })}
+        />
+        <Button
+          disabled={status > 0}
+          icon="caret-circle-o-right"
+          title="Run"
+          onClick={this.handleTraderAction.bind(this, 'run', record.ID)}
+        />
+        <Button
+          disabled={!(status > 0)}
+          icon="pause-circle-o"
+          title="Stop"
+          onClick={this.handleTraderAction.bind(this, 'stop', record.ID)}
+        />
+        <Popconfirm title="Are you sure to delete it ?" onConfirm={this.deleteTrader.bind(this, record.ID)}><Button
+          icon="delete"
+          title="Delete"
+        /></Popconfirm>
+      </Button.Group>),
     }];
     const formItemLayout = {
       labelCol: { span: 7 },
@@ -428,10 +393,12 @@ class Traders extends React.Component {
               {...formItemLayout}
               label="Strategy"
             >
-              <Select {...getFieldProps('StrategyID', {
-                rules: [{ required: true }],
-                initialValue: String(info.StrategyID),
-              })}>
+              <Select
+                notFoundContent="Please add a strategy at first"
+                {...getFieldProps('Strategy', {
+                  rules: [{ required: true }],
+                  initialValue: info.StrategyID > 0 ? String(info.StrategyID) : '',
+                })}>
                 {strategies.map(s => <Option key={String(s.ID)} value={String(s.ID)}>{s.Name}</Option>)}
               </Select>
             </FormItem>
@@ -439,23 +406,24 @@ class Traders extends React.Component {
               {...formItemLayout}
               label="Exchanges"
             >
-              <Select onSelect={this.handleExchangeChange}>
+              <Select
+                onSelect={this.handleExchangeChange}
+                notFoundContent="Please add an exchange at first"
+                >
                 {exchanges.map((e, i) => <Option key={String(i)} value={String(i)}>{e.Name}</Option>)}
               </Select>
-              {selectedExchanges.length > 0 ? <Spin spinning={this.state.exchangesLoading} tip="  ">
-                <div style={{ marginTop: 8 }}>
-                  {selectedExchanges.map((e, i) => <Tooltip
-                    key={String(i)}
-                    title={`${i > 0 ? '' : 'Exchange / '}Exchanges[${i}]`}>
-                    <Tag closable
-                      color={i > 0 ? '' : 'blue'}
-                      style={{ marginRight: 5 }}
-                      onClose={this.handleExchangeClose.bind(this, i)}>
-                      {e.Name}
-                    </Tag>
-                  </Tooltip>)}
-                </div>
-              </Spin> : ''}
+              {selectedExchanges.length > 0 ? <div style={{ marginTop: 8 }}>
+                {selectedExchanges.map((e, i) => <Tooltip
+                  key={String(i)}
+                  title={`${i > 0 ? '' : 'Exchange / '}Exchanges[${i}]`}>
+                  <Tag closable
+                    color={i > 0 ? '' : 'blue'}
+                    style={{ marginRight: 5 }}
+                    onClose={this.handleExchangeClose.bind(this, i)}>
+                    {e.Name}
+                  </Tag>
+                </Tooltip>)}
+              </div> : ''}
             </FormItem>
           </Form>
         </Modal>

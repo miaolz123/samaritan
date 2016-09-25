@@ -29,12 +29,12 @@ func init() {
 	dbURL = conf.Section("").Key("DatabaseURL").String()
 	DB, err = gorm.Open(strings.ToLower(dbType), dbURL)
 	if err != nil {
-		log.Printf("Load %v error: %v\n", dbType, err)
+		log.Printf("Connect to %v database error: %v\n", dbType, err)
 		dbType = "sqlite3"
 		dbURL = "data.db"
 		DB, err = gorm.Open(dbType, dbURL)
 		if err != nil {
-			log.Fatalln("Load database error:", err)
+			log.Fatalln("Connect to database error:", err)
 		}
 	}
 	DB.AutoMigrate(&User{}, &Exchange{}, &Strategy{}, &TraderExchange{}, &Trader{}, &Log{})
@@ -55,7 +55,12 @@ func init() {
 
 func ping() {
 	for {
-		DB.Exec("SELECT 1")
+		if err := DB.DB().Ping(); err != nil {
+			log.Println("Database ping error:", err)
+			if DB, err = gorm.Open(strings.ToLower(dbType), dbURL); err != nil {
+				log.Println("Retry connect to database error:", err)
+			}
+		}
 		time.Sleep(time.Minute)
 	}
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Button, Table, Modal, Form, Input, InputNumber, notification } from 'antd';
+import { Tag, Button, Table, Modal, Form, Input, InputNumber, Popconfirm, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
@@ -27,6 +27,7 @@ class Users extends React.Component {
     this.handleRefresh = this.handleRefresh.bind(this);
     this.fetchUsers = this.fetchUsers.bind(this);
     this.postUser = this.postUser.bind(this);
+    this.deleteUser = this.deleteUser.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
@@ -77,6 +78,27 @@ class Users extends React.Component {
         if (response.data.success) {
           this.setState({ infoModal: false });
           this.props.form.resetFields();
+          this.fetchUsers(config.api + this.state.fetchUsersUrl);
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        }
+      });
+  }
+
+  deleteUser(id) {
+    axios.delete(`${config.api}/user?id=${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        if (response.data.success) {
           this.fetchUsers(config.api + this.state.fetchUsersUrl);
         } else {
           notification['error']({
@@ -179,6 +201,15 @@ class Users extends React.Component {
       dataIndex: 'UpdatedAt',
       render: text => text.substr(0, 19),
       sorter: true,
+    }, {
+      title: 'Action',
+      key: 'action',
+      render: (text, record) => <Popconfirm title="Are you sure to delete it ?" onConfirm={this.deleteUser.bind(this, record.ID)}>
+        <Button
+          icon="delete"
+          title="Delete"
+        />
+      </Popconfirm>,
     }];
     const formItemLayout = {
       labelCol: { span: 7 },

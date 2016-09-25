@@ -7,6 +7,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/miaolz123/samaritan/model"
+	"github.com/miaolz123/samaritan/trader"
 )
 
 type userHandler struct {
@@ -145,6 +146,139 @@ func (c userHandler) Post() {
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
+}
+
+// Delete /user
+func (c userHandler) Delete() {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
+	id := c.URLParam("id")
+	db, err := model.NewOrm()
+	if err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	defer db.Close()
+	db = db.Begin()
+	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
+	if err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	user, err := model.GetUserByID(id)
+	if err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if user.Level >= self.Level {
+		db.Rollback()
+		resp["msg"] = "Insufficient permissions"
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if err := db.Unscoped().Delete(&user).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	exchanges := []model.Exchange{}
+	if err := db.Find(&exchanges, "user_id = ?", id).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if err := db.Unscoped().Where("user_id = ?", id).Delete(&model.Exchange{}).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if len(exchanges) > 0 {
+		exchangeIDs := []uint{}
+		for _, e := range exchanges {
+			exchangeIDs = append(exchangeIDs, e.ID)
+		}
+		if err := db.Unscoped().Where("exchange_id in (?)", exchangeIDs).Delete(&model.TraderExchange{}).Error; err != nil {
+			db.Rollback()
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+	}
+	strategies := []model.Strategy{}
+	if err := db.Find(&strategies, "user_id = ?", id).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if err := db.Unscoped().Where("user_id = ?", id).Delete(&model.Strategy{}).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if len(strategies) > 0 {
+		strategyIDs := []uint{}
+		for _, s := range strategies {
+			strategyIDs = append(strategyIDs, s.ID)
+		}
+		if err := db.Exec(`UPDATE traders SET strategy_id = 0 WHERE strategy_id in (?)`, strategyIDs).Error; err != nil {
+			db.Rollback()
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+	}
+	traders := []model.Trader{}
+	if err := db.Find(&traders, "user_id = ?", id).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if err := db.Unscoped().Where("user_id = ?", id).Delete(&model.Trader{}).Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	if len(traders) > 0 {
+		traderIDs := []uint{}
+		for _, t := range traders {
+			traderIDs = append(traderIDs, t.ID)
+		}
+		if err := db.Unscoped().Where("trader_id in (?)", traderIDs).Delete(&model.TraderExchange{}).Error; err != nil {
+			db.Rollback()
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+		if err := db.Unscoped().Where("trader_id in (?)", traderIDs).Delete(&model.Log{}).Error; err != nil {
+			db.Rollback()
+			resp["msg"] = fmt.Sprint(err)
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+	}
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	trader.Clean(user.ID)
 	resp["success"] = true
 	c.JSON(iris.StatusOK, resp)
 }

@@ -12,7 +12,7 @@ type User struct {
 
 // GetUserByID ...
 func GetUserByID(id interface{}) (user User, err error) {
-	err = DB.Where("id = ?", id).First(&user).Error
+	err = DB.First(&user, id).Error
 	return
 }
 

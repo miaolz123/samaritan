@@ -38,7 +38,7 @@ func GetTrader(self User, id interface{}) (trader Trader, err error) {
 	if err != nil {
 		return
 	}
-	if user.Level > self.Level || user.ID != self.ID {
+	if user.Level >= self.Level && user.ID != self.ID {
 		err = fmt.Errorf("Insufficient permissions")
 	}
 	if trader.StrategyID > 0 {
@@ -46,6 +46,8 @@ func GetTrader(self User, id interface{}) (trader Trader, err error) {
 			return
 		}
 	}
+	err = DB.Raw(`SELECT e.* FROM exchanges e, trader_exchanges r WHERE r.trader_id
+		= ? AND e.id = r.exchange_id`, trader.ID).Scan(&trader.Exchanges).Error
 	return
 }
 
@@ -67,6 +69,10 @@ func GetTraders(self User) (traders []Trader, err error) {
 			if err = DB.Where("id = ?", t.StrategyID).First(&traders[i].Strategy).Error; err != nil {
 				return
 			}
+		}
+		if err = DB.Raw(`SELECT e.* FROM exchanges e, trader_exchanges r WHERE r.trader_id
+		= ? AND e.id = r.exchange_id`, t.ID).Scan(&traders[i].Exchanges).Error; err != nil {
+			return
 		}
 	}
 	return

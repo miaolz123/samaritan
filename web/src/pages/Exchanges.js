@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Button, Table, Modal, Form, Input, Select, notification } from 'antd';
+import { Tag, Button, Table, Modal, Form, Input, Select, Popconfirm, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
@@ -28,6 +28,7 @@ class Exchanges extends React.Component {
     this.handleRefresh = this.handleRefresh.bind(this);
     this.fetchExchanges = this.fetchExchanges.bind(this);
     this.postExchange = this.postExchange.bind(this);
+    this.deleteExchange = this.deleteExchange.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
@@ -78,6 +79,27 @@ class Exchanges extends React.Component {
         if (response.data.success) {
           this.setState({ infoModal: false });
           this.props.form.resetFields();
+          this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        }
+      });
+  }
+
+  deleteExchange(id) {
+    axios.delete(`${config.api}/exchange?id=${id}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        if (response.data.success) {
           this.fetchExchanges(config.api + this.state.fetchExchangesUrl);
         } else {
           notification['error']({
@@ -181,6 +203,15 @@ class Exchanges extends React.Component {
       dataIndex: 'UpdatedAt',
       render: text => text.substr(0, 19),
       sorter: true,
+    }, {
+      title: 'Action',
+      key: 'action',
+      render: (text, record) => <Popconfirm title="Are you sure to delete it ?" onConfirm={this.deleteExchange.bind(this, record.ID)}>
+        <Button
+          icon="delete"
+          title="Delete"
+        />
+      </Popconfirm>,
     }];
     const formItemLayout = {
       labelCol: { span: 7 },

@@ -15,6 +15,8 @@ type Log struct {
 	Price        float64
 	Amount       float64
 	Message      string `gorm:"type:text"`
+
+	Time string `gorm:"-"`
 }
 
 // Logger struct
@@ -61,7 +63,6 @@ func (l Logger) Log(method int, price, amount float64, messages ...interface{}) 
 			Amount:       amount,
 			Message:      message,
 		}
-		fmt.Println(log)
 		DB.Create(&log)
 	}()
 }

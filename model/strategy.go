@@ -1,12 +1,16 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"fmt"
+
+	"github.com/jinzhu/gorm"
+)
 
 // Strategy struct
 type Strategy struct {
 	gorm.Model
 	UserID      uint   `gorm:"index"`
-	Name        string `gorm:"type:varchar(200);unique_index"`
+	Name        string `gorm:"type:varchar(200)"`
 	Description string `gorm:"type:text"`
 	Script      string `gorm:"type:text"`
 }
@@ -22,5 +26,20 @@ func GetStrategies(self User) (strategies []Strategy, err error) {
 		userIDs = append(userIDs, u.ID)
 	}
 	err = DB.Where("user_id in (?)", userIDs).Find(&strategies).Error
+	return
+}
+
+// GetStrategy ...
+func GetStrategy(self User, id interface{}) (strategy Strategy, err error) {
+	if err = DB.First(&strategy, id).Error; err != nil {
+		return
+	}
+	user, err := GetUserByID(strategy.UserID)
+	if err != nil {
+		return
+	}
+	if user.Level >= self.Level && user.ID != self.ID {
+		err = fmt.Errorf("Insufficient permissions")
+	}
 	return
 }

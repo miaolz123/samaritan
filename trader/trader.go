@@ -28,6 +28,10 @@ func Run(trader model.Trader) (err error) {
 	if err != nil {
 		return
 	}
+	if trader.StrategyID <= 0 {
+		err = fmt.Errorf("Please select a strategy")
+		return
+	}
 	if err = model.DB.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
 		return
 	}
@@ -75,6 +79,19 @@ func Run(trader model.Trader) (err error) {
 		trader.Logger.Log(constant.INFO, 0.0, 0.0, strings.TrimSuffix(message, ", "))
 		return otto.UndefinedValue()
 	})
+	trader.Ctx.Set("LogProfit", func(call otto.FunctionCall) otto.Value {
+		profit := 0.0
+		message := ""
+		for i, a := range call.ArgumentList {
+			if i == 0 {
+				profit = conver.Float64Must(a)
+				continue
+			}
+			message += fmt.Sprintf("%+v, ", a)
+		}
+		trader.Logger.Log(constant.PROFIT, 0.0, profit, strings.TrimSuffix(message, ", "))
+		return otto.UndefinedValue()
+	})
 	trader.Ctx.Set("Sleep", func(call otto.FunctionCall) otto.Value {
 		if t := conver.Int64Must(call.Argument(0).String()); t > 0 {
 			time.Sleep(time.Duration(t * 1000000))
@@ -92,8 +109,10 @@ func Run(trader model.Trader) (err error) {
 			Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader stop running")
 		}()
 		trader.Status = 1
-		Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader us running")
-		trader.Ctx.Run(trader.Strategy.Script)
+		Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader is running")
+		if _, err := trader.Ctx.Run(trader.Strategy.Script); err != nil {
+			Executor[trader.ID].Logger.Log(constant.ERROR, 0.0, 0.0, err)
+		}
 	}()
 	Executor[trader.ID] = &trader
 	return
@@ -111,4 +130,13 @@ func Stop(trader model.Trader) (err error) {
 	}
 	Executor[trader.ID].Status = 0
 	return
+}
+
+// Clean ...
+func Clean(userID uint) {
+	for _, t := range Executor {
+		if t.UserID == userID {
+			Stop(*t)
+		}
+	}
 }
