@@ -17,9 +17,10 @@ type Exchange interface {
 	Log(...interface{})
 	GetMainStock() string
 	SetMainStock(stock string) string
+	Simulate(balance, btc, ltc interface{}) bool
 	GetAccount() interface{}
-	Buy(stockType string, price, amount float64, msgs ...interface{}) interface{}
-	Sell(stockType string, price, amount float64, msgs ...interface{}) interface{}
+	Buy(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
+	Sell(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
 	GetOrder(stockType, id string) interface{}
 	CancelOrder(order Order) bool
 	GetOrders(stockType string) []Order

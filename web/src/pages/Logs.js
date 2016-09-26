@@ -102,7 +102,6 @@ class Logs extends React.Component {
     const { tableData, windowHeight } = this.state;
     const exchangeTypes = config.exchangeTypes.map(t => ({ text: t, value: `'${t}'` }));
     const logTypes = keys(config.logTypes).map(k => ({ text: config.logTypes[k], value: k }));
-    exchangeTypes.push({ text: 'globle', value: "''" });
     const columns = [{
       title: 'Time',
       dataIndex: 'Time',
@@ -112,7 +111,7 @@ class Logs extends React.Component {
       dataIndex: 'ExchangeType',
       filters: exchangeTypes,
       width: '15%',
-      render: text => text ? <Tag color="blue">{text}</Tag> : <Tag>globle</Tag>,
+      render: text => text && <Tag color={text === 'global' ? '' : 'blue'}>{text}</Tag>,
     }, {
       title: 'Type',
       dataIndex: 'Type',
@@ -125,10 +124,12 @@ class Logs extends React.Component {
       title: 'Price',
       dataIndex: 'Price',
       width: '10%',
+      render: text => text === 0.0 ? '' : text.toFixed(3),
     }, {
       title: 'Amount',
       dataIndex: 'Amount',
       width: '10%',
+      render: text => text === 0.0 ? '' : text.toFixed(3),
     }, {
       title: 'Message',
       dataIndex: 'Message',

@@ -8,6 +8,9 @@ const (
 	BUY    = 2
 	SELL   = 3
 	CANCEL = 4
+	// stockType : ["BTC", "LTC"]
+	BTC = "BTC"
+	LTC = "LTC"
 )
 
 var (

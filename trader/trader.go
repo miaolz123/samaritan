@@ -2,10 +2,7 @@ package trader
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
-	"github.com/miaolz123/conver"
 	"github.com/miaolz123/samaritan/api"
 	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
@@ -41,7 +38,7 @@ func Run(trader model.Trader) (err error) {
 	}
 	trader.Logger = model.Logger{
 		TraderID:     trader.ID,
-		ExchangeType: "",
+		ExchangeType: "global",
 	}
 	trader.Ctx = otto.New()
 	trader.Ctx.Interrupt = make(chan func(), 1)
@@ -63,43 +60,19 @@ func Run(trader model.Trader) (err error) {
 			exchanges = append(exchanges, api.NewOKCoinCn(opt))
 		case "huobi":
 			exchanges = append(exchanges, api.NewHuobi(opt))
-			// default:
-			// 	exchanges = append(exchanges, api.NewHuobi(opt))
 		}
 	}
 	if len(exchanges) == 0 {
 		err = fmt.Errorf("Please add at least one exchange")
 		return
 	}
-	trader.Ctx.Set("Log", func(call otto.FunctionCall) otto.Value {
-		message := ""
-		for _, a := range call.ArgumentList {
-			message += fmt.Sprintf("%+v, ", a)
-		}
-		trader.Logger.Log(constant.INFO, 0.0, 0.0, strings.TrimSuffix(message, ", "))
-		return otto.UndefinedValue()
-	})
-	trader.Ctx.Set("LogProfit", func(call otto.FunctionCall) otto.Value {
-		profit := 0.0
-		message := ""
-		for i, a := range call.ArgumentList {
-			if i == 0 {
-				profit = conver.Float64Must(a)
-				continue
-			}
-			message += fmt.Sprintf("%+v, ", a)
-		}
-		trader.Logger.Log(constant.PROFIT, 0.0, profit, strings.TrimSuffix(message, ", "))
-		return otto.UndefinedValue()
-	})
-	trader.Ctx.Set("Sleep", func(call otto.FunctionCall) otto.Value {
-		if t := conver.Int64Must(call.Argument(0).String()); t > 0 {
-			time.Sleep(time.Duration(t * 1000000))
-		}
-		return otto.UndefinedValue()
-	})
+	g := global{trader: trader}
+	trader.Ctx.Set("Global", g)
+	trader.Ctx.Set("G", g)
 	trader.Ctx.Set("Exchange", exchanges[0])
+	trader.Ctx.Set("E", exchanges[0])
 	trader.Ctx.Set("Exchanges", exchanges)
+	trader.Ctx.Set("Es", exchanges)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil && err != errHalt {

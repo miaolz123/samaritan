@@ -2,7 +2,7 @@ import './styles/app.css';
 
 import React from 'react';
 import { render } from 'react-dom';
-import { LocaleProvider, Menu, Icon, Modal, Form, Input, notification } from 'antd';
+import { LocaleProvider, Menu, Icon } from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
 import axios from 'axios';
 
@@ -12,24 +12,33 @@ import Users from './pages/Users';
 import Exchanges from './pages/Exchanges';
 import Strategies from './pages/Strategies';
 import Traders from './pages/Traders';
+import Login from './pages/Login';
 
-const FormItem = Form.Item;
-
-class Example extends React.Component {
+class App extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
+      token: localStorage.getItem('token'),
+      loading: true,
       collapse: false,
       current: 'traders',
-      loginModalShow: false,
+      loginShow: false,
     };
 
     this.handleClick = this.handleClick.bind(this);
     this.renderMain = this.renderMain.bind(this);
-    this.handleLoginOk = this.handleLoginOk.bind(this);
     this.reLogin = this.reLogin.bind(this);
     this.onCollapseChange = this.onCollapseChange.bind(this);
+  }
+
+  componentWillMount() {
+    axios.post(`${config.api}/token`, null, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        this.setState({ loading: false });
+      }, (response) => {
+        this.setState({ loginShow: true });
+      });
   }
 
   handleClick(e) {
@@ -59,31 +68,8 @@ class Example extends React.Component {
     }
   }
 
-  handleLoginOk() {
-    this.props.form.validateFields((errors, values) => {
-      if (errors) {
-        return;
-      }
-
-      axios.post(`${config.api}/login`, values)
-        .then((response) => {
-          if (response.data.success) {
-            localStorage.setItem('token', response.data.data);
-            this.setState({ loginModalShow: false });
-            window.location.href = window.location.href;
-          } else {
-            notification['error']({
-              message: 'Error',
-              description: String(response.data.msg),
-              duration: null,
-            });
-          }
-        }, () => {});
-    });
-  }
-
   reLogin() {
-    this.setState({ loginModalShow: true });
+    this.setState({ loginShow: true });
   }
 
   onCollapseChange() {
@@ -93,12 +79,15 @@ class Example extends React.Component {
   }
 
   render() {
-    const { collapse } = this.state;
-    const { getFieldProps } = this.props.form;
-    const formItemLayout = {
-      labelCol: { span: 7 },
-      wrapperCol: { span: 12 },
-    };
+    const { loading, collapse, loginShow } = this.state;
+
+    if (loginShow) {
+      return (<LocaleProvider locale={enUS}>
+          <Login />
+        </LocaleProvider>);
+    } else if (loading) {
+      return null;
+    }
 
     return (
       <LocaleProvider locale={enUS}>
@@ -141,38 +130,10 @@ class Example extends React.Component {
               <a href="https://github.com/miaolz123/samaritan">Samaritan</a> © 2016
             </div>
           </div>
-          <Modal
-            maskClosable={false}
-            width="50%"
-            title='Login'
-            visible={this.state.loginModalShow}
-            onOk={this.handleLoginOk}
-          >
-            <Form horizontal>
-              <FormItem
-                {...formItemLayout}
-                label="Username"
-              >
-                <Input {...getFieldProps('name', {
-                  rules: [{ required: true }],
-                })} />
-              </FormItem>
-              <FormItem
-                {...formItemLayout}
-                label="Password"
-              >
-                <Input type="password" {...getFieldProps('password', {
-                  rules: [{ required: true }],
-                })} />
-              </FormItem>
-            </Form>
-          </Modal>
         </div>
       </LocaleProvider>
     );
   }
 }
-
-const App = Form.create()(Example);
 
 render(<App />, document.getElementById('react-app'));

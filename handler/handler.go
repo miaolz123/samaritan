@@ -46,6 +46,7 @@ func init() {
 	server.Use(logger.New())
 	server.Use(recovery.New())
 	server.Post("/login", userLogin)
+	server.Post("/token", jwtmid.Serve, token)
 	server.API("/user", userHandler{}, jwtmid.Serve)
 	server.API("/exchange", exchangeHandler{}, jwtmid.Serve)
 	server.API("/strategy", strategyHandler{}, jwtmid.Serve)

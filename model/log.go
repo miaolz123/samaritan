@@ -1,8 +1,12 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
+
+	"github.com/miaolz123/samaritan/constant"
 )
 
 // Log struct
@@ -52,6 +56,16 @@ func (l Logger) Log(method int, price, amount float64, messages ...interface{}) 
 	go func() {
 		message := ""
 		for _, m := range messages {
+			if method != constant.ERROR {
+				v := reflect.ValueOf(m)
+				switch v.Kind() {
+				case reflect.Struct, reflect.Map, reflect.Slice:
+					if bs, err := json.Marshal(m); err == nil {
+						message += string(bs)
+						continue
+					}
+				}
+			}
 			message += fmt.Sprintf("%+v", m)
 		}
 		log := Log{

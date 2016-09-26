@@ -59,6 +59,11 @@ func userLogin(c *iris.Context) {
 	c.JSON(iris.StatusOK, resp)
 }
 
+// Post /token
+func token(c *iris.Context) {
+	c.JSON(iris.StatusOK, iris.Map{})
+}
+
 // Get /user
 func (c userHandler) Get() {
 	resp := iris.Map{

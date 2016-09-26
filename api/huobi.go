@@ -21,6 +21,10 @@ type Huobi struct {
 	host         string
 	logger       model.Logger
 	option       Option
+
+	simulate bool
+	account  Account
+	orders   map[string]Order
 }
 
 // NewHuobi : create an exchange struct of okcoin.cn
@@ -35,7 +39,7 @@ func NewHuobi(opt Option) *Huobi {
 		option:       opt,
 	}
 	if _, ok := e.stockMap[e.option.MainStock]; !ok {
-		e.option.MainStock = "BTC"
+		e.option.MainStock = constant.BTC
 	}
 	return &e
 }
@@ -73,8 +77,44 @@ func (e *Huobi) getAuthJSON(url string, params []string, optionals ...string) (j
 	return simplejson.NewJson(resp)
 }
 
+// Simulate : set the account of simulation
+func (e *Huobi) Simulate(balance, btc, ltc interface{}) bool {
+	e.simulate = true
+	// e.orders = make(map[string]Order)
+	e.account = Account{
+		Balance: conver.Float64Must(balance),
+		BTC:     conver.Float64Must(btc),
+		LTC:     conver.Float64Must(ltc),
+	}
+	return true
+}
+
 // GetAccount : get the account detail of this exchange
 func (e *Huobi) GetAccount() interface{} {
+	if e.simulate {
+		e.account.Total = e.account.Balance + e.account.FrozenBalance
+		ticker, err := e.getTicker(constant.BTC, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
+			return false
+		}
+		e.account.Total += ticker.Mid * (e.account.BTC + e.account.FrozenBTC)
+		ticker, err = e.getTicker(constant.LTC, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
+			return false
+		}
+		e.account.Total += ticker.Mid * (e.account.LTC + e.account.FrozenLTC)
+		e.account.Net = e.account.Total
+		if e.option.MainStock == constant.LTC {
+			e.account.Stock = e.account.LTC
+			e.account.FrozenStock = e.account.FrozenLTC
+		} else {
+			e.account.Stock = e.account.BTC
+			e.account.FrozenStock = e.account.FrozenBTC
+		}
+		return e.account
+	}
 	params := []string{
 		"method=get_account_info",
 	}
@@ -109,10 +149,35 @@ func (e *Huobi) GetAccount() interface{} {
 }
 
 // Buy : buy stocks
-func (e *Huobi) Buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+func (e *Huobi) Buy(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+	price := conver.Float64Must(_price)
+	amount := conver.Float64Must(_amount)
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
 		return false
+	}
+	if e.simulate {
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
+			return false
+		}
+		if price < ticker.Sell {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, order price must be greater than market sell price")
+			return false
+		}
+		if price*amount > e.account.Balance {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, balance is not enough")
+			return false
+		}
+		e.account.Balance -= ticker.Sell * amount
+		if stockType == constant.LTC {
+			e.account.LTC += amount
+		} else {
+			e.account.BTC += amount
+		}
+		e.logger.Log(constant.BUY, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
 	}
 	params := []string{
 		"coin_type=" + e.stockMap[stockType],
@@ -138,10 +203,39 @@ func (e *Huobi) Buy(stockType string, price, amount float64, msgs ...interface{}
 }
 
 // Sell : sell stocks
-func (e *Huobi) Sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+	price := conver.Float64Must(_price)
+	amount := conver.Float64Must(_amount)
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
 		return false
+	}
+	if e.simulate {
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
+			return false
+		}
+		if price > ticker.Buy {
+			e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, order price must be lesser than market buy price")
+			return false
+		}
+		if stockType == constant.LTC {
+			if amount > e.account.LTC {
+				e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, stock is not enough")
+				return false
+			}
+			e.account.LTC -= amount
+		} else {
+			if amount > e.account.BTC {
+				e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, stock is not enough")
+				return false
+			}
+			e.account.BTC -= amount
+		}
+		e.account.Balance += ticker.Buy * amount
+		e.logger.Log(constant.SELL, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
 	}
 	params := []string{
 		"coin_type=" + e.stockMap[stockType],
@@ -168,6 +262,9 @@ func (e *Huobi) Sell(stockType string, price, amount float64, msgs ...interface{
 
 // GetOrder : get details of an order
 func (e *Huobi) GetOrder(stockType, id string) interface{} {
+	if e.simulate {
+		return Order{ID: id, StockType: stockType}
+	}
 	params := []string{
 		"method=order_info",
 		"coin_type=" + e.stockMap[stockType],
@@ -194,6 +291,10 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 
 // CancelOrder : cancel an order
 func (e *Huobi) CancelOrder(order Order) bool {
+	if e.simulate {
+		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
+		return true
+	}
 	params := []string{
 		"method=cancel_order",
 		"coin_type=" + e.stockMap[order.StockType],
@@ -209,7 +310,7 @@ func (e *Huobi) CancelOrder(order Order) bool {
 		return false
 	}
 	if json.Get("result").MustString() == "success" {
-		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, fmt.Sprintf("%+v", order))
+		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
 		return true
 	}
 	e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", json.Get("msg").Interface())
@@ -220,6 +321,9 @@ func (e *Huobi) CancelOrder(order Order) bool {
 func (e *Huobi) GetOrders(stockType string) (orders []Order) {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
+		return
+	}
+	if e.simulate {
 		return
 	}
 	params := []string{
@@ -256,6 +360,9 @@ func (e *Huobi) GetTrades(stockType string) (orders []Order) {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
 		return
 	}
+	if e.simulate {
+		return
+	}
 	params := []string{
 		"method=get_new_deal_orders",
 		"coin_type=" + e.stockMap[stockType],
@@ -284,28 +391,26 @@ func (e *Huobi) GetTrades(stockType string) (orders []Order) {
 	return orders
 }
 
-// GetTicker : get market ticker & depth
-func (e *Huobi) GetTicker(stockType string, sizes ...int) interface{} {
+// getTicker : get market ticker & depth
+func (e *Huobi) getTicker(stockType string, sizes ...int) (ticker Ticker, err error) {
 	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, unrecognized stockType: ", stockType)
-		return false
+		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
+		return
 	}
 	size := 20
 	if len(sizes) > 0 && sizes[0] > 20 {
 		size = sizes[0]
 	}
-
 	resp, err := get(fmt.Sprint("http://api.huobi.com/staticmarket/depth_", strings.ToLower(stockType), "_", size, ".js"))
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, ", err)
-		return false
+		err = fmt.Errorf("GetTicker() error, %+v", err)
+		return
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, ", err)
-		return false
+		err = fmt.Errorf("GetTicker() error, %+v", err)
+		return
 	}
-	ticker := Ticker{}
 	depthsJSON := json.Get("bids")
 	for i := 0; i < len(depthsJSON.MustArray()); i++ {
 		depthJSON := depthsJSON.GetIndex(i)
@@ -323,12 +428,22 @@ func (e *Huobi) GetTicker(stockType string, sizes ...int) interface{} {
 		})
 	}
 	if len(ticker.Bids) < 1 || len(ticker.Asks) < 1 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTicker() error, can not get enough Bids or Asks")
-		return false
+		err = fmt.Errorf("GetTicker() error, can not get enough Bids or Asks")
+		return
 	}
 	ticker.Buy = ticker.Bids[0].Price
 	ticker.Sell = ticker.Asks[0].Price
 	ticker.Mid = (ticker.Buy + ticker.Sell) / 2
+	return
+}
+
+// GetTicker : get market ticker & depth
+func (e *Huobi) GetTicker(stockType string, sizes ...int) interface{} {
+	ticker, err := e.getTicker(stockType, sizes...)
+	if err != nil {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, err)
+		return false
+	}
 	return ticker
 }
 

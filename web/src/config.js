@@ -1,6 +1,6 @@
 module.exports = {
   api: 'http://127.0.0.1:9876',
-  exchangeTypes: ['okcoin.cn', 'huobi'],
+  exchangeTypes: ['okcoin.cn', 'huobi', 'global'],
   logTypes: {
     '-1': 'ERROR',
     '0': 'INFO',
