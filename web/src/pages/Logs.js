@@ -112,14 +112,14 @@ class Logs extends React.Component {
       dataIndex: 'ExchangeType',
       filters: exchangeTypes,
       width: '15%',
-      render: text => text ? <Tag color="blue">{text}</Tag> : <Tag color="green">globle</Tag>,
+      render: text => text ? <Tag color="blue">{text}</Tag> : <Tag>globle</Tag>,
     }, {
       title: 'Type',
       dataIndex: 'Type',
       filters: logTypes,
       width: '10%',
       render: text => <Tag
-        color={text < 0 ? 'red' : text < 1 ? 'green' : text < 2 ? 'yellow' : 'blue'}
+        color={text < 0 ? 'red' : text < 1 ? '' : text < 2 ? 'yellow' : 'blue'}
       >{config.logTypes[text]}</Tag>,
     }, {
       title: 'Price',
@@ -137,7 +137,7 @@ class Logs extends React.Component {
     return (
       <div>
         <div style={{ marginBottom: 16, textAlign: 'right' }}>
-          <Button style={{ marginRight: 5 }} type="primary">Go Back</Button>
+          <Button style={{ marginRight: 5 }} type="primary" onClick={this.props.goBack}>Go Back</Button>
           <Button style={{ marginRight: 10 }} onClick={this.handleRefresh}>Refresh</Button>
           <Tag>Total: {this.state.pagination.total}</Tag>
         </div>

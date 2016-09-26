@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"log"
+
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-ini/ini"
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/iris-contrib/middleware/logger"
@@ -13,8 +16,6 @@ var (
 	signKey = []byte("XXXXXXXXXXXXXXXX") // JWT sign key
 )
 
-// Server ...
-var Server = iris.New()
 var jwtmid = jwtmiddleware.New(jwtmiddleware.Config{
 	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 		return []byte(signKey), nil
@@ -23,7 +24,12 @@ var jwtmid = jwtmiddleware.New(jwtmiddleware.Config{
 })
 
 func init() {
-	Server.Use(cors.New(cors.Options{
+	conf, err := ini.Load("config.ini")
+	if err != nil {
+		log.Fatalln("Load config.ini error:", err)
+	}
+	server := iris.New()
+	server.Use(cors.New(cors.Options{
 		AllowedHeaders: []string{
 			"Origin",
 			"X-Requested-With",
@@ -37,15 +43,16 @@ func init() {
 			"Delete",
 		},
 	}))
-	Server.Use(logger.New())
-	Server.Use(recovery.New())
-	Server.Post("/login", userLogin)
-	Server.API("/user", userHandler{}, jwtmid.Serve)
-	Server.API("/exchange", exchangeHandler{}, jwtmid.Serve)
-	Server.API("/strategy", strategyHandler{}, jwtmid.Serve)
-	Server.API("/trader", traderHandler{}, jwtmid.Serve)
-	Server.Post("/run", jwtmid.Serve, traderRun)
-	Server.Post("/stop", jwtmid.Serve, traderStop)
-	Server.Post("/logs", jwtmid.Serve, logs)
-	Server.StaticWeb("/web", "web/dist", 1)
+	server.Use(logger.New())
+	server.Use(recovery.New())
+	server.Post("/login", userLogin)
+	server.API("/user", userHandler{}, jwtmid.Serve)
+	server.API("/exchange", exchangeHandler{}, jwtmid.Serve)
+	server.API("/strategy", strategyHandler{}, jwtmid.Serve)
+	server.API("/trader", traderHandler{}, jwtmid.Serve)
+	server.Post("/run", jwtmid.Serve, traderRun)
+	server.Post("/stop", jwtmid.Serve, traderStop)
+	server.Post("/logs", jwtmid.Serve, logs)
+	server.StaticWeb("/web", "web/dist", 1)
+	server.Listen(":" + conf.Section("").Key("ServerPort").String())
 }

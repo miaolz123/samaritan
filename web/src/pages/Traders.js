@@ -43,6 +43,7 @@ class Traders extends React.Component {
     this.handleInfoOk = this.handleInfoOk.bind(this);
     this.handleInfoCancel = this.handleInfoCancel.bind(this);
     this.handleTraderAction = this.handleTraderAction.bind(this);
+    this.handleGoBack = this.handleGoBack.bind(this);
   }
 
   componentWillMount() {
@@ -298,11 +299,15 @@ class Traders extends React.Component {
       });
   }
 
+  handleGoBack() {
+    this.setState({ showLogs: false });
+  }
+
   render() {
     const { info, tableData, strategies, exchanges, selectedExchanges, showLogs } = this.state;
 
     if (showLogs) {
-      return <Logs trader={info} />;
+      return <Logs trader={info} goBack={this.handleGoBack} />;
     }
 
     const { getFieldProps } = this.props.form;
