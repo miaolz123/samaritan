@@ -45,6 +45,7 @@ func init() {
 	}))
 	server.Use(logger.New())
 	server.Use(recovery.New())
+	server.Get("/", web)
 	server.Post("/login", userLogin)
 	server.Post("/token", jwtmid.Serve, token)
 	server.API("/user", userHandler{}, jwtmid.Serve)
@@ -54,6 +55,14 @@ func init() {
 	server.Post("/run", jwtmid.Serve, traderRun)
 	server.Post("/stop", jwtmid.Serve, traderStop)
 	server.Post("/logs", jwtmid.Serve, logs)
-	server.StaticWeb("/web", "web/dist", 1)
+	server.Get("/dist/:filename", web)
 	server.Listen(":" + conf.Section("").Key("ServerPort").String())
+}
+
+func web(c *iris.Context) {
+	filename := c.Param("filename")
+	if filename == "" {
+		filename = "index.html"
+	}
+	c.ServeFile("web/dist/"+filename, true)
 }

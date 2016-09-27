@@ -26,3 +26,4 @@ _testmain.go
 # Personal
 .vscode
 data.db
+web/dist/
