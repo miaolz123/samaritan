@@ -28,3 +28,4 @@ _testmain.go
 *.db
 web/dist/
 custom/*.ini
+dist.zip
