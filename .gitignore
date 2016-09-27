@@ -25,5 +25,6 @@ _testmain.go
 
 # Personal
 .vscode
-data.db
+*.db
 web/dist/
+custom/*.ini

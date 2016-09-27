@@ -38,12 +38,21 @@ class Traders extends React.Component {
     this.getStrategyAndExchange = this.getStrategyAndExchange.bind(this);
     this.handleInfoShow = this.handleInfoShow.bind(this);
     this.handleInfoAddShow = this.handleInfoAddShow.bind(this);
+    this.handleStrategyChange = this.handleStrategyChange.bind(this);
     this.handleExchangeChange = this.handleExchangeChange.bind(this);
     this.handleExchangeClose = this.handleExchangeClose.bind(this);
     this.handleInfoOk = this.handleInfoOk.bind(this);
     this.handleInfoCancel = this.handleInfoCancel.bind(this);
     this.handleTraderAction = this.handleTraderAction.bind(this);
     this.handleGoBack = this.handleGoBack.bind(this);
+  }
+
+  componentWillUpdate(nextProps, nextState) {
+    const { showLogs } = this.state;
+
+    if (showLogs && !nextState.showLogs) {
+      this.handleRefresh();
+    }
   }
 
   componentWillMount() {
@@ -59,11 +68,11 @@ class Traders extends React.Component {
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
+        this.setState({ loading: false });
         if (response.data.success) {
           const { data } = response.data;
 
           this.setState({
-            loading: false,
             pagination: { total: data.length },
             tableData: data,
           });
@@ -75,10 +84,17 @@ class Traders extends React.Component {
           });
         }
       }, (response) => {
+        this.setState({ loading: false });
         if (String(response).indexOf('401') > 0) {
           this.setState({ token: '' });
           localStorage.removeItem('token');
           this.props.reLogin();
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response),
+            duration: null,
+          });
         }
       });
   }
@@ -222,6 +238,19 @@ class Traders extends React.Component {
     });
   }
 
+  handleStrategyChange(value) {
+    const { getFieldValue, setFieldsValue } = this.props.form;
+    const { strategies } = this.state;
+
+    if (getFieldValue('Name') === '') {
+      strategies.map(s => {
+        if (String(s.ID) === value) {
+          setFieldsValue({ Name: `${s.Name}@${new Date().toLocaleDateString()}` });
+        }
+      });
+    }
+  }
+
   handleExchangeChange(value) {
     const { selectedExchanges, exchanges } = this.state;
 
@@ -268,13 +297,13 @@ class Traders extends React.Component {
     this.props.form.resetFields();
   }
 
-  handleTraderAction(action, id) {
+  handleTraderAction(action, info) {
     const descriptionMap = {
       run: 'Run the trader success',
       stop: 'Stop the trader success',
     };
 
-    axios.post(`${config.api}/${action}`, {ID: id}, { headers: { Authorization: `Bearer ${this.state.token}` } })
+    axios.post(`${config.api}/${action}`, info, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
         if (response.data.success) {
           notification['success']({
@@ -282,6 +311,9 @@ class Traders extends React.Component {
             description: descriptionMap[action],
             duration: 2,
           });
+          if (action === 'run') {
+            this.setState({ showLogs: true, info });
+          }
         } else {
           notification['error']({
             message: 'Error',
@@ -339,22 +371,24 @@ class Traders extends React.Component {
           title="Logs"
           onClick={() => this.setState({ showLogs: true, info: record })}
         />
-        <Button
-          disabled={status > 0}
-          icon="caret-circle-o-right"
-          title="Run"
-          onClick={this.handleTraderAction.bind(this, 'run', record.ID)}
-        />
+        <Popconfirm
+          title="Are you sure to RUN it ?"
+          onConfirm={this.handleTraderAction.bind(this, 'run', record)}
+        >
+          <Button disabled={status > 0} icon="caret-circle-o-right" title="Run" />
+        </Popconfirm>
         <Button
           disabled={!(status > 0)}
           icon="pause-circle-o"
           title="Stop"
-          onClick={this.handleTraderAction.bind(this, 'stop', record.ID)}
+          onClick={this.handleTraderAction.bind(this, 'stop', record)}
         />
-        <Popconfirm title="Are you sure to delete it ?" onConfirm={this.deleteTrader.bind(this, record.ID)}><Button
-          icon="delete"
-          title="Delete"
-        /></Popconfirm>
+        <Popconfirm
+          title="Are you sure to DELETE it ?"
+          onConfirm={this.deleteTrader.bind(this, record.ID)}
+        >
+          <Button icon="delete" title="Delete" />
+        </Popconfirm>
       </Button.Group>),
     }];
     const formItemLayout = {
@@ -399,6 +433,7 @@ class Traders extends React.Component {
               label="Strategy"
             >
               <Select
+                onSelect={this.handleStrategyChange}
                 notFoundContent="Please add a strategy at first"
                 {...getFieldProps('Strategy', {
                   rules: [{ required: true }],

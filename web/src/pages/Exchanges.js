@@ -49,11 +49,11 @@ class Exchanges extends React.Component {
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
+        this.setState({ loading: false });
         if (response.data.success) {
           const { data } = response.data;
 
           this.setState({
-            loading: false,
             pagination: { total: data.length },
             tableData: data,
           });
@@ -65,10 +65,17 @@ class Exchanges extends React.Component {
           });
         }
       }, (response) => {
+        this.setState({ loading: false });
         if (String(response).indexOf('401') > 0) {
           this.setState({ token: '' });
           localStorage.removeItem('token');
           this.props.reLogin();
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response),
+            duration: null,
+          });
         }
       });
   }
@@ -217,6 +224,13 @@ class Exchanges extends React.Component {
       labelCol: { span: 7 },
       wrapperCol: { span: 12 },
     };
+    const exchangeTypes = [];
+
+    config.exchangeTypes.map(t => {
+      if (t !== 'global') {
+        return exchangeTypes.push(<Option key={t} value={t}>{t}</Option>);
+      }
+    });
 
     return (
       <div>
@@ -256,9 +270,7 @@ class Exchanges extends React.Component {
               <Select {...getFieldProps('Type', {
                 rules: [{ required: true }],
                 initialValue: info.Type,
-              })}>
-                {config.exchangeTypes.map(t => <Option key={t} value={t}>{t}</Option>)}
-              </Select>
+              })}>{exchangeTypes}</Select>
             </FormItem>
             <FormItem
               {...formItemLayout}

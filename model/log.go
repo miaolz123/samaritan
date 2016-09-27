@@ -29,28 +29,6 @@ type Logger struct {
 	ExchangeType string
 }
 
-// GetLogs ...
-func GetLogs(self User, traderID interface{}, page, amount int64) (logs []Log, err error) {
-	trader, err := GetTrader(self, traderID)
-	if err != nil {
-		return
-	}
-	user, err := GetUserByID(trader.UserID)
-	if err != nil {
-		return
-	}
-	if user.ID != self.ID && user.Level >= self.Level {
-		return
-	}
-	if amount < 1 {
-		amount = 20
-	} else if amount > 1000 {
-		amount = 1000
-	}
-	err = DB.Where("trader_id = ?", traderID).Order("timestamp DESC").Limit(amount).Offset(page * amount).Find(&logs).Error
-	return
-}
-
 // Log ...
 func (l Logger) Log(method int, price, amount float64, messages ...interface{}) {
 	go func() {

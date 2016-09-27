@@ -28,7 +28,7 @@ func GetUsers(self User, order ...string) (users []User, err error) {
 	if len(order) > 0 && order[0] != "" {
 		orderKey = order[0]
 	}
-	err = DB.Order(orderKey).Where("level < ?", self.Level).Find(&users).Error
+	err = DB.Order(orderKey).Where("level < ?", self.Level).Order("id").Find(&users).Error
 	users = append([]User{self}, users...)
 	return
 }

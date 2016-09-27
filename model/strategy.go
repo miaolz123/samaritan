@@ -25,7 +25,7 @@ func GetStrategies(self User) (strategies []Strategy, err error) {
 	for _, u := range users {
 		userIDs = append(userIDs, u.ID)
 	}
-	err = DB.Where("user_id in (?)", userIDs).Find(&strategies).Error
+	err = DB.Where("user_id in (?)", userIDs).Order("id").Find(&strategies).Error
 	return
 }
 

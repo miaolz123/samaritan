@@ -58,13 +58,13 @@ class Logs extends React.Component {
     this.setState({ loading: true });
     axios.post(`${config.api}/logs`, { trader, pagination, filters }, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
+        this.setState({ loading: false });
         if (response.data.success) {
           const thisPagination = this.state.pagination;
           const { data, total } = response.data;
 
           thisPagination.total = total;
           this.setState({
-            loading: false,
             pagination: thisPagination,
             tableData: data,
           });
@@ -76,6 +76,7 @@ class Logs extends React.Component {
           });
         }
       }, (response) => {
+        this.setState({ loading: false });
         if (String(response).indexOf('401') > 0) {
           this.setState({ token: '' });
           localStorage.removeItem('token');

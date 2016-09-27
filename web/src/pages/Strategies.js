@@ -55,11 +55,11 @@ class Strategies extends React.Component {
 
     axios.get(url, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
+        this.setState({ loading: false });
         if (response.data.success) {
           const { data } = response.data;
 
           this.setState({
-            loading: false,
             pagination: { total: data.length },
             tableData: data,
           });
@@ -71,10 +71,17 @@ class Strategies extends React.Component {
           });
         }
       }, (response) => {
+        this.setState({ loading: false });
         if (String(response).indexOf('401') > 0) {
           this.setState({ token: '' });
           localStorage.removeItem('token');
           this.props.reLogin();
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response),
+            duration: null,
+          });
         }
       });
   }

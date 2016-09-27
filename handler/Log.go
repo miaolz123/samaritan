@@ -60,7 +60,6 @@ func logs(c *iris.Context) {
 	if len(req.Filters.Type) > 0 {
 		raw += fmt.Sprintf(" AND type IN (%v)", strings.Join(req.Filters.Type, ","))
 	}
-	raw += " ORDER BY timestamp DESC, id DESC"
 	total := struct {
 		Total int64
 	}{}
@@ -70,7 +69,8 @@ func logs(c *iris.Context) {
 		return
 	}
 	raw = strings.Replace(raw, "COUNT(*) total", "*", 1)
-	raw += fmt.Sprintf(" LIMIT %v OFFSET %v", req.Pagination.PageSize, req.Pagination.PageSize*(req.Pagination.Current-1))
+	raw += fmt.Sprintf(" ORDER BY timestamp DESC, id DESC LIMIT %v OFFSET %v",
+		req.Pagination.PageSize, req.Pagination.PageSize*(req.Pagination.Current-1))
 	logs := []model.Log{}
 	if err := model.DB.Raw(raw).Scan(&logs).Error; err != nil {
 		resp["msg"] = fmt.Sprint(err)

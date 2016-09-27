@@ -55,8 +55,10 @@ class Login extends React.Component {
       wrapperCol: { span: 6 },
     };
 
+    console.log(windowHeight);
+
     return (
-      <div style={{ paddingTop: windowHeight > 700 ? (windowHeight - 500) / 2 : windowHeight > 400 ? (windowHeight - 350) / 2 : 25 }}>
+      <div style={{ paddingTop: windowHeight > 600 ? (windowHeight - 500) / 2 : windowHeight > 400 ? (windowHeight - 350) / 2 : 25 }}>
         <h1 style={{
           margin: 24,
           fontSize: '30px',

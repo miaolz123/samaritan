@@ -5,33 +5,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-ini/ini"
 	"github.com/jinzhu/gorm"
-	// for data SQL
+	// for db SQL
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/miaolz123/samaritan/config"
 )
 
 var (
 	// DB Database
 	DB     *gorm.DB
-	dbType string
-	dbURL  string
+	dbType = config.String("dbtype")
+	dbURL  = config.String("dburl")
 )
 
 func init() {
-	conf, err := ini.Load("config.ini")
-	if err != nil {
-		log.Fatalln("Load config.ini error:", err)
-	}
-	dbType = conf.Section("").Key("DatabaseType").String()
-	dbURL = conf.Section("").Key("DatabaseURL").String()
+	var err error
 	DB, err = gorm.Open(strings.ToLower(dbType), dbURL)
 	if err != nil {
 		log.Printf("Connect to %v database error: %v\n", dbType, err)
 		dbType = "sqlite3"
-		dbURL = "data.db"
+		dbURL = "custom/data.db"
 		DB, err = gorm.Open(dbType, dbURL)
 		if err != nil {
 			log.Fatalln("Connect to database error:", err)
@@ -50,12 +45,13 @@ func init() {
 			log.Fatalln("Create admin error:", err)
 		}
 	}
+	DB.LogMode(false)
 	go ping()
 }
 
 func ping() {
 	for {
-		if err := DB.DB().Ping(); err != nil {
+		if err := DB.Exec("SELECT 1").Error; err != nil {
 			log.Println("Database ping error:", err)
 			if DB, err = gorm.Open(strings.ToLower(dbType), dbURL); err != nil {
 				log.Println("Retry connect to database error:", err)
