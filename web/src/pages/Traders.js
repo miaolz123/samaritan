@@ -342,7 +342,7 @@ class Traders extends React.Component {
       return <Logs trader={info} goBack={this.handleGoBack} />;
     }
 
-    const { getFieldProps } = this.props.form;
+    const { getFieldDecorator } = this.props.form;
     const columns = [{
       title: 'Name',
       dataIndex: 'Name',
@@ -423,24 +423,28 @@ class Traders extends React.Component {
               {...formItemLayout}
               label="Name"
             >
-              <Input {...getFieldProps('Name', {
+              {getFieldDecorator('Name', {
                 rules: [{ required: true }],
                 initialValue: info.Name,
-              })} />
+              })(
+                <Input />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="Strategy"
             >
-              <Select
-                onSelect={this.handleStrategyChange}
-                notFoundContent="Please add a strategy at first"
-                {...getFieldProps('Strategy', {
-                  rules: [{ required: true }],
-                  initialValue: info.StrategyID > 0 ? String(info.StrategyID) : '',
-                })}>
-                {strategies.map(s => <Option key={String(s.ID)} value={String(s.ID)}>{s.Name}</Option>)}
-              </Select>
+              {getFieldDecorator('Strategy', {
+                rules: [{ required: true }],
+                initialValue: info.StrategyID > 0 ? String(info.StrategyID) : '',
+              })(
+                <Select
+                  onSelect={this.handleStrategyChange}
+                  notFoundContent="Please add a strategy at first"
+                  >
+                  {strategies.map(s => <Option key={String(s.ID)} value={String(s.ID)}>{s.Name}</Option>)}
+                </Select>
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}

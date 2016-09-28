@@ -17,7 +17,9 @@ class Login extends React.Component {
   }
 
   handleOk(e) {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
     this.props.form.validateFields((errors, values) => {
       if (errors) {
         return;
@@ -50,7 +52,7 @@ class Login extends React.Component {
 
   render() {
     const { loading, windowHeight } = this.state;
-    const { getFieldProps } = this.props.form;
+    const { getFieldDecorator } = this.props.form;
     const formItemLayout = {
       labelCol: { span: 9 },
       wrapperCol: { span: 6 },
@@ -68,22 +70,21 @@ class Login extends React.Component {
             {...formItemLayout}
             label="Username"
           >
-            <Input
-              {...getFieldProps('Name', {
-                rules: [{ required: true }],
-              })}
-            />
+            {getFieldDecorator('Name', {
+              rules: [{ required: true }],
+            })(
+              <Input />
+            )}
           </Form.Item>
           <Form.Item
             {...formItemLayout}
             label="Password"
           >
-            <Input
-              type="password"
-              {...getFieldProps('Password', {
-                rules: [{ required: true }],
-              })}
-            />
+            {getFieldDecorator('Password', {
+              rules: [{ required: true }],
+            })(
+              <Input type="password" />
+            )}
           </Form.Item>
           <Form.Item wrapperCol={{ span: 15, offset: 9 }} style={{ marginTop: 24 }}>
             <Button type="primary" htmlType="submit" loading={loading}>Submit</Button>

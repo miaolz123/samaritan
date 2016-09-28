@@ -7,7 +7,9 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
+	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
+	"github.com/miaolz123/samaritan/trader"
 )
 
 type pagination struct {
@@ -83,5 +85,50 @@ func logs(c *iris.Context) {
 	resp["success"] = true
 	resp["total"] = total.Total
 	resp["data"] = logs
+	c.JSON(iris.StatusOK, resp)
+}
+
+// Delete /logs
+func logsDelete(c *iris.Context) {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
+	self, err := model.GetUser(jwtmid.Get(c).Claims.(jwt.MapClaims)["sub"])
+	if err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	td := model.Trader{}
+	if td, err = model.GetTrader(self, c.URLParam("id")); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	timeType := c.URLParam("type")
+	minTimestamp := int64(0)
+	switch timeType {
+	case constant.LastTime:
+		if t := trader.Executor[td.ID]; t != nil {
+			minTimestamp = t.LastRunAt
+		} else {
+			resp["msg"] = "Not found running trader"
+			c.JSON(iris.StatusOK, resp)
+			return
+		}
+	case constant.Day:
+		minTimestamp = time.Now().AddDate(0, 0, -1).Unix()
+	case constant.Week:
+		minTimestamp = time.Now().AddDate(0, 0, -7).Unix()
+	case constant.Month:
+		minTimestamp = time.Now().AddDate(0, -1, 0).Unix()
+	}
+	if err := model.DB.Where("trader_id = ?", td.ID).Where("timestamp < ?", minTimestamp).Delete(&model.Log{}).Error; err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	resp["success"] = true
 	c.JSON(iris.StatusOK, resp)
 }

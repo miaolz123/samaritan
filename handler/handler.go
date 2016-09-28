@@ -58,6 +58,7 @@ func Run() {
 	server.Post("/run", jwtmid.Serve, traderRun)
 	server.Post("/stop", jwtmid.Serve, traderStop)
 	server.Post("/logs", jwtmid.Serve, logs)
+	server.Delete("/logs", jwtmid.Serve, logsDelete)
 	server.Get("/", web)
 	server.Get("/dist/:filename", web)
 	server.Listen(":" + config.String("port"))

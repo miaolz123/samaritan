@@ -1,8 +1,9 @@
+import 'antd/dist/antd.css';
 import './styles/app.css';
 
 import React from 'react';
 import { render } from 'react-dom';
-import { LocaleProvider, Menu, Icon } from 'antd';
+import { LocaleProvider, Menu, Icon, Modal } from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
 import axios from 'axios';
 
@@ -60,8 +61,18 @@ class App extends React.Component {
       case 'traders':
         return <Traders style={{ height: '100%' }} reLogin={this.reLogin} />;
       case 'logout':
-        localStorage.removeItem('token');
-        window.location.href = window.location.href;
+        this.setState({ loginShow: true });
+        Modal.confirm({
+          title: 'Confirm',
+          content: 'Are you sure to logout ?',
+          onOk: () => {
+            localStorage.removeItem('token');
+            window.location.href = window.location.href;
+          },
+          onCancel: () => {
+            window.location.href = window.location.href;
+          },
+        });
         return '';
       default:
         return <div style={{ height: '100%' }}>ERROR!</div>;

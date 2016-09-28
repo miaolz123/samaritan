@@ -26,7 +26,7 @@ cooking.set({
   extractCSS: true,
   urlLoaderLimit: 10000,
 
-  extends: ['react', 'lint', 'less']
+  extends: ['react', 'lint']
 });
 
 cooking.add('resolve.alias', {

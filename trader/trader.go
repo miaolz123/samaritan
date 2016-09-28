@@ -2,6 +2,7 @@ package trader
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/miaolz123/samaritan/api"
 	"github.com/miaolz123/samaritan/constant"
@@ -81,6 +82,7 @@ func Run(trader model.Trader) (err error) {
 			trader.Status = 0
 			Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader stop running")
 		}()
+		trader.LastRunAt = time.Now().Unix()
 		trader.Status = 1
 		Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader is running")
 		if _, err := trader.Ctx.Run(trader.Strategy.Script); err != nil {

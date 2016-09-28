@@ -19,6 +19,7 @@ type Trader struct {
 	Logger    Logger     `gorm:"-" json:"-"`
 	Strategy  Strategy   `gorm:"-"`
 	Ctx       *otto.Otto `gorm:"-" json:"-"`
+	LastRunAt int64
 }
 
 // TraderExchange struct

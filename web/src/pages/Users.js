@@ -189,7 +189,7 @@ class Users extends React.Component {
 
   render() {
     const { info, tableData } = this.state;
-    const { getFieldProps, getFieldValue } = this.props.form;
+    const { getFieldDecorator, getFieldValue } = this.props.form;
     const columns = [{
       title: 'Username',
       dataIndex: 'Name',
@@ -229,17 +229,17 @@ class Users extends React.Component {
         callback();
       }
     };
-    const passwdProps = info.ID ? getFieldProps('Password', {
+    const passwdProps = info.ID ? getFieldDecorator('Password', {
       rules: [{ required: false, whitespace: true }],
-    }) : getFieldProps('Password', {
+    }) : getFieldDecorator('Password', {
       rules: [{ required: true, whitespace: true }],
     });
-    const repasswdProps = info.ID && !getFieldValue('Password') ? getFieldProps('rePassword', {
+    const repasswdProps = info.ID && !getFieldValue('Password') ? getFieldDecorator('rePassword', {
       rules: [
         { required: false, whitespace: true },
         { validator: checkPassword },
       ],
-    }) : getFieldProps('rePassword', {
+    }) : getFieldDecorator('rePassword', {
       rules: [
         { required: true, whitespace: true },
         { validator: checkPassword },
@@ -272,35 +272,39 @@ class Users extends React.Component {
               {...formItemLayout}
               label="Username"
             >
-              <Input
-                disabled={info.ID > 0}
-                {...getFieldProps('Name', {
-                  rules: [{ required: true }],
-                  initialValue: info.Name,
-                })} />
+              {getFieldDecorator('Name', {
+                rules: [{ required: true }],
+                initialValue: info.Name,
+              })(
+                <Input disabled={info.ID > 0} />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="Level"
             >
-              <InputNumber
-              max={tableData.length > 0 ? tableData[0].Level : 99}
-              {...getFieldProps('Level', {
+              {getFieldDecorator('Level', {
                 rules: [{ required: true }],
                 initialValue: info.Level,
-              })} />
+              })(
+                <InputNumber min={0} max={tableData.length > 0 ? tableData[0].Level : 99} />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="Password"
             >
-              <Input type="Password" {...passwdProps} />
+              {passwdProps(
+                <Input type="Password" />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="Password Confirm"
             >
-              <Input type="Password" {...repasswdProps} />
+              {repasswdProps(
+                <Input type="Password" />
+              )}
             </FormItem>
           </Form>
         </Modal>

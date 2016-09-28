@@ -202,7 +202,7 @@ class Strategies extends React.Component {
 
   render() {
     const { windowHeight, info, tableData, script } = this.state;
-    const { getFieldProps } = this.props.form;
+    const { getFieldDecorator } = this.props.form;
     const columns = [{
       title: 'Name',
       dataIndex: 'Name',
@@ -263,19 +263,22 @@ class Strategies extends React.Component {
               {...formItemLayout}
               label="Name"
             >
-              <Input {...getFieldProps('Name', {
+              {getFieldDecorator('Name', {
                 rules: [{ required: true }],
                 initialValue: info.Name,
-              })} />
+              })(
+                <Input />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="Description"
             >
-              <Input type="textarea"
-              {...getFieldProps('Description', {
+              {getFieldDecorator('Description', {
                 initialValue: info.Description,
-              })} />
+              })(
+                <Input type="textarea" />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}

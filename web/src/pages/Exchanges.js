@@ -192,7 +192,7 @@ class Exchanges extends React.Component {
 
   render() {
     const { info, tableData } = this.state;
-    const { getFieldProps } = this.props.form;
+    const { getFieldDecorator } = this.props.form;
     const columns = [{
       title: 'Name',
       dataIndex: 'Name',
@@ -258,37 +258,45 @@ class Exchanges extends React.Component {
               {...formItemLayout}
               label="Name"
             >
-              <Input {...getFieldProps('Name', {
+              {getFieldDecorator('Name', {
                 rules: [{ required: true }],
                 initialValue: info.Name,
-              })} />
+              })(
+                <Input />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="Type"
             >
-              <Select {...getFieldProps('Type', {
+              {getFieldDecorator('Type', {
                 rules: [{ required: true }],
                 initialValue: info.Type,
-              })}>{exchangeTypes}</Select>
+              })(
+                <Select>{exchangeTypes}</Select>
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="AccessKey"
             >
-              <Input {...getFieldProps('AccessKey', {
+              {getFieldDecorator('AccessKey', {
                 rules: [{ required: true }],
                 initialValue: info.AccessKey,
-              })} />
+              })(
+                <Input />
+              )}
             </FormItem>
             <FormItem
               {...formItemLayout}
               label="SecretKey"
             >
-              <Input {...getFieldProps('SecretKey', {
+              {getFieldDecorator('SecretKey', {
                 rules: [{ required: true }],
                 initialValue: info.SecretKey,
-              })} />
+              })(
+                <Input />
+              )}
             </FormItem>
           </Form>
         </Modal>
