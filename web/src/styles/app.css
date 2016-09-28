@@ -1,3 +1,23 @@
+@font-face {
+  font-family: 'iconfont';
+  src: url('http://127.0.0.1:8080/static/iconfont.eot');
+  /* IE9 */
+  src: url('http://127.0.0.1:8080/static/iconfont.eot?#iefix') format('embedded-opentype'),
+  url('http://127.0.0.1:8080/static/iconfont.woff') format('woff'),
+  url('http://127.0.0.1:8080/static/iconfont.ttf') format('truetype'),
+  url('http://127.0.0.1:8080/static/iconfont.svg#iconfont') format('svg');
+  /* iOS 4.1- */
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-stroke-width: 0.2px;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .ant-layout-aside {
   position: absolute;
   height: 100%;
@@ -31,37 +51,37 @@
   transition: all 0.3s ease;
 }
 
-.ant-layout-aside .ant-layout-sider > .ant-menu {
+.ant-layout-aside .ant-layout-sider>.ant-menu {
   margin-bottom: 20px;
 }
 
-.ant-layout-aside .ant-layout-sider > .ant-menu > .ant-menu-item {
+.ant-layout-aside .ant-layout-sider>.ant-menu>.ant-menu-item {
   margin: 16px 0;
 }
 
-.ant-layout-aside .ant-layout-sider > .ant-menu > .ant-menu-item .nav-text {
+.ant-layout-aside .ant-layout-sider>.ant-menu>.ant-menu-item .nav-text {
   vertical-align: baseline;
   display: inline-block;
 }
 
-.ant-layout-aside .ant-layout-sider > .ant-menu > .ant-menu-item > .anticon {
+.ant-layout-aside .ant-layout-sider>.ant-menu>.ant-menu-item>.anticon {
   transition: font-size .3s;
 }
 
-.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item {
+.ant-layout-aside-collapse .ant-layout-sider>.ant-menu>.ant-menu-item {
   transition: all 0s ease;
 }
 
-.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item > .anticon {
+.ant-layout-aside-collapse .ant-layout-sider>.ant-menu>.ant-menu-item>.anticon {
   font-size: 16px;
   display: inline-block;
 }
 
-.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item .nav-text {
+.ant-layout-aside-collapse .ant-layout-sider>.ant-menu>.ant-menu-item .nav-text {
   display: none;
 }
 
-.ant-layout-aside-collapse .ant-layout-sider > .ant-menu > .ant-menu-item:hover {
+.ant-layout-aside-collapse .ant-layout-sider>.ant-menu>.ant-menu-item:hover {
   background: #2db7f5;
   color: #fff;
   transition: all 0s ease;

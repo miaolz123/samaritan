@@ -16,7 +16,8 @@ class Login extends React.Component {
     this.handleOk = this.handleOk.bind(this);
   }
 
-  handleOk() {
+  handleOk(e) {
+    e.preventDefault();
     this.props.form.validateFields((errors, values) => {
       if (errors) {
         return;
@@ -55,8 +56,6 @@ class Login extends React.Component {
       wrapperCol: { span: 6 },
     };
 
-    console.log(windowHeight);
-
     return (
       <div style={{ paddingTop: windowHeight > 600 ? (windowHeight - 500) / 2 : windowHeight > 400 ? (windowHeight - 350) / 2 : 25 }}>
         <h1 style={{
@@ -64,7 +63,7 @@ class Login extends React.Component {
           fontSize: '30px',
           textAlign: 'center',
         }}>Samaritan</h1>
-        <Form horizontal>
+        <Form horizontal onSubmit={this.handleOk}>
           <Form.Item
             {...formItemLayout}
             label="Username"
@@ -87,7 +86,7 @@ class Login extends React.Component {
             />
           </Form.Item>
           <Form.Item wrapperCol={{ span: 15, offset: 9 }} style={{ marginTop: 24 }}>
-            <Button type="primary" onClick={this.handleOk} loading={loading}>Submit</Button>
+            <Button type="primary" htmlType="submit" loading={loading}>Submit</Button>
           </Form.Item>
         </Form>
       </div>
