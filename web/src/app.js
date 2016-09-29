@@ -124,7 +124,7 @@ class App extends React.Component {
                 <Icon type="team" /><span className="nav-text">Users</span>
               </Menu.Item>
               <Menu.Item key="logout">
-                <Icon type="logout" /><span className="nav-text">Logout</span>
+                <Icon type="poweroff" /><span className="nav-text">Logout</span>
               </Menu.Item>
             </Menu>
             <div className="ant-aside-action" onClick={this.onCollapseChange}>

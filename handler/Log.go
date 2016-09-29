@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
+	"github.com/miaolz123/samaritan/config"
 	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
 	"github.com/miaolz123/samaritan/trader"
@@ -79,8 +80,12 @@ func logs(c *iris.Context) {
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
+	loc, err := time.LoadLocation(config.String("logstimezone"))
+	if err != nil || loc == nil {
+		loc = time.Local
+	}
 	for i, l := range logs {
-		logs[i].Time = time.Unix(l.Timestamp, 0).Format("01/02 15:04:05")
+		logs[i].Time = time.Unix(l.Timestamp, 0).In(loc).Format("01/02 15:04:05")
 	}
 	resp["success"] = true
 	resp["total"] = total.Total

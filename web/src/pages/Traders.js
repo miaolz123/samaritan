@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Tooltip, Button, Table, Modal, Form, Input, Select, Popconfirm, notification } from 'antd';
+import { Tag, Tooltip, Badge, Button, Table, Modal, Form, Input, Select, Popconfirm, notification } from 'antd';
 import axios from 'axios';
 
 import config from '../config';
@@ -362,26 +362,28 @@ class Traders extends React.Component {
       render: text => text.substr(0, 19),
       sorter: true,
     }, {
-      title: 'Action',
+      title: 'Status',
       dataIndex: 'Status',
-      render: (status, record) => (<Button.Group>
+      render: status => <Badge status={status > 0 ? 'processing' : 'error'} text={status > 0 ? 'RUNNING' : 'HALTAD'}/>,
+    }, {
+      title: 'Action',
+      render: (text, record) => (<Button.Group>
+        {record.Status > 0
+        ? <Button
+            icon="pause-circle-o"
+            title="Stop"
+            onClick={this.handleTraderAction.bind(this, 'stop', record)}
+          />
+        : <Popconfirm
+            title="Are you sure to RUN it ?"
+            onConfirm={this.handleTraderAction.bind(this, 'run', record)}
+          >
+            <Button icon="play-circle-o" title="Run" />
+          </Popconfirm>}
         <Button
-          type="primary"
           icon="message"
           title="Logs"
           onClick={() => this.setState({ showLogs: true, info: record })}
-        />
-        <Popconfirm
-          title="Are you sure to RUN it ?"
-          onConfirm={this.handleTraderAction.bind(this, 'run', record)}
-        >
-          <Button disabled={status > 0} icon="caret-circle-o-right" title="Run" />
-        </Popconfirm>
-        <Button
-          disabled={!(status > 0)}
-          icon="pause-circle-o"
-          title="Stop"
-          onClick={this.handleTraderAction.bind(this, 'stop', record)}
         />
         <Popconfirm
           title="Are you sure to DELETE it ?"

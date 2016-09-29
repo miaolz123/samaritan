@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
@@ -32,7 +35,9 @@ func web(c *iris.Context) {
 
 // Run ...
 func Run() {
+	port := config.String("port")
 	server := iris.New()
+	server.Config.DisableBanner = true
 	server.Use(cors.New(cors.Options{
 		AllowedHeaders: []string{
 			"Origin",
@@ -61,5 +66,6 @@ func Run() {
 	server.Delete("/logs", jwtmid.Serve, logsDelete)
 	server.Get("/", web)
 	server.Get("/dist/:filename", web)
-	server.Listen(":" + config.String("port"))
+	fmt.Println(time.Now().Format("01/02 - 15:04:05"), "Smaritan running at http://127.0.0.1:"+port)
+	server.Listen(":" + port)
 }

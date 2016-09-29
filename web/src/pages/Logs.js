@@ -190,7 +190,7 @@ class Logs extends React.Component {
         </div>
         <Table
           size="middle"
-          scroll={{x: innerWidth > 1000 ? innerWidth - 250 : 750, y: windowHeight > 500 ? windowHeight - 230 : 500}}
+          scroll={{x: innerWidth > 1250 ? innerWidth - 250 : 1000, y: windowHeight > 500 ? windowHeight - 230 : 500}}
           columns={columns}
           dataSource={tableData}
           pagination={this.state.pagination}

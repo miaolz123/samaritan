@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"strings"
 
 	"github.com/go-ini/ini"
 )
@@ -20,9 +21,12 @@ func init() {
 	for _, k := range keys {
 		confs[k] = conf.Section("").Key(k).String()
 	}
+	if confs["logstimezone"] == "" {
+		confs["logstimezone"] = "Local"
+	}
 }
 
 // String ...
 func String(key string) string {
-	return confs[key]
+	return confs[strings.ToLower(key)]
 }
