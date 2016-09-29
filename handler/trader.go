@@ -230,7 +230,7 @@ func traderRun(c *iris.Context) {
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if err := trader.Run(req); err != nil {
+	if err := trader.Run(trader.Global{Trader: req}); err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return
@@ -251,7 +251,7 @@ func traderStop(c *iris.Context) {
 		c.JSON(iris.StatusOK, resp)
 		return
 	}
-	if err := trader.Stop(req); err != nil {
+	if err := trader.Stop(trader.Global{Trader: req}); err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return

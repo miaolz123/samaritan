@@ -364,7 +364,7 @@ class Traders extends React.Component {
     }, {
       title: 'Status',
       dataIndex: 'Status',
-      render: status => <Badge status={status > 0 ? 'processing' : 'error'} text={status > 0 ? 'RUNNING' : 'HALTAD'}/>,
+      render: status => <Badge status={status > 0 ? 'processing' : 'error'} text={status > 0 ? 'RUN' : 'HALT'}/>,
     }, {
       title: 'Action',
       render: (text, record) => (<Button.Group>

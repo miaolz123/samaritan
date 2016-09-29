@@ -137,12 +137,10 @@ class Logs extends React.Component {
     const columns = [{
       title: 'Time',
       dataIndex: 'Time',
-      fixed: 'left',
       width: 120,
     }, {
       title: 'Exchange',
       dataIndex: 'ExchangeType',
-      fixed: 'left',
       filters: exchangeTypes,
       width: 100,
       render: text => text && <Tag color={text === 'global' ? '' : 'blue'}>{text}</Tag>,

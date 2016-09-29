@@ -20,13 +20,13 @@ cooking.set({
   clean: true,
   hash: true,
   chunk: 'vendor',
-  publicPath: './dist/',
+  publicPath: '../dist/',
   assetsPath: 'static',
   sourceMap: true,
   extractCSS: true,
   urlLoaderLimit: 10000,
 
-  extends: ['react', 'lint']
+  extends: ['react', 'lint', 'less']
 });
 
 cooking.add('resolve.alias', {

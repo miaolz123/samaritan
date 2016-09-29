@@ -11,15 +11,24 @@ import (
 )
 
 // Executor ...
-var Executor = make(map[uint]*model.Trader)
+var Executor = make(map[uint]*Global)
 var errHalt = fmt.Errorf("HALT")
 
+// Global ...
+type Global struct {
+	model.Trader
+	Logger model.Logger
+	Ctx    *otto.Otto
+	es     []api.Exchange
+	tasks  []task
+}
+
 // Run ...
-func Run(trader model.Trader) (err error) {
+func Run(trader Global) (err error) {
 	if t := Executor[trader.ID]; t != nil && t.Status > 0 {
 		return
 	}
-	if err = model.DB.First(&trader, trader.ID).Error; err != nil {
+	if err = model.DB.First(&trader.Trader, trader.ID).Error; err != nil {
 		return
 	}
 	self, err := model.GetUserByID(trader.UserID)
@@ -41,39 +50,42 @@ func Run(trader model.Trader) (err error) {
 		TraderID:     trader.ID,
 		ExchangeType: "global",
 	}
+	trader.tasks = []task{}
 	trader.Ctx = otto.New()
 	trader.Ctx.Interrupt = make(chan func(), 1)
 	for _, c := range constant.CONSTS {
 		trader.Ctx.Set(c, c)
 	}
-	exchanges := []api.Exchange{}
+	index := 0
 	for _, e := range es {
 		opt := api.Option{
+			Index:     index,
 			TraderID:  trader.ID,
 			Type:      e.Type,
 			AccessKey: e.AccessKey,
 			SecretKey: e.SecretKey,
-			MainStock: "BTC",
 			Ctx:       trader.Ctx,
 		}
 		switch opt.Type {
-		case "okcoin.cn":
-			exchanges = append(exchanges, api.NewOKCoinCn(opt))
-		case "huobi":
-			exchanges = append(exchanges, api.NewHuobi(opt))
+		case constant.OkCoinCn:
+			trader.es = append(trader.es, api.NewOKCoinCn(opt))
+		case constant.Huobi:
+			trader.es = append(trader.es, api.NewHuobi(opt))
+		default:
+			index--
 		}
+		index++
 	}
-	if len(exchanges) == 0 {
+	if len(trader.es) == 0 {
 		err = fmt.Errorf("Please add at least one exchange")
 		return
 	}
-	g := global{trader: trader}
-	trader.Ctx.Set("Global", g)
-	trader.Ctx.Set("G", g)
-	trader.Ctx.Set("Exchange", exchanges[0])
-	trader.Ctx.Set("E", exchanges[0])
-	trader.Ctx.Set("Exchanges", exchanges)
-	trader.Ctx.Set("Es", exchanges)
+	trader.Ctx.Set("Global", &trader)
+	trader.Ctx.Set("G", &trader)
+	trader.Ctx.Set("Exchange", trader.es[0])
+	trader.Ctx.Set("E", trader.es[0])
+	trader.Ctx.Set("Exchanges", trader.es)
+	trader.Ctx.Set("Es", trader.es)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil && err != errHalt {
@@ -94,7 +106,7 @@ func Run(trader model.Trader) (err error) {
 }
 
 // Stop ...
-func Stop(trader model.Trader) (err error) {
+func Stop(trader Global) (err error) {
 	t := Executor[trader.ID]
 	if t == nil {
 		err = fmt.Errorf("Can not found the Trader")

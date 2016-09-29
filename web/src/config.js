@@ -1,6 +1,6 @@
 module.exports = {
-  // api: location.href.replace(/(\w+)\s*\//, '$1'),
-  api: 'http://127.0.0.1:9876',
+  api: location.href.replace(/(\w+)\s*\//, '$1'),
+  // api: 'http://127.0.0.1:9876',
   exchangeTypes: ['okcoin.cn', 'huobi', 'global'],
   logTypes: {
     '-1': 'ERROR',

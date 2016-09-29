@@ -29,6 +29,7 @@ type Huobi struct {
 
 // NewHuobi : create an exchange struct of okcoin.cn
 func NewHuobi(opt Option) *Huobi {
+	opt.MainStock = constant.BTC
 	e := Huobi{
 		stockMap:     map[string]string{"BTC": "1", "LTC": "2"},
 		orderTypeMap: map[int]int{1: 1, 2: -1, 3: 2, 4: -2},
@@ -47,6 +48,16 @@ func NewHuobi(opt Option) *Huobi {
 // Log : print something to console
 func (e *Huobi) Log(msgs ...interface{}) {
 	e.logger.Log(constant.INFO, 0.0, 0.0, msgs...)
+}
+
+// GetIndex : get the index of this exchange
+func (e *Huobi) GetIndex() int {
+	return e.option.Index
+}
+
+// GetType : get the type of this exchange
+func (e *Huobi) GetType() string {
+	return e.option.Type
 }
 
 // GetMainStock : get the MainStock of this exchange

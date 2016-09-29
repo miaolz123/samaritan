@@ -29,3 +29,4 @@ _testmain.go
 web/dist/
 custom/*.ini
 dist.zip
+samaritan

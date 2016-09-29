@@ -4,6 +4,7 @@ import "github.com/robertkrimen/otto"
 
 // Option : exchange option
 type Option struct {
+	Index     int
 	TraderID  uint
 	Type      string // one of ["okcoin.cn", "huobi"]
 	AccessKey string
@@ -15,6 +16,8 @@ type Option struct {
 // Exchange interface
 type Exchange interface {
 	Log(...interface{})
+	GetIndex() int
+	GetType() string
 	GetMainStock() string
 	SetMainStock(stock string) string
 	Simulate(balance, btc, ltc interface{}) bool

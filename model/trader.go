@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/jinzhu/gorm"
-	"github.com/robertkrimen/otto"
 )
 
 // Trader struct
@@ -16,9 +15,7 @@ type Trader struct {
 
 	Exchanges []Exchange `gorm:"-"`
 	Status    int        `gorm:"-"`
-	Logger    Logger     `gorm:"-" json:"-"`
 	Strategy  Strategy   `gorm:"-"`
-	Ctx       *otto.Otto `gorm:"-" json:"-"`
 	LastRunAt int64
 }
 

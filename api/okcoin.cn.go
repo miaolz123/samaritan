@@ -29,6 +29,7 @@ type OKCoinCn struct {
 
 // NewOKCoinCn : create an exchange struct of okcoin.cn
 func NewOKCoinCn(opt Option) *OKCoinCn {
+	opt.MainStock = constant.BTC
 	e := OKCoinCn{
 		stockMap:     map[string]string{"BTC": "btc", "LTC": "ltc"},
 		orderTypeMap: map[string]int{"buy": 1, "sell": -1, "buy_market": 2, "sell_market": -2},
@@ -47,6 +48,16 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 // Log : print something to console
 func (e *OKCoinCn) Log(msgs ...interface{}) {
 	e.logger.Log(constant.INFO, 0.0, 0.0, msgs...)
+}
+
+// GetIndex : get the index of this exchange
+func (e *OKCoinCn) GetIndex() int {
+	return e.option.Index
+}
+
+// GetType : get the type of this exchange
+func (e *OKCoinCn) GetType() string {
+	return e.option.Type
 }
 
 // GetMainStock : get the MainStock of this exchange
