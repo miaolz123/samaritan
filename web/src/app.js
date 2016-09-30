@@ -22,7 +22,7 @@ class App extends React.Component {
     this.state = {
       token: localStorage.getItem('token'),
       loading: true,
-      collapse: false,
+      collapse: true,
       current: 'traders',
       loginShow: false,
     };

@@ -2,6 +2,7 @@ package trader
 
 import (
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/miaolz123/conver"
@@ -64,15 +65,33 @@ func (g *Global) AddTask(e api.Exchange, name string, args ...interface{}) bool 
 	return true
 }
 
-// Do ...
-func (g *Global) Do() (results []interface{}) {
+// GetTasks ...
+func (g *Global) GetTasks() (tasks []string) {
 	for _, t := range g.tasks {
-		var result interface{}
-		rs := t.fn.Call(t.args)
-		if len(rs) > 0 {
-			result = rs[0].Interface()
-		}
-		results = append(results, result)
+		tasks = append(tasks, t.name)
 	}
+	return
+}
+
+// ExecTasks ...
+func (g *Global) ExecTasks(timeouts ...interface{}) (results []interface{}) {
+	if len(timeouts) > 0 {
+		conver.IntMust(timeouts[0])
+	}
+	for range g.tasks {
+		results = append(results, nil)
+	}
+	wg := sync.WaitGroup{}
+	for i, t := range g.tasks {
+		wg.Add(1)
+		go func(i int, t task) {
+			rs := t.fn.Call(t.args)
+			if len(rs) > 0 {
+				results[i] = rs[0].Interface()
+			}
+			wg.Done()
+		}(i, t)
+	}
+	wg.Wait()
 	return
 }
