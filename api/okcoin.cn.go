@@ -50,11 +50,6 @@ func (e *OKCoinCn) Log(msgs ...interface{}) {
 	e.logger.Log(constant.INFO, 0.0, 0.0, msgs...)
 }
 
-// GetIndex : get the index of this exchange
-func (e *OKCoinCn) GetIndex() int {
-	return e.option.Index
-}
-
 // GetType : get the type of this exchange
 func (e *OKCoinCn) GetType() string {
 	return e.option.Type

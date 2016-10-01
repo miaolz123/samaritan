@@ -1,19 +1,17 @@
 package trader
 
 import (
-	"reflect"
 	"sync"
 	"time"
 
 	"github.com/miaolz123/conver"
-	"github.com/miaolz123/samaritan/api"
 	"github.com/miaolz123/samaritan/constant"
+	"github.com/robertkrimen/otto"
 )
 
 type task struct {
-	name string
-	fn   reflect.Value
-	args []reflect.Value
+	fn   otto.Value
+	args []interface{}
 }
 
 // Sleep ...
@@ -42,52 +40,28 @@ func (g *Global) LogProfit(msgs ...interface{}) {
 }
 
 // AddTask ...
-func (g *Global) AddTask(e api.Exchange, name string, args ...interface{}) bool {
-	t := task{}
-	switch name {
-	case "Log":
-		t.fn = reflect.ValueOf(e.Log)
-	case constant.GetAccount:
-		t.fn = reflect.ValueOf(e.GetAccount)
-	case constant.Buy:
-		t.fn = reflect.ValueOf(e.Buy)
-	case constant.Sell:
-		t.fn = reflect.ValueOf(e.Sell)
-	default:
-		g.Logger.Log(constant.ERROR, 0.0, 0.0, "Invalid task name")
-		return false
+func (g *Global) AddTask(fn otto.Value, args ...interface{}) bool {
+	if fn.Class() != "Function" {
+		g.Logger.Log(constant.ERROR, 0.0, 0.0, "AddTask(), Invalid function")
 	}
-	t.name = name
-	for _, arg := range args {
-		t.args = append(t.args, reflect.ValueOf(arg))
-	}
-	g.tasks = append(g.tasks, t)
+	g.tasks = append(g.tasks, task{fn: fn, args: args})
 	return true
 }
 
-// GetTasks ...
-func (g *Global) GetTasks() (tasks []string) {
-	for _, t := range g.tasks {
-		tasks = append(tasks, t.name)
-	}
-	return
-}
-
 // ExecTasks ...
-func (g *Global) ExecTasks(timeouts ...interface{}) (results []interface{}) {
-	if len(timeouts) > 0 {
-		conver.IntMust(timeouts[0])
-	}
+func (g *Global) ExecTasks() (results []interface{}) {
 	for range g.tasks {
-		results = append(results, nil)
+		results = append(results, false)
 	}
 	wg := sync.WaitGroup{}
 	for i, t := range g.tasks {
 		wg.Add(1)
 		go func(i int, t task) {
-			rs := t.fn.Call(t.args)
-			if len(rs) > 0 {
-				results[i] = rs[0].Interface()
+			result, err := t.fn.Call(t.fn, t.args...)
+			if err != nil || result.IsUndefined() || result.IsNull() || result.IsNaN() {
+				results[i] = false
+			} else {
+				results[i] = result
 			}
 			wg.Done()
 		}(i, t)

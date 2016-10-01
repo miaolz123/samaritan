@@ -56,10 +56,8 @@ func Run(trader Global) (err error) {
 	for _, c := range constant.CONSTS {
 		trader.Ctx.Set(c, c)
 	}
-	index := 0
 	for _, e := range es {
 		opt := api.Option{
-			Index:     index,
 			TraderID:  trader.ID,
 			Type:      e.Type,
 			AccessKey: e.AccessKey,
@@ -71,10 +69,7 @@ func Run(trader Global) (err error) {
 			trader.es = append(trader.es, api.NewOKCoinCn(opt))
 		case constant.Huobi:
 			trader.es = append(trader.es, api.NewHuobi(opt))
-		default:
-			index--
 		}
-		index++
 	}
 	if len(trader.es) == 0 {
 		err = fmt.Errorf("Please add at least one exchange")

@@ -173,6 +173,7 @@ class Strategies extends React.Component {
         Description: '',
         Script: '',
       },
+      script: '',
       infoModal: true,
     });
   }

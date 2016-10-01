@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/iris-contrib/middleware/cors"
+	// "github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/iris-contrib/middleware/logger"
 	"github.com/iris-contrib/middleware/recovery"
@@ -38,20 +38,20 @@ func Run() {
 	port := config.String("port")
 	server := iris.New()
 	server.Config.DisableBanner = true
-	server.Use(cors.New(cors.Options{
-		AllowedHeaders: []string{
-			"Origin",
-			"X-Requested-With",
-			"Content-Type",
-			"Accept",
-			"Authorization",
-		},
-		AllowedMethods: []string{
-			"Get",
-			"Post",
-			"Delete",
-		},
-	}))
+	// server.Use(cors.New(cors.Options{
+	// 	AllowedHeaders: []string{
+	// 		"Origin",
+	// 		"X-Requested-With",
+	// 		"Content-Type",
+	// 		"Accept",
+	// 		"Authorization",
+	// 	},
+	// 	AllowedMethods: []string{
+	// 		"Get",
+	// 		"Post",
+	// 		"Delete",
+	// 	},
+	// }))
 	server.Use(logger.New())
 	server.Use(recovery.New())
 	server.Post("/login", userLogin)
