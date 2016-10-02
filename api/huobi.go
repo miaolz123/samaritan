@@ -486,15 +486,15 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...int) (records []Re
 		recordJSON := json.GetIndex(i - 1)
 		recordTime := conver.Int64Must(recordJSON.GetIndex(0).MustString("19700101000000000")[:12])
 		if recordTime > timeLast {
-			recordsNew = append(recordsNew, Record{
+			recordsNew = append([]Record{Record{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
 				High:   recordJSON.GetIndex(2).MustFloat64(),
 				Low:    recordJSON.GetIndex(3).MustFloat64(),
 				Close:  recordJSON.GetIndex(4).MustFloat64(),
 				Volume: recordJSON.GetIndex(5).MustFloat64(),
-			})
-		} else if recordTime == timeLast {
+			}}, recordsNew...)
+		} else if timeLast > 0 && recordTime == timeLast {
 			e.records[period][len(e.records[period])-1] = Record{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
@@ -509,7 +509,7 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...int) (records []Re
 	}
 	e.records[period] = append(e.records[period], recordsNew...)
 	if len(e.records[period]) > size {
-		e.records[period] = e.records[period][:size]
+		e.records[period] = e.records[period][len(e.records[period])-size : len(e.records[period])]
 	}
 	return e.records[period]
 }

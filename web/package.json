@@ -18,7 +18,8 @@
     "react": "*",
     "react-chartjs-2": "^1.2.3",
     "react-code-mirror": "^3.1.0",
-    "react-dom": "*"
+    "react-dom": "*",
+    "recharts": "^0.15.1"
   },
   "devDependencies": {
     "babel-plugin-import": "^1.0.1"

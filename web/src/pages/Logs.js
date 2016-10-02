@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tag, Button, Modal, Table, Select, notification } from 'antd';
+import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import keys from 'lodash.keys';
 import axios from 'axios';
 
@@ -21,10 +22,15 @@ class Logs extends React.Component {
       },
       filters: {},
       tableData: [],
+      chartData: [],
+      chartShow: false,
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
+    this.handleProfit = this.handleProfit.bind(this);
+    this.handleProfitClose = this.handleProfitClose.bind(this);
     this.fetchLogs = this.fetchLogs.bind(this);
+    this.fetchProfits = this.fetchProfits.bind(this);
     this.deleteLogs = this.deleteLogs.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
   }
@@ -42,10 +48,20 @@ class Logs extends React.Component {
       });
     }
     this.fetchLogs();
+    this.fetchProfits();
   }
 
   handleRefresh() {
     this.fetchLogs();
+    this.fetchProfits();
+  }
+
+  handleProfit() {
+    this.setState({ chartShow: true });
+  }
+
+  handleProfitClose() {
+    this.setState({ chartShow: false });
   }
 
   fetchLogs(pagination, filters) {
@@ -70,6 +86,37 @@ class Logs extends React.Component {
             pagination: thisPagination,
             tableData: data,
           });
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        this.setState({ loading: false });
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response),
+            duration: null,
+          });
+        }
+      });
+  }
+
+  fetchProfits() {
+    const { trader } = this.props;
+
+    axios.get(`${config.api}/profits?id=${trader.ID}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        this.setState({ loading: false });
+        if (response.data.success) {
+          this.setState({ chartData: response.data.data });
         } else {
           notification['error']({
             message: 'Error',
@@ -131,7 +178,7 @@ class Logs extends React.Component {
   }
 
   render() {
-    const { tableData, innerWidth, windowHeight } = this.state;
+    const { tableData, chartData, chartShow, innerWidth, windowHeight } = this.state;
     const exchangeTypes = config.exchangeTypes.map(t => ({ text: t, value: `'${t}'` }));
     const logTypes = keys(config.logTypes).map(k => ({ text: config.logTypes[k], value: k }));
     const columns = [{
@@ -171,6 +218,7 @@ class Logs extends React.Component {
       <div>
         <div style={{ marginBottom: 16, textAlign: 'right' }}>
           <Button style={{ marginRight: 5 }} type="primary" onClick={this.props.goBack}>Go Back</Button>
+          <Button style={{ marginRight: 5 }} disabled={!chartData || chartData.length < 1} onClick={this.handleProfit}>Profit</Button>
           <Button style={{ marginRight: 5 }} onClick={this.handleRefresh}>Refresh</Button>
           <Select
             placeholder="Delete"
@@ -195,6 +243,23 @@ class Logs extends React.Component {
           loading={this.state.loading}
           onChange={this.handleTableChange}
         />
+        <Modal
+          maskClosable={false}
+          visible={chartShow}
+          width={innerWidth * 0.8}
+          title="Profit Chart"
+          onCancel={this.handleProfitClose}
+          footer=''>
+          <LineChart
+            width={innerWidth * 0.75}
+            height={innerWidth * 0.3}
+            data={chartData}>
+            <Line type="monotone" dataKey="Amount" dot={false} stroke="#8884d8" />
+            <XAxis dataKey="Time" />
+            <YAxis domain={['auto', 'auto']} />
+            <Tooltip />
+          </LineChart>
+        </Modal>
       </div>
     );
   }

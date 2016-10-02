@@ -15,7 +15,7 @@ type Log struct {
 	TraderID     uint   `gorm:"index"`
 	Timestamp    int64
 	ExchangeType string `gorm:"type:varchar(50)"`
-	Type         int    // ["info", "profit", "buy", "sell", "cancel"]
+	Type         int    // ["error", "info", "profit", "buy", "sell", "cancel"]
 	Price        float64
 	Amount       float64
 	Message      string `gorm:"type:text"`

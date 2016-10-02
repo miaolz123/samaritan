@@ -137,3 +137,51 @@ func logsDelete(c *iris.Context) {
 	resp["success"] = true
 	c.JSON(iris.StatusOK, resp)
 }
+
+// Get /profits
+func profits(c *iris.Context) {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
+	self, err := model.GetUser(jwtmid.Get(c).Claims.(jwt.MapClaims)["sub"])
+	if err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	td := model.Trader{}
+	if td, err = model.GetTrader(self, c.URLParam("id")); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	logs := []model.Log{}
+	if err := model.DB.Where("trader_id = ?", td.ID).Where("type = 1").Find(&logs).Error; err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	amount, _ := c.URLParamInt("amount")
+	if amount == 0 {
+		amount = 100
+	}
+	if len(logs) < amount {
+		amount = len(logs)
+	}
+	data := []model.Log{}
+	loc, err := time.LoadLocation(config.String("logstimezone"))
+	if err != nil || loc == nil {
+		loc = time.Local
+	}
+	for i := 1; i <= amount; i++ {
+		index := i*len(logs)/amount - 1
+		data = append(data, model.Log{
+			Time:   time.Unix(logs[index].Timestamp, 0).In(loc).Format("01/02 15:04:05"),
+			Amount: logs[index].Amount,
+		})
+	}
+	resp["data"] = data
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
+}

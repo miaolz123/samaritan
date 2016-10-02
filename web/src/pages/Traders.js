@@ -369,11 +369,12 @@ class Traders extends React.Component {
       title: 'Action',
       render: (text, record) => (<Button.Group>
         {record.Status > 0
-        ? <Button
-            icon="pause-circle-o"
-            title="Stop"
-            onClick={this.handleTraderAction.bind(this, 'stop', record)}
-          />
+        ? <Popconfirm
+            title="Are you sure to STOP it ?"
+            onConfirm={this.handleTraderAction.bind(this, 'stop', record)}
+          >
+            <Button icon="pause-circle-o" title="Stop" />
+          </Popconfirm>
         : <Popconfirm
             title="Are you sure to RUN it ?"
             onConfirm={this.handleTraderAction.bind(this, 'run', record)}

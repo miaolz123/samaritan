@@ -64,6 +64,7 @@ func Run() {
 	server.Post("/stop", jwtmid.Serve, traderStop)
 	server.Post("/logs", jwtmid.Serve, logs)
 	server.Delete("/logs", jwtmid.Serve, logsDelete)
+	server.Get("/profits", jwtmid.Serve, profits)
 	server.Get("/", web)
 	server.Get("/dist/*filename", web)
 	fmt.Println(time.Now().Format("01/02 - 15:04:05"), "Smaritan running at http://127.0.0.1:"+port)
