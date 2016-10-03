@@ -60,6 +60,7 @@ func Run(trader Global) (err error) {
 		opt := api.Option{
 			TraderID:  trader.ID,
 			Type:      e.Type,
+			Name:      e.Name,
 			AccessKey: e.AccessKey,
 			SecretKey: e.SecretKey,
 			Ctx:       trader.Ctx,

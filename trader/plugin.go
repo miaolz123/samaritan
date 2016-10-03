@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	filepath.Walk("registry", func(path string, info os.FileInfo, err error) error {
+	filepath.Walk("plugin", func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".js") {
 			return err
 		}

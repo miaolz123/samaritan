@@ -157,7 +157,7 @@ func profits(c *iris.Context) {
 		return
 	}
 	logs := []model.Log{}
-	if err := model.DB.Where("trader_id = ?", td.ID).Where("type = 1").Find(&logs).Error; err != nil {
+	if err := model.DB.Where("trader_id = ?", td.ID).Where("type = 1").Order("timestamp").Order("id").Find(&logs).Error; err != nil {
 		resp["msg"] = fmt.Sprint(err)
 		c.JSON(iris.StatusOK, resp)
 		return

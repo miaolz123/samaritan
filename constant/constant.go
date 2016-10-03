@@ -19,10 +19,6 @@ const (
 	Day      = "1"
 	Week     = "2"
 	Month    = "3"
-	// task name
-	GetAccount = "GetAccount"
-	Buy        = "Buy"
-	Sell       = "Sell"
 )
 
 var (

@@ -35,15 +35,15 @@ type Order struct {
 
 // Ticker struct
 type Ticker struct {
-	Bids []MarketOrder
+	Bids []OrderBook
 	Buy  float64
 	Mid  float64
 	Sell float64
-	Asks []MarketOrder
+	Asks []OrderBook
 }
 
-// MarketOrder struct
-type MarketOrder struct {
+// OrderBook struct
+type OrderBook struct {
 	Price  float64
 	Amount float64
 }

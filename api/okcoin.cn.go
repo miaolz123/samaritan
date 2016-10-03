@@ -17,6 +17,7 @@ type OKCoinCn struct {
 	stockMap     map[string]string
 	orderTypeMap map[string]int
 	periodMap    map[string]string
+	minAmountMap map[string]float64
 	records      map[string][]Record
 	host         string
 	logger       model.Logger
@@ -31,13 +32,33 @@ type OKCoinCn struct {
 func NewOKCoinCn(opt Option) *OKCoinCn {
 	opt.MainStock = constant.BTC
 	e := OKCoinCn{
-		stockMap:     map[string]string{"BTC": "btc", "LTC": "ltc"},
-		orderTypeMap: map[string]int{"buy": 1, "sell": -1, "buy_market": 2, "sell_market": -2},
-		periodMap:    map[string]string{"M": "1min", "M5": "5min", "M15": "15min", "M30": "30min", "H": "1hour", "D": "1day", "W": "1week"},
-		records:      make(map[string][]Record),
-		host:         "https://www.okcoin.cn/api/v1/",
-		logger:       model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
-		option:       opt,
+		stockMap: map[string]string{
+			constant.BTC: "btc",
+			constant.LTC: "ltc",
+		},
+		orderTypeMap: map[string]int{
+			"buy":         1,
+			"sell":        -1,
+			"buy_market":  2,
+			"sell_market": -2,
+		},
+		periodMap: map[string]string{
+			"M":   "1min",
+			"M5":  "5min",
+			"M15": "15min",
+			"M30": "30min",
+			"H":   "1hour",
+			"D":   "1day",
+			"W":   "1week",
+		},
+		minAmountMap: map[string]float64{
+			constant.BTC: 0.01,
+			constant.LTC: 0.1,
+		},
+		records: make(map[string][]Record),
+		host:    "https://www.okcoin.cn/api/v1/",
+		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
+		option:  opt,
 	}
 	if _, ok := e.stockMap[e.option.MainStock]; !ok {
 		e.option.MainStock = constant.BTC
@@ -55,6 +76,11 @@ func (e *OKCoinCn) GetType() string {
 	return e.option.Type
 }
 
+// GetName : get the name of this exchange
+func (e *OKCoinCn) GetName() string {
+	return e.option.Name
+}
+
 // GetMainStock : get the MainStock of this exchange
 func (e *OKCoinCn) GetMainStock() string {
 	return e.option.MainStock
@@ -66,6 +92,11 @@ func (e *OKCoinCn) SetMainStock(stock string) string {
 		e.option.MainStock = stock
 	}
 	return e.option.MainStock
+}
+
+// GetMinAmount : get the min trade amonut of this exchange
+func (e *OKCoinCn) GetMinAmount(stock string) float64 {
+	return e.minAmountMap[stock]
 }
 
 func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Json, err error) {
@@ -288,29 +319,6 @@ func (e *OKCoinCn) GetOrder(stockType, id string) interface{} {
 	return false
 }
 
-// CancelOrder : cancel an order
-func (e *OKCoinCn) CancelOrder(order Order) bool {
-	if e.simulate {
-		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
-		return true
-	}
-	params := []string{
-		"symbol=" + e.stockMap[order.StockType] + "_cny",
-		"order_id=" + order.ID,
-	}
-	json, err := e.getAuthJSON(e.host+"cancel_order.do", params)
-	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", err)
-		return false
-	}
-	if result := json.Get("result").MustBool(); !result {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, the error number is ", json.Get("error_code").MustInt())
-		return false
-	}
-	e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
-	return true
-}
-
 // GetOrders : get all unfilled orders
 func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
 	if _, ok := e.stockMap[stockType]; !ok {
@@ -389,15 +397,38 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []Order) {
 	return orders
 }
 
+// CancelOrder : cancel an order
+func (e *OKCoinCn) CancelOrder(order Order) bool {
+	if e.simulate {
+		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
+		return true
+	}
+	params := []string{
+		"symbol=" + e.stockMap[order.StockType] + "_cny",
+		"order_id=" + order.ID,
+	}
+	json, err := e.getAuthJSON(e.host+"cancel_order.do", params)
+	if err != nil {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", err)
+		return false
+	}
+	if result := json.Get("result").MustBool(); !result {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, the error number is ", json.Get("error_code").MustInt())
+		return false
+	}
+	e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
+	return true
+}
+
 // getTicker : get market ticker & depth
-func (e *OKCoinCn) getTicker(stockType string, sizes ...int) (ticker Ticker, err error) {
+func (e *OKCoinCn) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
 	if _, ok := e.stockMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
 		return
 	}
 	size := 20
-	if len(sizes) > 0 && sizes[0] > 20 {
-		size = sizes[0]
+	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
+		size = conver.IntMust(sizes[0])
 	}
 	resp, err := get(fmt.Sprint(e.host, "depth.do?symbol=", e.stockMap[stockType], "_cny&size=", size))
 	if err != nil {
@@ -412,7 +443,7 @@ func (e *OKCoinCn) getTicker(stockType string, sizes ...int) (ticker Ticker, err
 	depthsJSON := json.Get("bids")
 	for i := 0; i < len(depthsJSON.MustArray()); i++ {
 		depthJSON := depthsJSON.GetIndex(i)
-		ticker.Bids = append(ticker.Bids, MarketOrder{
+		ticker.Bids = append(ticker.Bids, OrderBook{
 			Price:  depthJSON.GetIndex(0).MustFloat64(),
 			Amount: depthJSON.GetIndex(1).MustFloat64(),
 		})
@@ -420,7 +451,7 @@ func (e *OKCoinCn) getTicker(stockType string, sizes ...int) (ticker Ticker, err
 	depthsJSON = json.Get("asks")
 	for i := len(depthsJSON.MustArray()); i > 0; i-- {
 		depthJSON := depthsJSON.GetIndex(i - 1)
-		ticker.Asks = append(ticker.Asks, MarketOrder{
+		ticker.Asks = append(ticker.Asks, OrderBook{
 			Price:  depthJSON.GetIndex(0).MustFloat64(),
 			Amount: depthJSON.GetIndex(1).MustFloat64(),
 		})
@@ -436,7 +467,7 @@ func (e *OKCoinCn) getTicker(stockType string, sizes ...int) (ticker Ticker, err
 }
 
 // GetTicker : get market ticker & depth
-func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
+func (e *OKCoinCn) GetTicker(stockType string, sizes ...interface{}) interface{} {
 	ticker, err := e.getTicker(stockType, sizes...)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, err)
@@ -446,7 +477,7 @@ func (e *OKCoinCn) GetTicker(stockType string, sizes ...int) interface{} {
 }
 
 // GetRecords : get candlestick data
-func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...int) (records []Record) {
+func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) (records []Record) {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
 		return
@@ -456,8 +487,8 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...int) (records [
 		return
 	}
 	size := 200
-	if len(sizes) > 0 {
-		size = sizes[0]
+	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
+		size = conver.IntMust(sizes[0])
 	}
 	resp, err := get(fmt.Sprint(e.host, "kline.do?symbol=", e.stockMap[stockType], "_cny&type=", e.periodMap[period], "&size=", size))
 	if err != nil {
