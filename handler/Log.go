@@ -185,3 +185,26 @@ func profits(c *iris.Context) {
 	resp["success"] = true
 	c.JSON(iris.StatusOK, resp)
 }
+
+// Get /status
+func status(c *iris.Context) {
+	resp := iris.Map{
+		"success": false,
+		"msg":     "",
+	}
+	self, err := model.GetUser(jwtmid.Get(c).Claims.(jwt.MapClaims)["sub"])
+	if err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	td := model.Trader{}
+	if td, err = model.GetTrader(self, c.URLParam("id")); err != nil {
+		resp["msg"] = fmt.Sprint(err)
+		c.JSON(iris.StatusOK, resp)
+		return
+	}
+	resp["data"] = trader.GetStatus(td.ID)
+	resp["success"] = true
+	c.JSON(iris.StatusOK, resp)
+}

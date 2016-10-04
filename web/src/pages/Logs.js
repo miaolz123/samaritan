@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Button, Modal, Table, Select, notification } from 'antd';
+import { Tag, Button, Modal, Alert, Table, Select, notification } from 'antd';
 import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import keys from 'lodash.keys';
 import axios from 'axios';
@@ -24,6 +24,7 @@ class Logs extends React.Component {
       tableData: [],
       chartData: [],
       chartShow: false,
+      statusLog: '',
     };
 
     this.handleRefresh = this.handleRefresh.bind(this);
@@ -31,6 +32,7 @@ class Logs extends React.Component {
     this.handleProfitClose = this.handleProfitClose.bind(this);
     this.fetchLogs = this.fetchLogs.bind(this);
     this.fetchProfits = this.fetchProfits.bind(this);
+    this.fetchStatusLog = this.fetchStatusLog.bind(this);
     this.deleteLogs = this.deleteLogs.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
   }
@@ -49,11 +51,20 @@ class Logs extends React.Component {
     }
     this.fetchLogs();
     this.fetchProfits();
+    this.fetchStatusLog();
+    this.autoRefresh = setInterval(this.fetchStatusLog, 5000);
+  }
+
+  componentWillUnmount() {
+    if (this.autoRefresh) {
+      clearInterval(this.autoRefresh);
+    }
   }
 
   handleRefresh() {
     this.fetchLogs();
     this.fetchProfits();
+    this.fetchStatusLog();
   }
 
   handleProfit() {
@@ -140,6 +151,37 @@ class Logs extends React.Component {
       });
   }
 
+  fetchStatusLog() {
+    const { trader } = this.props;
+
+    axios.get(`${config.api}/status?id=${trader.ID}`, { headers: { Authorization: `Bearer ${this.state.token}` } })
+      .then((response) => {
+        this.setState({ loading: false });
+        if (response.data.success) {
+          this.setState({ statusLog: response.data.data });
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response.data.msg),
+            duration: null,
+          });
+        }
+      }, (response) => {
+        this.setState({ loading: false });
+        if (String(response).indexOf('401') > 0) {
+          this.setState({ token: '' });
+          localStorage.removeItem('token');
+          this.props.reLogin();
+        } else {
+          notification['error']({
+            message: 'Error',
+            description: String(response),
+            duration: null,
+          });
+        }
+      });
+  }
+
   deleteLogs(value) {
     const { trader } = this.props;
 
@@ -178,7 +220,7 @@ class Logs extends React.Component {
   }
 
   render() {
-    const { tableData, chartData, chartShow, innerWidth, windowHeight } = this.state;
+    const { tableData, chartData, chartShow, statusLog, innerWidth, windowHeight } = this.state;
     const exchangeTypes = config.exchangeTypes.map(t => ({ text: t, value: `'${t}'` }));
     const logTypes = keys(config.logTypes).map(k => ({ text: config.logTypes[k], value: k }));
     const columns = [{
@@ -234,6 +276,7 @@ class Logs extends React.Component {
           </Select>
           <Tag>Total: {this.state.pagination.total}</Tag>
         </div>
+        {statusLog && <Alert message={`Status: ${statusLog}`} type="info" />}
         <Table
           size="middle"
           scroll={{x: innerWidth > 1250 ? innerWidth - 250 : 1000, y: windowHeight > 500 ? windowHeight - 230 : 500}}

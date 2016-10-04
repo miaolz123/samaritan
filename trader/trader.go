@@ -17,10 +17,11 @@ var errHalt = fmt.Errorf("HALT")
 // Global ...
 type Global struct {
 	model.Trader
-	Logger model.Logger
-	Ctx    *otto.Otto
-	es     []api.Exchange
-	tasks  []task
+	Logger    model.Logger
+	Ctx       *otto.Otto
+	es        []api.Exchange
+	tasks     []task
+	statusLog string
 }
 
 // Run ...
@@ -113,14 +114,23 @@ func Run(trader Global) (err error) {
 	return
 }
 
+// GetStatus ...
+func GetStatus(id uint) string {
+	t := Executor[id]
+	if t != nil {
+		return t.statusLog
+	}
+	return ""
+}
+
 // Stop ...
-func Stop(trader Global) (err error) {
-	t := Executor[trader.ID]
+func Stop(id uint) (err error) {
+	t := Executor[id]
 	if t == nil {
 		err = fmt.Errorf("Can not found the Trader")
 		return
 	}
-	Executor[trader.ID].Ctx.Interrupt <- func() {
+	Executor[id].Ctx.Interrupt <- func() {
 		panic(errHalt)
 	}
 	return
@@ -130,7 +140,7 @@ func Stop(trader Global) (err error) {
 func Clean(userID uint) {
 	for _, t := range Executor {
 		if t.UserID == userID {
-			Stop(*t)
+			Stop(t.ID)
 		}
 	}
 }

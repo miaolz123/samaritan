@@ -1,6 +1,9 @@
 package trader
 
 import (
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -41,6 +44,25 @@ func (g *Global) LogProfit(msgs ...interface{}) {
 		profit = conver.Float64Must(msgs[0])
 	}
 	g.Logger.Log(constant.PROFIT, 0.0, profit, msgs[1:]...)
+}
+
+// LogStatus ...
+func (g *Global) LogStatus(msgs ...interface{}) {
+	go func() {
+		msg := ""
+		for _, m := range msgs {
+			v := reflect.ValueOf(m)
+			switch v.Kind() {
+			case reflect.Struct, reflect.Map, reflect.Slice:
+				if bs, err := json.Marshal(m); err == nil {
+					msg += string(bs)
+					continue
+				}
+			}
+			msg += fmt.Sprintf("%+v", m)
+		}
+		g.statusLog = msg
+	}()
 }
 
 // AddTask ...
