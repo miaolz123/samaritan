@@ -85,16 +85,28 @@ func Run(trader Global) (err error) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil && err != errHalt {
-				Executor[trader.ID].Logger.Log(constant.ERROR, 0.0, 0.0, err)
+				trader.Logger.Log(constant.ERROR, 0.0, 0.0, err)
+			}
+			if exit, err := trader.Ctx.Get("exit"); err == nil && exit.IsFunction() {
+				if _, err := exit.Call(exit); err != nil {
+					trader.Logger.Log(constant.ERROR, 0.0, 0.0, err)
+				}
 			}
 			trader.Status = 0
-			Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader stop running")
+			trader.Logger.Log(constant.INFO, 0.0, 0.0, "The Trader stop running")
 		}()
 		trader.LastRunAt = time.Now().Unix()
 		trader.Status = 1
-		Executor[trader.ID].Logger.Log(constant.INFO, 0.0, 0.0, "The Trader is running")
+		trader.Logger.Log(constant.INFO, 0.0, 0.0, "The Trader is running")
 		if _, err := trader.Ctx.Run(trader.Strategy.Script); err != nil {
-			Executor[trader.ID].Logger.Log(constant.ERROR, 0.0, 0.0, err)
+			trader.Logger.Log(constant.ERROR, 0.0, 0.0, err)
+		}
+		if main, err := trader.Ctx.Get("main"); err != nil || !main.IsFunction() {
+			trader.Logger.Log(constant.ERROR, 0.0, 0.0, "Can not get the main function")
+		} else {
+			if _, err := main.Call(main); err != nil {
+				trader.Logger.Log(constant.ERROR, 0.0, 0.0, err)
+			}
 		}
 	}()
 	Executor[trader.ID] = &trader
@@ -111,7 +123,6 @@ func Stop(trader Global) (err error) {
 	Executor[trader.ID].Ctx.Interrupt <- func() {
 		panic(errHalt)
 	}
-	Executor[trader.ID].Status = 0
 	return
 }
 
