@@ -67,6 +67,10 @@ func (g *Global) LogStatus(msgs ...interface{}) {
 
 // AddTask ...
 func (g *Global) AddTask(fn otto.Value, args ...interface{}) bool {
+	if g.execed {
+		g.tasks = []task{}
+		g.execed = false
+	}
 	if fn.Class() != "Function" {
 		g.Logger.Log(constant.ERROR, 0.0, 0.0, "AddTask(), Invalid function")
 	}
@@ -76,6 +80,7 @@ func (g *Global) AddTask(fn otto.Value, args ...interface{}) bool {
 
 // ExecTasks ...
 func (g *Global) ExecTasks() (results []interface{}) {
+	g.execed = true
 	for range g.tasks {
 		results = append(results, false)
 	}

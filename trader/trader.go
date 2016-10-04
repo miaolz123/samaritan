@@ -21,6 +21,7 @@ type Global struct {
 	Ctx       *otto.Otto
 	es        []api.Exchange
 	tasks     []task
+	execed    bool
 	statusLog string
 }
 

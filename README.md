@@ -18,7 +18,7 @@
 
 ## Documentation
 
-`coming soon ...`
+[Read Documentation](https://miaolz123.gitbooks.io/samaritan/content/)
 
 ## Contributing
 
