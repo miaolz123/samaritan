@@ -26,6 +26,10 @@ type OKCoinCn struct {
 	simulate bool
 	account  Account
 	orders   map[string]Order
+
+	limit     float64
+	lastSleep int64
+	lastTimes int64
 }
 
 // NewOKCoinCn : create an exchange struct of okcoin.cn
@@ -55,10 +59,12 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 			constant.BTC: 0.01,
 			constant.LTC: 0.1,
 		},
-		records: make(map[string][]Record),
-		host:    "https://www.okcoin.cn/api/v1/",
-		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
-		option:  opt,
+		records:   make(map[string][]Record),
+		host:      "https://www.okcoin.cn/api/v1/",
+		logger:    model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
+		option:    opt,
+		limit:     10.0,
+		lastSleep: time.Now().UnixNano(),
 	}
 	if _, ok := e.stockMap[e.option.MainStock]; !ok {
 		e.option.MainStock = constant.BTC
@@ -94,12 +100,30 @@ func (e *OKCoinCn) SetMainStock(stock string) string {
 	return e.option.MainStock
 }
 
+// SetLimit : set the limit calls amount per second of this exchange
+func (e *OKCoinCn) SetLimit(times interface{}) float64 {
+	e.limit = conver.Float64Must(times)
+	return e.limit
+}
+
+// AutoSleep : auto sleep to achieve the limit calls amount per second of this exchange
+func (e *OKCoinCn) AutoSleep() {
+	now := time.Now().UnixNano()
+	interval := 1e+9/e.limit*conver.Float64Must(e.lastTimes) - conver.Float64Must(now-e.lastSleep)
+	if interval > 0.0 {
+		time.Sleep(time.Duration(conver.Int64Must(interval)))
+	}
+	e.lastTimes = 0
+	e.lastSleep = now
+}
+
 // GetMinAmount : get the min trade amonut of this exchange
 func (e *OKCoinCn) GetMinAmount(stock string) float64 {
 	return e.minAmountMap[stock]
 }
 
 func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Json, err error) {
+	e.lastTimes++
 	params = append(params, "api_key="+e.option.AccessKey)
 	sort.Strings(params)
 	params = append(params, "secret_key="+e.option.SecretKey)
@@ -297,11 +321,11 @@ func (e *OKCoinCn) GetOrder(stockType, id string) interface{} {
 	}
 	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, ", err)
 		return false
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, the error number is ", json.Get("error_code").MustInt())
 		return false
 	}
 	ordersJSON := json.Get("orders")

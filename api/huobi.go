@@ -26,6 +26,10 @@ type Huobi struct {
 	simulate bool
 	account  Account
 	orders   map[string]Order
+
+	limit     float64
+	lastSleep int64
+	lastTimes int64
 }
 
 // NewHuobi : create an exchange struct of okcoin.cn
@@ -55,10 +59,12 @@ func NewHuobi(opt Option) *Huobi {
 			constant.BTC: 0.001,
 			constant.LTC: 0.01,
 		},
-		records: make(map[string][]Record),
-		host:    "https://api.huobi.com/apiv3",
-		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
-		option:  opt,
+		records:   make(map[string][]Record),
+		host:      "https://api.huobi.com/apiv3",
+		logger:    model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
+		option:    opt,
+		limit:     10.0,
+		lastSleep: time.Now().UnixNano(),
 	}
 	if _, ok := e.stockMap[e.option.MainStock]; !ok {
 		e.option.MainStock = constant.BTC
@@ -94,12 +100,30 @@ func (e *Huobi) SetMainStock(stock string) string {
 	return e.option.MainStock
 }
 
+// SetLimit : set the limit calls amount per second of this exchange
+func (e *Huobi) SetLimit(times interface{}) float64 {
+	e.limit = conver.Float64Must(times)
+	return e.limit
+}
+
+// AutoSleep : auto sleep to achieve the limit calls amount per second of this exchange
+func (e *Huobi) AutoSleep() {
+	now := time.Now().UnixNano()
+	interval := 1e+9/e.limit*conver.Float64Must(e.lastTimes) - conver.Float64Must(now-e.lastSleep)
+	if interval > 0.0 {
+		time.Sleep(time.Duration(conver.Int64Must(interval)))
+	}
+	e.lastTimes = 0
+	e.lastSleep = now
+}
+
 // GetMinAmount : get the min trade amonut of this exchange
 func (e *Huobi) GetMinAmount(stock string) float64 {
 	return e.minAmountMap[stock]
 }
 
 func (e *Huobi) getAuthJSON(url string, params []string, optionals ...string) (json *simplejson.Json, err error) {
+	e.lastTimes++
 	params = append(params, []string{
 		"access_key=" + e.option.AccessKey,
 		"secret_key=" + e.option.SecretKey,
@@ -309,11 +333,11 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 	}
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, ", err)
 		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return false
 	}
 	return Order{

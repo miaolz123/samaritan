@@ -22,6 +22,10 @@ func (g *Global) Sleep(intervals ...interface{}) {
 	}
 	if interval > 0 {
 		time.Sleep(time.Duration(interval * 1000000))
+	} else {
+		for _, e := range g.es {
+			e.AutoSleep()
+		}
 	}
 }
 

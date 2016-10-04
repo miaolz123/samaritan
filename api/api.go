@@ -20,6 +20,8 @@ type Exchange interface {
 	GetName() string
 	GetMainStock() string
 	SetMainStock(stock string) string
+	SetLimit(times interface{}) float64
+	AutoSleep()
 	GetMinAmount(stock string) float64
 	Simulate(balance, btc, ltc interface{}) bool
 	GetAccount() interface{}
