@@ -159,6 +159,10 @@ class Logs extends React.Component {
         this.setState({ loading: false });
         if (response.data.success) {
           this.setState({ statusLog: response.data.data });
+          if (!response.data.data && this.autoRefresh) {
+            clearInterval(this.autoRefresh);
+            this.autoRefresh = undefined;
+          }
         } else {
           notification['error']({
             message: 'Error',

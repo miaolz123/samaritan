@@ -1,7 +1,9 @@
 package api
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -62,6 +64,12 @@ func signMd5(params []string) string {
 	m := md5.New()
 	m.Write([]byte(strings.Join(params, "&")))
 	return hex.EncodeToString(m.Sum(nil))
+}
+
+func signSha512(params []string, key string) string {
+	h := hmac.New(sha512.New, []byte(key))
+	h.Write([]byte(strings.Join(params, "&")))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func post(url string, data []string) ([]byte, error) {

@@ -344,13 +344,14 @@ func (e *OKCoinCn) GetOrder(stockType, id string) interface{} {
 }
 
 // GetOrders : get all unfilled orders
-func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
+func (e *OKCoinCn) GetOrders(stockType string) interface{} {
+	orders := []Order{}
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	if e.simulate {
-		return
+		return orders
 	}
 	params := []string{
 		"symbol=" + e.stockMap[stockType] + "_cny",
@@ -359,11 +360,11 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
 	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
-		return
+		return false
 	}
 	if result := json.Get("result").MustBool(); !result {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, the error number is ", json.Get("error_code").MustInt())
-		return
+		return false
 	}
 	ordersJSON := json.Get("orders")
 	count := len(ordersJSON.MustArray())
@@ -382,13 +383,14 @@ func (e *OKCoinCn) GetOrders(stockType string) (orders []Order) {
 }
 
 // GetTrades : get all filled orders recently
-func (e *OKCoinCn) GetTrades(stockType string) (orders []Order) {
+func (e *OKCoinCn) GetTrades(stockType string) interface{} {
+	orders := []Order{}
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	if e.simulate {
-		return
+		return orders
 	}
 	params := []string{
 		"symbol=" + e.stockMap[stockType] + "_cny",
@@ -399,11 +401,11 @@ func (e *OKCoinCn) GetTrades(stockType string) (orders []Order) {
 	json, err := e.getAuthJSON(e.host+"order_history.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", err)
-		return
+		return false
 	}
 	if result := json.Get("result").MustBool(); !result {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, the error number is ", json.Get("error_code").MustInt())
-		return
+		return false
 	}
 	ordersJSON := json.Get("orders")
 	count := len(ordersJSON.MustArray())
@@ -531,7 +533,7 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) (r
 	recordsNew := []Record{}
 	for i := len(json.MustArray()); i > 0; i-- {
 		recordJSON := json.GetIndex(i - 1)
-		recordTime := conver.Int64Must(time.Unix(recordJSON.GetIndex(0).MustInt64()/1000, 0).Format("200601021504"))
+		recordTime := recordJSON.GetIndex(0).MustInt64() / 1000
 		if recordTime > timeLast {
 			recordsNew = append([]Record{Record{
 				Time:   recordTime,

@@ -72,6 +72,8 @@ func Run(trader Global) (err error) {
 			trader.es = append(trader.es, api.NewOKCoinCn(opt))
 		case constant.Huobi:
 			trader.es = append(trader.es, api.NewHuobi(opt))
+		case constant.Poloniex:
+			trader.es = append(trader.es, api.NewPoloniex(opt))
 		}
 	}
 	if len(trader.es) == 0 {

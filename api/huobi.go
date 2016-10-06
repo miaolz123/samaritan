@@ -351,13 +351,14 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 }
 
 // GetOrders : get all unfilled orders
-func (e *Huobi) GetOrders(stockType string) (orders []Order) {
+func (e *Huobi) GetOrders(stockType string) interface{} {
+	orders := []Order{}
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	if e.simulate {
-		return
+		return orders
 	}
 	params := []string{
 		"method=get_orders",
@@ -366,11 +367,11 @@ func (e *Huobi) GetOrders(stockType string) (orders []Order) {
 	json, err := e.getAuthJSON(e.host+"order_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
-		return
+		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", strings.TrimSpace(json.Get("msg").MustString()))
-		return
+		return false
 	}
 	count := len(json.MustArray())
 	for i := 0; i < count; i++ {
@@ -388,13 +389,14 @@ func (e *Huobi) GetOrders(stockType string) (orders []Order) {
 }
 
 // GetTrades : get all filled orders recently
-func (e *Huobi) GetTrades(stockType string) (orders []Order) {
+func (e *Huobi) GetTrades(stockType string) interface{} {
+	orders := []Order{}
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	if e.simulate {
-		return
+		return orders
 	}
 	params := []string{
 		"method=get_new_deal_orders",
@@ -403,11 +405,11 @@ func (e *Huobi) GetTrades(stockType string) (orders []Order) {
 	json, err := e.getAuthJSON(e.host+"order_history.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", err)
-		return
+		return false
 	}
 	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", strings.TrimSpace(json.Get("msg").MustString()))
-		return
+		return false
 	}
 	count := len(json.MustArray())
 	for i := 0; i < count; i++ {
@@ -539,7 +541,8 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) (reco
 	recordsNew := []Record{}
 	for i := len(json.MustArray()); i > 0; i-- {
 		recordJSON := json.GetIndex(i - 1)
-		recordTime := conver.Int64Must(recordJSON.GetIndex(0).MustString("19700101000000000")[:12])
+		t, _ := time.Parse("20060102150405000", recordJSON.GetIndex(0).MustString("19700101000000000"))
+		recordTime := t.Unix()
 		if recordTime > timeLast {
 			recordsNew = append([]Record{Record{
 				Time:   recordTime,

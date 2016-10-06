@@ -28,8 +28,8 @@ type Exchange interface {
 	Buy(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
 	Sell(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
 	GetOrder(stockType, id string) interface{}
-	GetOrders(stockType string) []Order
-	GetTrades(stockType string) []Order
+	GetOrders(stockType string) interface{}
+	GetTrades(stockType string) interface{}
 	CancelOrder(order Order) bool
 	GetTicker(stockType string, sizes ...interface{}) interface{}
 	GetRecords(stockType, period string, sizes ...interface{}) []Record
