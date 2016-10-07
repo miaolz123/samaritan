@@ -59,10 +59,11 @@ func NewHuobi(opt Option) *Huobi {
 			constant.BTC: 0.001,
 			constant.LTC: 0.01,
 		},
-		records:   make(map[string][]Record),
-		host:      "https://api.huobi.com/apiv3",
-		logger:    model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
-		option:    opt,
+		records: make(map[string][]Record),
+		host:    "https://api.huobi.com/apiv3",
+		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
+		option:  opt,
+
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
@@ -223,15 +224,12 @@ func (e *Huobi) Buy(stockType string, _price, _amount interface{}, msgs ...inter
 			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
 			return false
 		}
-		if price < ticker.Sell {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, order price must be greater than market sell price")
-			return false
-		}
-		if price*amount > e.account.Balance {
+		total := simulateBuy(amount, ticker)
+		if total > e.account.Balance {
 			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, balance is not enough")
 			return false
 		}
-		e.account.Balance -= ticker.Sell * amount
+		e.account.Balance -= total
 		if stockType == constant.LTC {
 			e.account.LTC += amount
 		} else {
@@ -294,7 +292,7 @@ func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...inte
 			}
 			e.account.BTC -= amount
 		}
-		e.account.Balance += ticker.Buy * amount
+		e.account.Balance += simulateSell(amount, ticker)
 		e.logger.Log(constant.SELL, price, amount, msgs...)
 		return fmt.Sprint(time.Now().Unix())
 	}
@@ -511,14 +509,14 @@ func (e *Huobi) GetTicker(stockType string, sizes ...interface{}) interface{} {
 }
 
 // GetRecords : get candlestick data
-func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) (records []Record) {
+func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	if _, ok := e.periodMap[period]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
-		return
+		return false
 	}
 	size := 200
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
@@ -527,12 +525,12 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) (reco
 	resp, err := get(fmt.Sprint("http://api.huobi.com/staticmarket/", strings.ToLower(stockType), "_kline_", e.periodMap[period], "_json.js"))
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
-		return
+		return false
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
-		return
+		return false
 	}
 	timeLast := int64(0)
 	if len(e.records[period]) > 0 {

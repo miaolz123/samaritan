@@ -59,10 +59,11 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 			constant.BTC: 0.01,
 			constant.LTC: 0.1,
 		},
-		records:   make(map[string][]Record),
-		host:      "https://www.okcoin.cn/api/v1/",
-		logger:    model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
-		option:    opt,
+		records: make(map[string][]Record),
+		host:    "https://www.okcoin.cn/api/v1/",
+		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
+		option:  opt,
+
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
@@ -211,15 +212,12 @@ func (e *OKCoinCn) Buy(stockType string, _price, _amount interface{}, msgs ...in
 			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
 			return false
 		}
-		if price < ticker.Sell {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, order price must be greater than market sell price")
-			return false
-		}
-		if price*amount > e.account.Balance {
+		total := simulateBuy(amount, ticker)
+		if total > e.account.Balance {
 			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, balance is not enough")
 			return false
 		}
-		e.account.Balance -= ticker.Sell * amount
+		e.account.Balance -= total
 		if stockType == constant.LTC {
 			e.account.LTC += amount
 		} else {
@@ -283,7 +281,7 @@ func (e *OKCoinCn) Sell(stockType string, _price, _amount interface{}, msgs ...i
 			}
 			e.account.BTC -= amount
 		}
-		e.account.Balance += ticker.Buy * amount
+		e.account.Balance += simulateSell(amount, ticker)
 		e.logger.Log(constant.SELL, price, amount, msgs...)
 		return fmt.Sprint(time.Now().Unix())
 	}
@@ -503,14 +501,14 @@ func (e *OKCoinCn) GetTicker(stockType string, sizes ...interface{}) interface{}
 }
 
 // GetRecords : get candlestick data
-func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) (records []Record) {
+func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
-		return
+		return false
 	}
 	if _, ok := e.periodMap[period]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
-		return
+		return false
 	}
 	size := 200
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
@@ -519,12 +517,12 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) (r
 	resp, err := get(fmt.Sprint(e.host, "kline.do?symbol=", e.stockMap[stockType], "_cny&type=", e.periodMap[period], "&size=", size))
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
-		return
+		return false
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
-		return
+		return false
 	}
 	timeLast := int64(0)
 	if len(e.records[period]) > 0 {
