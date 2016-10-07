@@ -3,7 +3,9 @@ package api
 import (
 	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -60,6 +62,10 @@ type Record struct {
 	Volume float64
 }
 
+func base64Encode(data string) string {
+	return base64.StdEncoding.EncodeToString([]byte(data))
+}
+
 func signMd5(params []string) string {
 	m := md5.New()
 	m.Write([]byte(strings.Join(params, "&")))
@@ -68,6 +74,12 @@ func signMd5(params []string) string {
 
 func signSha512(params []string, key string) string {
 	h := hmac.New(sha512.New, []byte(key))
+	h.Write([]byte(strings.Join(params, "&")))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func signSha1(params []string, key string) string {
+	h := hmac.New(sha1.New, []byte(key))
 	h.Write([]byte(strings.Join(params, "&")))
 	return hex.EncodeToString(h.Sum(nil))
 }

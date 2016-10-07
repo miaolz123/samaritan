@@ -454,7 +454,7 @@ func (e *OKCoinCn) getTicker(stockType string, sizes ...interface{}) (ticker Tic
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprint(e.host, "depth.do?symbol=", e.stockMap[stockType], "_cny&size=", size))
+	resp, err := get(fmt.Sprintf("%vdepth.do?symbol=%v_cny&size=%v", e.host, e.stockMap[stockType], size))
 	if err != nil {
 		err = fmt.Errorf("GetTicker() error, %+v", err)
 		return
@@ -514,7 +514,7 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) in
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprint(e.host, "kline.do?symbol=", e.stockMap[stockType], "_cny&type=", e.periodMap[period], "&size=", size))
+	resp, err := get(fmt.Sprintf("%vkline.do?symbol=%v_cny&type=%v&size=%v", e.host, e.stockMap[stockType], e.periodMap[period], size))
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
 		return false

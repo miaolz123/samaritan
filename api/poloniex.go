@@ -525,7 +525,7 @@ func (e *Poloniex) getTicker(stockType string, sizes ...interface{}) (ticker Tic
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprint(e.host, "public?command=returnOrderBook&currencyPair=", e.stockMap[stockType], "&depth=", size))
+	resp, err := get(fmt.Sprintf("%vpublic?command=returnOrderBook&currencyPair=%v&depth=%v", e.host, e.stockMap[stockType], size))
 	if err != nil {
 		err = fmt.Errorf("GetTicker() error, %+v", err)
 		return
@@ -591,7 +591,7 @@ func (e *Poloniex) GetRecords(stockType, period string, sizes ...interface{}) in
 	if start < 0 {
 		start = 0
 	}
-	resp, err := get(fmt.Sprint(e.host, "public?command=returnChartData&currencyPair=", e.stockMap[stockType], "&start=", start, "&end=9999999999&period=", e.periodMap[period]))
+	resp, err := get(fmt.Sprintf("%vpublic?command=returnChartData&currencyPair=%v&start=%v&end=9999999999&period=%v", e.host, e.stockMap[stockType], start, e.periodMap[period]))
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
 		return false

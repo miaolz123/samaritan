@@ -12,6 +12,7 @@ const (
 	OkCoinCn = "okcoin.cn"
 	Huobi    = "huobi"
 	Poloniex = "poloniex"
+	Btcc     = "btcc"
 	// stock type
 	BTC = "BTC"
 	LTC = "LTC"
