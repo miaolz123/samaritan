@@ -128,9 +128,9 @@ func (e *Btcc) GetMinAmount(stock string) float64 {
 
 func (e *Btcc) getAuthJSON(method string, params []string) (jsoner *simplejson.Json, err error) {
 	e.lastTimes++
-	tonce := time.Now().UnixNano() / 1000000
+	tonce := time.Now().UnixNano() / 1000
 	allParams := []string{
-		fmt.Sprint("nonce=", tonce),
+		fmt.Sprint("tonce=", tonce),
 		"accesskey=" + e.option.AccessKey,
 		"requestmethod=post",
 		fmt.Sprint("id=", tonce),
@@ -230,7 +230,6 @@ func (e *Btcc) GetAccount() interface{} {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
-	fmt.Println(231231, json)
 	if errMsg := json.GetPath("error", "message").MustString(); errMsg != "" {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", errMsg)
 		return false
@@ -251,6 +250,7 @@ func (e *Btcc) GetAccount() interface{} {
 func (e *Btcc) Buy(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
+	fmt.Println(253253, fmt.Sprintf("%f, %f", price, amount))
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
 		return false

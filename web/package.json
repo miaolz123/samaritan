@@ -10,15 +10,13 @@
   },
   "license": "MIT",
   "dependencies": {
-    "antd": "^2.0.0",
+    "antd": "^2.0.1",
     "axios": "^0.13.1",
-    "chart.js": "^2.2.1",
     "codemirror": "^5.19.0",
     "lodash.keys": "^4.2.0",
-    "react": "*",
-    "react-chartjs-2": "^1.2.3",
+    "react": "^15.3.2",
     "react-code-mirror": "^3.1.0",
-    "react-dom": "*",
+    "react-dom": "^15.3.2",
     "recharts": "^0.15.1"
   },
   "devDependencies": {
