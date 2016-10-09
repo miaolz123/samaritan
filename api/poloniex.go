@@ -349,8 +349,8 @@ func (e *Poloniex) Buy(stockType string, _price, _amount interface{}, msgs ...in
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=buy",
 		"currencyPair=" + stockType,
-		fmt.Sprint("rate=", price),
-		fmt.Sprint("amount=", amount),
+		fmt.Sprintf("rate=%f", price),
+		fmt.Sprintf("amount=%f", amount),
 	})
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
@@ -398,8 +398,8 @@ func (e *Poloniex) Sell(stockType string, _price, _amount interface{}, msgs ...i
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=sell",
 		"currencyPair=" + stockType,
-		fmt.Sprint("rate=", price),
-		fmt.Sprint("amount=", amount),
+		fmt.Sprintf("rate=%f", price),
+		fmt.Sprintf("amount=%f", amount),
 	})
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
@@ -415,6 +415,10 @@ func (e *Poloniex) Sell(stockType string, _price, _amount interface{}, msgs ...i
 
 // GetOrder : get details of an order
 func (e *Poloniex) GetOrder(stockType, id string) interface{} {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
+		return false
+	}
 	return Order{ID: id, StockType: stockType}
 }
 

@@ -240,12 +240,12 @@ func (e *Huobi) Buy(stockType string, _price, _amount interface{}, msgs ...inter
 	}
 	params := []string{
 		"coin_type=" + e.stockMap[stockType],
-		fmt.Sprint("amount=", amount),
+		fmt.Sprintf("amount=%f", amount),
 	}
 	methodParam := "method=buy_market"
 	if price > 0 {
 		methodParam = "method=buy"
-		params = append(params, fmt.Sprint("price=", price))
+		params = append(params, fmt.Sprintf("price=%f", price))
 	}
 	params = append(params, methodParam)
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
@@ -298,12 +298,12 @@ func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...inte
 	}
 	params := []string{
 		"coin_type=" + e.stockMap[stockType],
-		fmt.Sprint("amount=", amount),
+		fmt.Sprintf("amount=%f", amount),
 	}
 	methodParam := "method=sell_market"
 	if price > 0 {
 		methodParam = "method=sell"
-		params = append(params, fmt.Sprint("price=", price))
+		params = append(params, fmt.Sprintf("price=%f", price))
 	}
 	params = append(params, methodParam)
 	json, err := e.getAuthJSON(e.host, params, "market=cny")
@@ -321,6 +321,10 @@ func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...inte
 
 // GetOrder : get details of an order
 func (e *Huobi) GetOrder(stockType, id string) interface{} {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
+		return false
+	}
 	if e.simulate {
 		return Order{ID: id, StockType: stockType}
 	}

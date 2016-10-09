@@ -230,11 +230,11 @@ func (e *OKCoinCn) Buy(stockType string, _price, _amount interface{}, msgs ...in
 		"symbol=" + e.stockMap[stockType] + "_cny",
 	}
 	typeParam := "type=buy_market"
-	amountParam := fmt.Sprint("price=", amount)
+	amountParam := fmt.Sprintf("price=%f", amount)
 	if price > 0 {
 		typeParam = "type=buy"
-		amountParam = fmt.Sprint("amount=", amount)
-		params = append(params, fmt.Sprint("price=", price))
+		amountParam = fmt.Sprintf("amount=%f", amount)
+		params = append(params, fmt.Sprintf("price=%f", price))
 	}
 	params = append(params, typeParam, amountParam)
 	json, err := e.getAuthJSON(e.host+"trade.do", params)
@@ -287,12 +287,12 @@ func (e *OKCoinCn) Sell(stockType string, _price, _amount interface{}, msgs ...i
 	}
 	params := []string{
 		"symbol=" + e.stockMap[stockType] + "_cny",
-		fmt.Sprint("amount=", amount),
+		fmt.Sprintf("amount=%f", amount),
 	}
 	typeParam := "type=sell_market"
 	if price > 0 {
 		typeParam = "type=sell"
-		params = append(params, fmt.Sprint("price=", price))
+		params = append(params, fmt.Sprintf("price=%f", price))
 	}
 	params = append(params, typeParam)
 	json, err := e.getAuthJSON(e.host+"trade.do", params)
@@ -310,6 +310,10 @@ func (e *OKCoinCn) Sell(stockType string, _price, _amount interface{}, msgs ...i
 
 // GetOrder : get details of an order
 func (e *OKCoinCn) GetOrder(stockType, id string) interface{} {
+	if _, ok := e.stockMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
+		return false
+	}
 	if e.simulate {
 		return Order{ID: id, StockType: stockType}
 	}
