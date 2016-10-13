@@ -16,7 +16,7 @@ import (
 	"github.com/miaolz123/samaritan/model"
 )
 
-// Btcc : the exchange struct of okcoin.cn
+// Btcc : the exchange struct of btcc.com
 type Btcc struct {
 	stockMap     map[string]string
 	orderTypeMap map[string]int

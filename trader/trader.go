@@ -76,6 +76,8 @@ func Run(trader Global) (err error) {
 			trader.es = append(trader.es, api.NewPoloniex(opt))
 		case constant.Btcc:
 			trader.es = append(trader.es, api.NewBtcc(opt))
+		case constant.Chbtc:
+			trader.es = append(trader.es, api.NewChbtc(opt))
 		}
 	}
 	if len(trader.es) == 0 {

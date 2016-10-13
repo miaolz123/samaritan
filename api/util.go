@@ -84,6 +84,15 @@ func signSha1(params []string, key string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+func signChbtc(params []string, key string) string {
+	sha := sha1.New()
+	sha.Write([]byte(key))
+	secret := hex.EncodeToString(sha.Sum(nil))
+	h := hmac.New(md5.New, []byte(secret))
+	h.Write([]byte(strings.Join(params, "&")))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func post(url string, data []string) ([]byte, error) {
 	var ret []byte
 	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(strings.Join(data, "&")))

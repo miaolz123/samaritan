@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -12,8 +11,8 @@ import (
 	"github.com/miaolz123/samaritan/model"
 )
 
-// Huobi : the exchange struct of huobi.com
-type Huobi struct {
+// Chbtc : the exchange struct of chbtc.com
+type Chbtc struct {
 	stockMap     map[string]string
 	orderTypeMap map[int]int
 	periodMap    map[string]string
@@ -32,35 +31,45 @@ type Huobi struct {
 	lastTimes int64
 }
 
-// NewHuobi : create an exchange struct of huobi.com
-func NewHuobi(opt Option) *Huobi {
+// NewChbtc : create an exchange struct of chbtc.com
+func NewChbtc(opt Option) *Chbtc {
 	opt.MainStock = constant.BTC
-	e := Huobi{
+	e := Chbtc{
 		stockMap: map[string]string{
-			constant.BTC: "1",
-			constant.LTC: "2",
+			constant.BTC: "btc_cny",
+			constant.LTC: "ltc_cny",
+			"ETH":        "eth_cny",
+			"ETC":        "etc_cny",
+			"ETH_BTC":    "eth_btc",
 		},
 		orderTypeMap: map[int]int{
 			1: 1,
-			2: -1,
-			3: 2,
-			4: -2,
+			0: -1,
 		},
 		periodMap: map[string]string{
-			"M":   "001",
-			"M5":  "005",
-			"M15": "015",
-			"M30": "030",
-			"H":   "060",
-			"D":   "100",
-			"W":   "200",
+			"M":   "1min",
+			"M3":  "3min",
+			"M5":  "5min",
+			"M15": "15min",
+			"M30": "30min",
+			"H":   "1hour",
+			"H2":  "2hour",
+			"H4":  "4hour",
+			"H6":  "6hour",
+			"H12": "12hour",
+			"D":   "1day",
+			"D3":  "3day",
+			"W":   "1week",
 		},
 		minAmountMap: map[string]float64{
 			constant.BTC: 0.001,
-			constant.LTC: 0.01,
+			constant.LTC: 0.001,
+			"ETH":        0.001,
+			"ETC":        0.001,
+			"ETH_BTC":    0.001,
 		},
 		records: make(map[string][]Record),
-		host:    "https://api.huobi.com/apiv3",
+		host:    "https://trade.chbtc.com/api",
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:  opt,
 
@@ -74,27 +83,27 @@ func NewHuobi(opt Option) *Huobi {
 }
 
 // Log : print something to console
-func (e *Huobi) Log(msgs ...interface{}) {
+func (e *Chbtc) Log(msgs ...interface{}) {
 	e.logger.Log(constant.INFO, 0.0, 0.0, msgs...)
 }
 
 // GetType : get the type of this exchange
-func (e *Huobi) GetType() string {
+func (e *Chbtc) GetType() string {
 	return e.option.Type
 }
 
 // GetName : get the name of this exchange
-func (e *Huobi) GetName() string {
+func (e *Chbtc) GetName() string {
 	return e.option.Name
 }
 
 // GetMainStock : get the MainStock of this exchange
-func (e *Huobi) GetMainStock() string {
+func (e *Chbtc) GetMainStock() string {
 	return e.option.MainStock
 }
 
 // SetMainStock : set the MainStock of this exchange
-func (e *Huobi) SetMainStock(stock string) string {
+func (e *Chbtc) SetMainStock(stock string) string {
 	if _, ok := e.stockMap[stock]; ok {
 		e.option.MainStock = stock
 	}
@@ -102,13 +111,13 @@ func (e *Huobi) SetMainStock(stock string) string {
 }
 
 // SetLimit : set the limit calls amount per second of this exchange
-func (e *Huobi) SetLimit(times interface{}) float64 {
+func (e *Chbtc) SetLimit(times interface{}) float64 {
 	e.limit = conver.Float64Must(times)
 	return e.limit
 }
 
 // AutoSleep : auto sleep to achieve the limit calls amount per second of this exchange
-func (e *Huobi) AutoSleep() {
+func (e *Chbtc) AutoSleep() {
 	now := time.Now().UnixNano()
 	interval := 1e+9/e.limit*conver.Float64Must(e.lastTimes) - conver.Float64Must(now-e.lastSleep)
 	if interval > 0.0 {
@@ -119,20 +128,15 @@ func (e *Huobi) AutoSleep() {
 }
 
 // GetMinAmount : get the min trade amonut of this exchange
-func (e *Huobi) GetMinAmount(stock string) float64 {
+func (e *Chbtc) GetMinAmount(stock string) float64 {
 	return e.minAmountMap[stock]
 }
 
-func (e *Huobi) getAuthJSON(url string, params []string, optionals ...string) (json *simplejson.Json, err error) {
+func (e *Chbtc) getAuthJSON(method string, params []string, optionals ...string) (json *simplejson.Json, err error) {
 	e.lastTimes++
-	params = append(params, []string{
-		"access_key=" + e.option.AccessKey,
-		"secret_key=" + e.option.SecretKey,
-		fmt.Sprint("created=", time.Now().Unix()),
-	}...)
-	sort.Strings(params)
-	params = append(params, "sign="+signMd5(params))
-	resp, err := post(url, append(params, optionals...))
+	params = append([]string{"method=" + method, "accesskey=" + e.option.AccessKey}, params...)
+	params = append(params, "sign="+signChbtc(params, e.option.SecretKey), fmt.Sprint("reqTime=", time.Now().UnixNano()/1000000))
+	resp, err := get(e.host + "/" + method + "?" + strings.Join(params, "&"))
 	if err != nil {
 		return
 	}
@@ -140,7 +144,7 @@ func (e *Huobi) getAuthJSON(url string, params []string, optionals ...string) (j
 }
 
 // Simulate : set the account of simulation
-func (e *Huobi) Simulate(balance, btc, ltc interface{}) bool {
+func (e *Chbtc) Simulate(balance, btc, ltc interface{}) bool {
 	e.simulate = true
 	// e.orders = make(map[string]Order)
 	e.account = Account{
@@ -152,7 +156,7 @@ func (e *Huobi) Simulate(balance, btc, ltc interface{}) bool {
 }
 
 // GetAccount : get the account detail of this exchange
-func (e *Huobi) GetAccount() interface{} {
+func (e *Chbtc) GetAccount() interface{} {
 	if e.simulate {
 		e.account.Total = e.account.Balance + e.account.FrozenBalance
 		ticker, err := e.getTicker(constant.BTC, 10)
@@ -177,41 +181,39 @@ func (e *Huobi) GetAccount() interface{} {
 		}
 		return e.account
 	}
-	params := []string{
-		"method=get_account_info",
-	}
-	json, err := e.getAuthJSON(e.host, params, "market=cny")
+	json, err := e.getAuthJSON("getAccountInfo", []string{})
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", json.Get("message").MustString())
 		return false
 	}
-	account := Account{
-		Total:         conver.Float64Must(json.Get("total").Interface()),
-		Net:           conver.Float64Must(json.Get("net_asset").Interface()),
-		Balance:       conver.Float64Must(json.Get("available_cny_display").Interface()),
-		FrozenBalance: conver.Float64Must(json.Get("frozen_cny_display").Interface()),
-		BTC:           conver.Float64Must(json.Get("available_btc_display").Interface()),
-		FrozenBTC:     conver.Float64Must(json.Get("frozen_btc_display").Interface()),
-		LTC:           conver.Float64Must(json.Get("available_ltc_display").Interface()),
-		FrozenLTC:     conver.Float64Must(json.Get("frozen_ltc_display").Interface()),
+	mainStock := strings.Split(e.option.MainStock, "_")[0]
+	account := map[string]float64{
+		"Total":         0.0,
+		"Net":           0.0,
+		"BTC":           json.GetPath("result", "balance", "BTC", "amount").MustFloat64(),
+		"FrozenBTC":     json.GetPath("result", "frozen", "BTC", "amount").MustFloat64(),
+		"LTC":           json.GetPath("result", "balance", "LTC", "amount").MustFloat64(),
+		"FrozenLTC":     json.GetPath("result", "frozen", "LTC", "amount").MustFloat64(),
+		"ETH":           json.GetPath("result", "balance", "ETH", "amount").MustFloat64(),
+		"FrozenETH":     json.GetPath("result", "frozen", "ETH", "amount").MustFloat64(),
+		"ETC":           json.GetPath("result", "balance", "ETC", "amount").MustFloat64(),
+		"FrozenETC":     json.GetPath("result", "frozen", "ETC", "amount").MustFloat64(),
+		"Balance":       json.GetPath("result", "balance", "CNY", "amount").MustFloat64(),
+		"FrozenBalance": json.GetPath("result", "frozen", "CNY", "amount").MustFloat64(),
+		"Stock":         0.0,
+		"FrozenStock":   0.0,
 	}
-	switch e.option.MainStock {
-	case "BTC":
-		account.Stock = account.BTC
-		account.FrozenStock = account.FrozenBTC
-	case "LTC":
-		account.Stock = account.LTC
-		account.FrozenStock = account.FrozenLTC
-	}
+	account["Stock"] = account[mainStock]
+	account["FrozenStock"] = account["Frozen"+mainStock]
 	return account
 }
 
 // Buy : buy stocks
-func (e *Huobi) Buy(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *Chbtc) Buy(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
 	if _, ok := e.stockMap[stockType]; !ok {
@@ -239,22 +241,18 @@ func (e *Huobi) Buy(stockType string, _price, _amount interface{}, msgs ...inter
 		return fmt.Sprint(time.Now().Unix())
 	}
 	params := []string{
-		"coin_type=" + e.stockMap[stockType],
+		fmt.Sprintf("price=%f", price),
 		fmt.Sprintf("amount=%f", amount),
+		"tradeType=1",
+		"currency=" + e.stockMap[stockType],
 	}
-	methodParam := "method=buy_market"
-	if price > 0 {
-		methodParam = "method=buy"
-		params = append(params, fmt.Sprintf("price=%f", price))
-	}
-	params = append(params, methodParam)
-	json, err := e.getAuthJSON(e.host, params, "market=cny")
+	json, err := e.getAuthJSON("order", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", json.Get("message").MustString())
 		return false
 	}
 	e.logger.Log(constant.BUY, price, amount, msgs...)
@@ -262,7 +260,7 @@ func (e *Huobi) Buy(stockType string, _price, _amount interface{}, msgs ...inter
 }
 
 // Sell : sell stocks
-func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *Chbtc) Sell(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
 	if _, ok := e.stockMap[stockType]; !ok {
@@ -297,22 +295,18 @@ func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...inte
 		return fmt.Sprint(time.Now().Unix())
 	}
 	params := []string{
-		"coin_type=" + e.stockMap[stockType],
+		fmt.Sprintf("price=%f", price),
 		fmt.Sprintf("amount=%f", amount),
+		"tradeType=0",
+		"currency=" + e.stockMap[stockType],
 	}
-	methodParam := "method=sell_market"
-	if price > 0 {
-		methodParam = "method=sell"
-		params = append(params, fmt.Sprintf("price=%f", price))
-	}
-	params = append(params, methodParam)
-	json, err := e.getAuthJSON(e.host, params, "market=cny")
+	json, err := e.getAuthJSON("order", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", json.Get("message").MustString())
 		return false
 	}
 	e.logger.Log(constant.SELL, price, amount, msgs...)
@@ -320,7 +314,7 @@ func (e *Huobi) Sell(stockType string, _price, _amount interface{}, msgs ...inte
 }
 
 // GetOrder : get details of an order
-func (e *Huobi) GetOrder(stockType, id string) interface{} {
+func (e *Chbtc) GetOrder(stockType, id string) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
 		return false
@@ -329,31 +323,30 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 		return Order{ID: id, StockType: stockType}
 	}
 	params := []string{
-		"method=order_info",
-		"coin_type=" + e.stockMap[stockType],
 		"id=" + id,
+		"currency=" + e.stockMap[stockType],
 	}
-	json, err := e.getAuthJSON(e.host, params, "market=cny")
+	json, err := e.getAuthJSON("getOrder", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, ", json.Get("message").MustString())
 		return false
 	}
 	return Order{
 		ID:         fmt.Sprint(json.Get("id").Interface()),
-		Price:      conver.Float64Must(json.Get("order_price").Interface()),
-		Amount:     conver.Float64Must(json.Get("order_amount").Interface()),
-		DealAmount: conver.Float64Must(json.Get("processed_amount").Interface()),
+		Price:      conver.Float64Must(json.Get("price").Interface()),
+		Amount:     conver.Float64Must(json.Get("total_amount").Interface()),
+		DealAmount: conver.Float64Must(json.Get("trade_amount").Interface()),
 		OrderType:  e.orderTypeMap[json.Get("type").MustInt()],
 		StockType:  stockType,
 	}
 }
 
 // GetOrders : get all unfilled orders
-func (e *Huobi) GetOrders(stockType string) interface{} {
+func (e *Chbtc) GetOrders(stockType string) interface{} {
 	orders := []Order{}
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
@@ -363,16 +356,17 @@ func (e *Huobi) GetOrders(stockType string) interface{} {
 		return orders
 	}
 	params := []string{
-		"method=get_orders",
-		"coin_type=" + e.stockMap[stockType],
+		"currency=" + e.stockMap[stockType],
+		"pageIndex=1",
+		"pageSize=100",
 	}
-	json, err := e.getAuthJSON(e.host+"order_info.do", params)
+	json, err := e.getAuthJSON("getUnfinishedOrdersIgnoreTradeType", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code != 3001 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", json.Get("message").MustString())
 		return false
 	}
 	count := len(json.MustArray())
@@ -380,9 +374,9 @@ func (e *Huobi) GetOrders(stockType string) interface{} {
 		orderJSON := json.GetIndex(i)
 		orders = append(orders, Order{
 			ID:         fmt.Sprint(orderJSON.Get("id").Interface()),
-			Price:      conver.Float64Must(orderJSON.Get("order_price").Interface()),
-			Amount:     conver.Float64Must(orderJSON.Get("order_amount").Interface()),
-			DealAmount: conver.Float64Must(orderJSON.Get("processed_amount").Interface()),
+			Price:      conver.Float64Must(orderJSON.Get("price").Interface()),
+			Amount:     conver.Float64Must(orderJSON.Get("total_amount").Interface()),
+			DealAmount: conver.Float64Must(orderJSON.Get("trade_amount").Interface()),
 			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		})
@@ -391,7 +385,7 @@ func (e *Huobi) GetOrders(stockType string) interface{} {
 }
 
 // GetTrades : get all filled orders recently
-func (e *Huobi) GetTrades(stockType string) interface{} {
+func (e *Chbtc) GetTrades(stockType string) interface{} {
 	orders := []Order{}
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
@@ -401,16 +395,17 @@ func (e *Huobi) GetTrades(stockType string) interface{} {
 		return orders
 	}
 	params := []string{
-		"method=get_new_deal_orders",
-		"coin_type=" + e.stockMap[stockType],
+		"currency=" + e.stockMap[stockType],
+		"pageIndex=1",
+		"pageSize=100",
 	}
-	json, err := e.getAuthJSON(e.host+"order_history.do", params)
+	json, err := e.getAuthJSON("getOrdersIgnoreTradeType", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code != 3001 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", json.Get("message").MustString())
 		return false
 	}
 	count := len(json.MustArray())
@@ -418,9 +413,9 @@ func (e *Huobi) GetTrades(stockType string) interface{} {
 		orderJSON := json.GetIndex(i)
 		orders = append(orders, Order{
 			ID:         fmt.Sprint(orderJSON.Get("id").Interface()),
-			Price:      conver.Float64Must(orderJSON.Get("order_price").Interface()),
-			Amount:     conver.Float64Must(orderJSON.Get("order_amount").Interface()),
-			DealAmount: conver.Float64Must(orderJSON.Get("processed_amount").Interface()),
+			Price:      conver.Float64Must(orderJSON.Get("price").Interface()),
+			Amount:     conver.Float64Must(orderJSON.Get("total_amount").Interface()),
+			DealAmount: conver.Float64Must(orderJSON.Get("trade_amount").Interface()),
 			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		})
@@ -429,35 +424,30 @@ func (e *Huobi) GetTrades(stockType string) interface{} {
 }
 
 // CancelOrder : cancel an order
-func (e *Huobi) CancelOrder(order Order) bool {
+func (e *Chbtc) CancelOrder(order Order) bool {
 	if e.simulate {
 		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
 		return true
 	}
 	params := []string{
-		"method=cancel_order",
-		"coin_type=" + e.stockMap[order.StockType],
 		"id=" + order.ID,
+		"currency=" + e.stockMap[order.StockType],
 	}
-	json, err := e.getAuthJSON(e.host, params, "market=cny")
+	json, err := e.getAuthJSON("cancelOrder", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", err)
 		return false
 	}
-	if code := conver.IntMust(json.Get("code").Interface()); code > 0 {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", strings.TrimSpace(json.Get("msg").MustString()))
+	if code := json.Get("code").MustInt(); code != 0 && code > 1000 {
+		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", json.Get("message").MustString())
 		return false
 	}
-	if json.Get("result").MustString() == "success" {
-		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
-		return true
-	}
-	e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", json.Get("msg").Interface())
-	return false
+	e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
+	return true
 }
 
 // getTicker : get market ticker & depth
-func (e *Huobi) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
+func (e *Chbtc) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
 	if _, ok := e.stockMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
 		return
@@ -466,7 +456,7 @@ func (e *Huobi) getTicker(stockType string, sizes ...interface{}) (ticker Ticker
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprintf("http://api.huobi.com/staticmarket/depth_%v_%v.js", strings.ToLower(stockType), size))
+	resp, err := get(fmt.Sprintf("http://api.chbtc.com/data/v1/depth?currency=%v", e.stockMap[stockType]))
 	if err != nil {
 		err = fmt.Errorf("GetTicker() error, %+v", err)
 		return
@@ -478,6 +468,9 @@ func (e *Huobi) getTicker(stockType string, sizes ...interface{}) (ticker Ticker
 	}
 	depthsJSON := json.Get("bids")
 	for i := 0; i < len(depthsJSON.MustArray()); i++ {
+		if i >= size {
+			break
+		}
 		depthJSON := depthsJSON.GetIndex(i)
 		ticker.Bids = append(ticker.Bids, OrderBook{
 			Price:  depthJSON.GetIndex(0).MustFloat64(),
@@ -485,8 +478,12 @@ func (e *Huobi) getTicker(stockType string, sizes ...interface{}) (ticker Ticker
 		})
 	}
 	depthsJSON = json.Get("asks")
-	for i := 0; i < len(depthsJSON.MustArray()); i++ {
-		depthJSON := depthsJSON.GetIndex(i)
+	length := len(depthsJSON.MustArray())
+	for i := length; i > 0; i-- {
+		if length-i >= size {
+			break
+		}
+		depthJSON := depthsJSON.GetIndex(i - 1)
 		ticker.Asks = append(ticker.Asks, OrderBook{
 			Price:  depthJSON.GetIndex(0).MustFloat64(),
 			Amount: depthJSON.GetIndex(1).MustFloat64(),
@@ -503,7 +500,7 @@ func (e *Huobi) getTicker(stockType string, sizes ...interface{}) (ticker Ticker
 }
 
 // GetTicker : get market ticker & depth
-func (e *Huobi) GetTicker(stockType string, sizes ...interface{}) interface{} {
+func (e *Chbtc) GetTicker(stockType string, sizes ...interface{}) interface{} {
 	ticker, err := e.getTicker(stockType, sizes...)
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, err)
@@ -513,7 +510,7 @@ func (e *Huobi) GetTicker(stockType string, sizes ...interface{}) interface{} {
 }
 
 // GetRecords : get candlestick data
-func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
+func (e *Chbtc) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	if _, ok := e.stockMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
 		return false
@@ -526,7 +523,7 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) inter
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprintf("http://api.huobi.com/staticmarket/%v_kline_%v_json.js", strings.ToLower(stockType), e.periodMap[period]))
+	resp, err := get(fmt.Sprintf("http://api.chbtc.com/data/v1/kline?currency=%v&type=%v&size=%v", e.stockMap[stockType], e.periodMap[period], size))
 	if err != nil {
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
 		return false
@@ -536,6 +533,7 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) inter
 		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
 		return false
 	}
+	json = json.Get("data")
 	timeLast := int64(0)
 	if len(e.records[period]) > 0 {
 		timeLast = e.records[period][len(e.records[period])-1].Time
@@ -543,8 +541,7 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) inter
 	recordsNew := []Record{}
 	for i := len(json.MustArray()); i > 0; i-- {
 		recordJSON := json.GetIndex(i - 1)
-		t, _ := time.Parse("20060102150405000", recordJSON.GetIndex(0).MustString("19700101000000000"))
-		recordTime := t.Unix()
+		recordTime := recordJSON.GetIndex(0).MustInt64() / 1000
 		if recordTime > timeLast {
 			recordsNew = append([]Record{Record{
 				Time:   recordTime,

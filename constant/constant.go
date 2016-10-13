@@ -13,6 +13,7 @@ const (
 	Huobi    = "huobi"
 	Poloniex = "poloniex"
 	Btcc     = "btcc"
+	Chbtc    = "chbtc"
 	// stock type
 	BTC = "BTC"
 	LTC = "LTC"
