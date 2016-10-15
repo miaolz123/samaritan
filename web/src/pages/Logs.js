@@ -246,6 +246,11 @@ class Logs extends React.Component {
         color={text < 0 ? 'red' : text < 1 ? '' : text < 2 ? 'yellow' : 'blue'}
       >{config.logTypes[text]}</Tag>,
     }, {
+      title: 'StockType',
+      dataIndex: 'StockType',
+      width: 100,
+      render: text => text ? <Tag>{text}</Tag> : '',
+    }, {
       title: 'Price',
       dataIndex: 'Price',
       width: 100,

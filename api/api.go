@@ -24,8 +24,7 @@ type Exchange interface {
 	AutoSleep()
 	GetMinAmount(stock string) float64
 	GetAccount() interface{}
-	Buy(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
-	Sell(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
+	Trade(stockType string, tradeType string, price, amount interface{}, msgs ...interface{}) interface{}
 	GetOrder(stockType, id string) interface{}
 	GetOrders(stockType string) interface{}
 	GetTrades(stockType string) interface{}

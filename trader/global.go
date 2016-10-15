@@ -34,7 +34,7 @@ func (g *Global) Sleep(intervals ...interface{}) {
 
 // Log ...
 func (g *Global) Log(msgs ...interface{}) {
-	g.Logger.Log(constant.INFO, 0.0, 0.0, msgs...)
+	g.Logger.Log(constant.INFO, "", 0.0, 0.0, msgs...)
 }
 
 // LogProfit ...
@@ -43,7 +43,7 @@ func (g *Global) LogProfit(msgs ...interface{}) {
 	if len(msgs) > 0 {
 		profit = conver.Float64Must(msgs[0])
 	}
-	g.Logger.Log(constant.PROFIT, 0.0, profit, msgs[1:]...)
+	g.Logger.Log(constant.PROFIT, "", 0.0, profit, msgs[1:]...)
 }
 
 // LogStatus ...
@@ -72,7 +72,7 @@ func (g *Global) AddTask(fn otto.Value, args ...interface{}) bool {
 		g.execed = false
 	}
 	if fn.Class() != "Function" {
-		g.Logger.Log(constant.ERROR, 0.0, 0.0, "AddTask(), Invalid function")
+		g.Logger.Log(constant.ERROR, "", 0.0, 0.0, "AddTask(), Invalid function")
 	}
 	g.tasks = append(g.tasks, task{fn: fn, args: args})
 	return true

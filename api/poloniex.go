@@ -16,14 +16,14 @@ import (
 
 // Poloniex : the exchange struct of poloniex
 type Poloniex struct {
-	stockMap     map[string]string
-	orderTypeMap map[string]int
-	periodMap    map[string]string
-	minAmountMap map[string]float64
-	records      map[string][]Record
-	host         string
-	logger       model.Logger
-	option       Option
+	stockTypeMap     map[string]string
+	tradeTypeMap     map[string]string
+	recordsPeriodMap map[string]string
+	minAmountMap     map[string]float64
+	records          map[string][]Record
+	host             string
+	logger           model.Logger
+	option           Option
 
 	simulate bool
 	account  map[string]float64
@@ -36,128 +36,128 @@ type Poloniex struct {
 
 // NewPoloniex : create an exchange struct of poloniex
 func NewPoloniex(opt Option) *Poloniex {
-	opt.MainStock = "BTC_XMR"
+	opt.MainStock = "BTC/XMR"
 	e := Poloniex{
-		stockMap: map[string]string{
-			"BTC_1CR":    "BTC_1CR",
-			"BTC_BBR":    "BTC_BBR",
-			"BTC_BCN":    "BTC_BCN",
-			"BTC_BELA":   "BTC_BELA",
-			"BTC_BITS":   "BTC_BITS",
-			"BTC_BLK":    "BTC_BLK",
-			"BTC_BLOCK":  "BTC_BLOCK",
-			"BTC_BTCD":   "BTC_BTCD",
-			"BTC_BTM":    "BTC_BTM",
-			"BTC_BTS":    "BTC_BTS",
-			"BTC_BURST":  "BTC_BURST",
-			"BTC_C2":     "BTC_C2",
-			"BTC_CGA":    "BTC_CGA",
-			"BTC_CLAM":   "BTC_CLAM",
-			"BTC_CURE":   "BTC_CURE",
-			"BTC_DASH":   "BTC_DASH",
-			"BTC_DGB":    "BTC_DGB",
-			"BTC_DIEM":   "BTC_DIEM",
-			"BTC_DOGE":   "BTC_DOGE",
-			"BTC_EMC2":   "BTC_EMC2",
-			"BTC_FLDC":   "BTC_FLDC",
-			"BTC_FLO":    "BTC_FLO",
-			"BTC_GEO":    "BTC_GEO",
-			"BTC_GAME":   "BTC_GAME",
-			"BTC_GRC":    "BTC_GRC",
-			"BTC_HUC":    "BTC_HUC",
-			"BTC_HZ":     "BTC_HZ",
-			"BTC_LTBC":   "BTC_LTBC",
-			"BTC_LTC":    "BTC_LTC",
-			"BTC_MAID":   "BTC_MAID",
-			"BTC_MMNXT":  "BTC_MMNXT",
-			"BTC_OMNI":   "BTC_OMNI",
-			"BTC_MYR":    "BTC_MYR",
-			"BTC_NAUT":   "BTC_NAUT",
-			"BTC_NAV":    "BTC_NAV",
-			"BTC_NBT":    "BTC_NBT",
-			"BTC_NEOS":   "BTC_NEOS",
-			"BTC_NMC":    "BTC_NMC",
-			"BTC_NOBL":   "BTC_NOBL",
-			"BTC_NOTE":   "BTC_NOTE",
-			"BTC_NSR":    "BTC_NSR",
-			"BTC_NXT":    "BTC_NXT",
-			"BTC_PINK":   "BTC_PINK",
-			"BTC_POT":    "BTC_POT",
-			"BTC_PPC":    "BTC_PPC",
-			"BTC_QBK":    "BTC_QBK",
-			"BTC_QORA":   "BTC_QORA",
-			"BTC_QTL":    "BTC_QTL",
-			"BTC_RBY":    "BTC_RBY",
-			"BTC_RDD":    "BTC_RDD",
-			"BTC_RIC":    "BTC_RIC",
-			"BTC_SDC":    "BTC_SDC",
-			"BTC_SJCX":   "BTC_SJCX",
-			"BTC_STR":    "BTC_STR",
-			"BTC_SYNC":   "BTC_SYNC",
-			"BTC_SYS":    "BTC_SYS",
-			"BTC_UNITY":  "BTC_UNITY",
-			"BTC_VIA":    "BTC_VIA",
-			"BTC_XVC":    "BTC_XVC",
-			"BTC_VRC":    "BTC_VRC",
-			"BTC_VTC":    "BTC_VTC",
-			"BTC_XBC":    "BTC_XBC",
-			"BTC_XCN":    "BTC_XCN",
-			"BTC_XCP":    "BTC_XCP",
-			"BTC_XDN":    "BTC_XDN",
-			"BTC_XEM":    "BTC_XEM",
-			"BTC_XMG":    "BTC_XMG",
-			"BTC_XMR":    "BTC_XMR",
-			"BTC_XPM":    "BTC_XPM",
-			"BTC_XRP":    "BTC_XRP",
-			"BTC_XST":    "BTC_XST",
-			"USDT_BTC":   "USDT_BTC",
-			"USDT_DASH":  "USDT_DASH",
-			"USDT_LTC":   "USDT_LTC",
-			"USDT_NXT":   "USDT_NXT",
-			"USDT_STR":   "USDT_STR",
-			"USDT_XMR":   "USDT_XMR",
-			"USDT_XRP":   "USDT_XRP",
-			"XMR_BBR":    "XMR_BBR",
-			"XMR_BCN":    "XMR_BCN",
-			"XMR_BLK":    "XMR_BLK",
-			"XMR_BTCD":   "XMR_BTCD",
-			"XMR_DASH":   "XMR_DASH",
-			"XMR_DIEM":   "XMR_DIEM",
-			"XMR_LTC":    "XMR_LTC",
-			"XMR_MAID":   "XMR_MAID",
-			"XMR_NXT":    "XMR_NXT",
-			"XMR_QORA":   "XMR_QORA",
-			"XMR_XDN":    "XMR_XDN",
-			"BTC_IOC":    "BTC_IOC",
-			"BTC_ETH":    "BTC_ETH",
-			"USDT_ETH":   "USDT_ETH",
-			"BTC_SC":     "BTC_SC",
-			"BTC_BCY":    "BTC_BCY",
-			"BTC_EXP":    "BTC_EXP",
-			"BTC_FCT":    "BTC_FCT",
-			"BTC_BITCNY": "BTC_BITCNY",
-			"BTC_RADS":   "BTC_RADS",
-			"BTC_AMP":    "BTC_AMP",
-			"BTC_VOX":    "BTC_VOX",
-			"BTC_DCR":    "BTC_DCR",
-			"BTC_LSK":    "BTC_LSK",
-			"ETH_LSK":    "ETH_LSK",
-			"BTC_LBC":    "BTC_LBC",
-			"BTC_STEEM":  "BTC_STEEM",
-			"ETH_STEEM":  "ETH_STEEM",
-			"BTC_SBD":    "BTC_SBD",
-			"BTC_ETC":    "BTC_ETC",
-			"ETH_ETC":    "ETH_ETC",
-			"USDT_ETC":   "USDT_ETC",
-			"BTC_REP":    "BTC_REP",
-			"USDT_REP":   "USDT_REP",
-			"ETH_REP":    "ETH_REP",
+		stockTypeMap: map[string]string{
+			"BTC/1CR":    "BTC_1CR",
+			"BTC/BBR":    "BTC_BBR",
+			"BTC/BCN":    "BTC_BCN",
+			"BTC/BELA":   "BTC_BELA",
+			"BTC/BITS":   "BTC_BITS",
+			"BTC/BLK":    "BTC_BLK",
+			"BTC/BLOCK":  "BTC_BLOCK",
+			"BTC/BTCD":   "BTC_BTCD",
+			"BTC/BTM":    "BTC_BTM",
+			"BTC/BTS":    "BTC_BTS",
+			"BTC/BURST":  "BTC_BURST",
+			"BTC/C2":     "BTC_C2",
+			"BTC/CGA":    "BTC_CGA",
+			"BTC/CLAM":   "BTC_CLAM",
+			"BTC/CURE":   "BTC_CURE",
+			"BTC/DASH":   "BTC_DASH",
+			"BTC/DGB":    "BTC_DGB",
+			"BTC/DIEM":   "BTC_DIEM",
+			"BTC/DOGE":   "BTC_DOGE",
+			"BTC/EMC2":   "BTC_EMC2",
+			"BTC/FLDC":   "BTC_FLDC",
+			"BTC/FLO":    "BTC_FLO",
+			"BTC/GEO":    "BTC_GEO",
+			"BTC/GAME":   "BTC_GAME",
+			"BTC/GRC":    "BTC_GRC",
+			"BTC/HUC":    "BTC_HUC",
+			"BTC/HZ":     "BTC_HZ",
+			"BTC/LTBC":   "BTC_LTBC",
+			"BTC/LTC":    "BTC_LTC",
+			"BTC/MAID":   "BTC_MAID",
+			"BTC/MMNXT":  "BTC_MMNXT",
+			"BTC/OMNI":   "BTC_OMNI",
+			"BTC/MYR":    "BTC_MYR",
+			"BTC/NAUT":   "BTC_NAUT",
+			"BTC/NAV":    "BTC_NAV",
+			"BTC/NBT":    "BTC_NBT",
+			"BTC/NEOS":   "BTC_NEOS",
+			"BTC/NMC":    "BTC_NMC",
+			"BTC/NOBL":   "BTC_NOBL",
+			"BTC/NOTE":   "BTC_NOTE",
+			"BTC/NSR":    "BTC_NSR",
+			"BTC/NXT":    "BTC_NXT",
+			"BTC/PINK":   "BTC_PINK",
+			"BTC/POT":    "BTC_POT",
+			"BTC/PPC":    "BTC_PPC",
+			"BTC/QBK":    "BTC_QBK",
+			"BTC/QORA":   "BTC_QORA",
+			"BTC/QTL":    "BTC_QTL",
+			"BTC/RBY":    "BTC_RBY",
+			"BTC/RDD":    "BTC_RDD",
+			"BTC/RIC":    "BTC_RIC",
+			"BTC/SDC":    "BTC_SDC",
+			"BTC/SJCX":   "BTC_SJCX",
+			"BTC/STR":    "BTC_STR",
+			"BTC/SYNC":   "BTC_SYNC",
+			"BTC/SYS":    "BTC_SYS",
+			"BTC/UNITY":  "BTC_UNITY",
+			"BTC/VIA":    "BTC_VIA",
+			"BTC/XVC":    "BTC_XVC",
+			"BTC/VRC":    "BTC_VRC",
+			"BTC/VTC":    "BTC_VTC",
+			"BTC/XBC":    "BTC_XBC",
+			"BTC/XCN":    "BTC_XCN",
+			"BTC/XCP":    "BTC_XCP",
+			"BTC/XDN":    "BTC_XDN",
+			"BTC/XEM":    "BTC_XEM",
+			"BTC/XMG":    "BTC_XMG",
+			"BTC/XMR":    "BTC_XMR",
+			"BTC/XPM":    "BTC_XPM",
+			"BTC/XRP":    "BTC_XRP",
+			"BTC/XST":    "BTC_XST",
+			"USDT/BTC":   "USDT_BTC",
+			"USDT/DASH":  "USDT_DASH",
+			"USDT/LTC":   "USDT_LTC",
+			"USDT/NXT":   "USDT_NXT",
+			"USDT/STR":   "USDT_STR",
+			"USDT/XMR":   "USDT_XMR",
+			"USDT/XRP":   "USDT_XRP",
+			"XMR/BBR":    "XMR_BBR",
+			"XMR/BCN":    "XMR_BCN",
+			"XMR/BLK":    "XMR_BLK",
+			"XMR/BTCD":   "XMR_BTCD",
+			"XMR/DASH":   "XMR_DASH",
+			"XMR/DIEM":   "XMR_DIEM",
+			"XMR/LTC":    "XMR_LTC",
+			"XMR/MAID":   "XMR_MAID",
+			"XMR/NXT":    "XMR_NXT",
+			"XMR/QORA":   "XMR_QORA",
+			"XMR/XDN":    "XMR_XDN",
+			"BTC/IOC":    "BTC_IOC",
+			"BTC/ETH":    "BTC_ETH",
+			"USDT/ETH":   "USDT_ETH",
+			"BTC/SC":     "BTC_SC",
+			"BTC/BCY":    "BTC_BCY",
+			"BTC/EXP":    "BTC_EXP",
+			"BTC/FCT":    "BTC_FCT",
+			"BTC/BITCNY": "BTC_BITCNY",
+			"BTC/RADS":   "BTC_RADS",
+			"BTC/AMP":    "BTC_AMP",
+			"BTC/VOX":    "BTC_VOX",
+			"BTC/DCR":    "BTC_DCR",
+			"BTC/LSK":    "BTC_LSK",
+			"ETH/LSK":    "ETH_LSK",
+			"BTC/LBC":    "BTC_LBC",
+			"BTC/STEEM":  "BTC_STEEM",
+			"ETH/STEEM":  "ETH_STEEM",
+			"BTC/SBD":    "BTC_SBD",
+			"BTC/ETC":    "BTC_ETC",
+			"ETH/ETC":    "ETH_ETC",
+			"USDT/ETC":   "USDT_ETC",
+			"BTC/REP":    "BTC_REP",
+			"USDT/REP":   "USDT_REP",
+			"ETH/REP":    "ETH_REP",
 		},
-		orderTypeMap: map[string]int{
-			"buy":  1,
-			"sell": -1,
+		tradeTypeMap: map[string]string{
+			"buy":  constant.TradeTypeBuy,
+			"sell": constant.TradeTypeSell,
 		},
-		periodMap: map[string]string{
+		recordsPeriodMap: map[string]string{
 			"M5":  "300",
 			"M15": "900",
 			"M30": "1800",
@@ -166,8 +166,7 @@ func NewPoloniex(opt Option) *Poloniex {
 			"D":   "86400",
 		},
 		minAmountMap: map[string]float64{
-			constant.BTC: 0.01,
-			constant.LTC: 0.1,
+			"BTC/XMR": 0.0,
 		},
 		records: make(map[string][]Record),
 		host:    "https://poloniex.com/",
@@ -179,7 +178,7 @@ func NewPoloniex(opt Option) *Poloniex {
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
-	if _, ok := e.stockMap[e.option.MainStock]; !ok {
+	if _, ok := e.stockTypeMap[e.option.MainStock]; !ok {
 		e.option.MainStock = "BTC_XMR"
 	}
 	return &e
@@ -187,7 +186,7 @@ func NewPoloniex(opt Option) *Poloniex {
 
 // Log : print something to console
 func (e *Poloniex) Log(msgs ...interface{}) {
-	e.logger.Log(constant.INFO, 0.0, 0.0, msgs...)
+	e.logger.Log(constant.INFO, "", 0.0, 0.0, msgs...)
 }
 
 // GetType : get the type of this exchange
@@ -207,7 +206,7 @@ func (e *Poloniex) GetMainStock() string {
 
 // SetMainStock : set the MainStock of this exchange
 func (e *Poloniex) SetMainStock(stock string) string {
-	if _, ok := e.stockMap[stock]; ok {
+	if _, ok := e.stockTypeMap[stock]; ok {
 		e.option.MainStock = stock
 	}
 	return e.option.MainStock
@@ -285,11 +284,11 @@ func (e *Poloniex) GetAccount() interface{} {
 		"account=all",
 	})
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
 	if errMsg := jsoner.Get("error").MustString(); errMsg != "" {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", errMsg)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", errMsg)
 		return false
 	}
 	resp := map[string]struct {
@@ -298,7 +297,7 @@ func (e *Poloniex) GetAccount() interface{} {
 		BtcValue  string
 	}{}
 	if err = json.Unmarshal(data, &resp); err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetAccount() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
 	account := map[string]float64{
@@ -318,105 +317,89 @@ func (e *Poloniex) GetAccount() interface{} {
 	return account
 }
 
-// Buy : buy stocks
-func (e *Poloniex) Buy(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+// Trade : place an order
+func (e *Poloniex) Trade(stockType string, tradeType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+	stockType = strings.ToUpper(stockType)
+	tradeType = strings.ToUpper(tradeType)
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
-	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
+	if _, ok := e.stockTypeMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	if e.simulate {
-		types := strings.Split(stockType, "_")
-		if len(types) < 2 {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
-		}
 		ticker, err := e.getTicker(stockType, 10)
 		if err != nil {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
 			return false
 		}
 		total := simulateBuy(amount, ticker)
-		if total > e.account[types[0]] {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", types[0], " is not enough")
+		if total > e.account["Balance"] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, balance is not enough")
 			return false
 		}
-		e.account[types[0]] -= total
-		e.account[types[1]] += amount
-		e.logger.Log(constant.BUY, price, amount, msgs...)
+		e.account["Balance"] -= total
+		if stockType == constant.LTC {
+			e.account["LTC"] += amount
+		} else {
+			e.account["BTC"] += amount
+		}
+		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
 		return fmt.Sprint(time.Now().Unix())
 	}
+	switch tradeType {
+	case constant.TradeTypeBuy:
+		return e.buy(stockType, price, amount, msgs...)
+	case constant.TradeTypeSell:
+		return e.sell(stockType, price, amount, msgs...)
+	default:
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized tradeType: ", tradeType)
+		return false
+	}
+}
+
+func (e *Poloniex) buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=buy",
-		"currencyPair=" + stockType,
+		"stockType=" + stockType,
 		fmt.Sprintf("rate=%f", price),
 		fmt.Sprintf("amount=%f", amount),
 	})
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
 		return false
 	}
 	if errMsg := json.Get("error").MustString(); errMsg != "" {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, ", errMsg)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", errMsg)
 		return false
 	}
-	e.logger.Log(constant.BUY, price, amount, msgs...)
+	e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
 	return fmt.Sprint(json.Get("orderNumber").Interface())
 }
 
-// Sell : sell stocks
-func (e *Poloniex) Sell(stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
-	price := conver.Float64Must(_price)
-	amount := conver.Float64Must(_amount)
-	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
-		return false
-	}
-	if e.simulate {
-		types := strings.Split(stockType, "_")
-		if len(types) < 2 {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
-		}
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
-			return false
-		}
-		if price > ticker.Buy {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, order price must be lesser than market buy price")
-			return false
-		}
-		if amount > e.account[types[1]] {
-			e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", e.account[types[1]], " is not enough")
-			return false
-		}
-		e.account[types[1]] -= amount
-		e.account[types[0]] += simulateSell(amount, ticker)
-		e.logger.Log(constant.SELL, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
-	}
+func (e *Poloniex) sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=sell",
-		"currencyPair=" + stockType,
+		"stockType=" + stockType,
 		fmt.Sprintf("rate=%f", price),
 		fmt.Sprintf("amount=%f", amount),
 	})
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
 		return false
 	}
 	if errMsg := json.Get("error").MustString(); errMsg != "" {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "Sell() error, ", errMsg)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", errMsg)
 		return false
 	}
-	e.logger.Log(constant.BUY, price, amount, msgs...)
+	e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
 	return fmt.Sprint(json.Get("orderNumber").Interface())
 }
 
 // GetOrder : get details of an order
 func (e *Poloniex) GetOrder(stockType, id string) interface{} {
-	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
+	if _, ok := e.stockTypeMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	return Order{ID: id, StockType: stockType}
@@ -425,8 +408,8 @@ func (e *Poloniex) GetOrder(stockType, id string) interface{} {
 // GetOrders : get all unfilled orders
 func (e *Poloniex) GetOrders(stockType string) interface{} {
 	orders := []Order{}
-	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
+	if _, ok := e.stockTypeMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	if e.simulate {
@@ -434,14 +417,14 @@ func (e *Poloniex) GetOrders(stockType string) interface{} {
 	}
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=returnOpenOrders",
-		"currencyPair=" + stockType,
+		"stockType=" + stockType,
 	})
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, ", err)
 		return false
 	}
 	if errMsg := json.Get("error").MustString(); errMsg != "" {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetOrders() error, ", errMsg)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, ", errMsg)
 		return false
 	}
 	count := len(json.MustArray())
@@ -452,7 +435,7 @@ func (e *Poloniex) GetOrders(stockType string) interface{} {
 			Price:      conver.Float64Must(orderJSON.Get("rate").Interface()),
 			Amount:     conver.Float64Must(orderJSON.Get("amount").Interface()),
 			DealAmount: 0.0,
-			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustString()],
+			TradeType:  e.tradeTypeMap[orderJSON.Get("type").MustString()],
 			StockType:  stockType,
 		})
 	}
@@ -462,8 +445,8 @@ func (e *Poloniex) GetOrders(stockType string) interface{} {
 // GetTrades : get all filled orders recently
 func (e *Poloniex) GetTrades(stockType string) interface{} {
 	orders := []Order{}
-	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
+	if _, ok := e.stockTypeMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	if e.simulate {
@@ -471,14 +454,14 @@ func (e *Poloniex) GetTrades(stockType string) interface{} {
 	}
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=returnTradeHistory",
-		"currencyPair=" + stockType,
+		"stockType=" + stockType,
 	})
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, ", err)
 		return false
 	}
 	if errMsg := json.Get("error").MustString(); errMsg != "" {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetTrades() error, ", errMsg)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, ", errMsg)
 		return false
 	}
 	count := len(json.MustArray())
@@ -489,7 +472,7 @@ func (e *Poloniex) GetTrades(stockType string) interface{} {
 			Price:      conver.Float64Must(orderJSON.Get("rate").Interface()),
 			Amount:     conver.Float64Must(orderJSON.Get("amount").Interface()),
 			DealAmount: 0.0,
-			OrderType:  e.orderTypeMap[orderJSON.Get("type").MustString()],
+			TradeType:  e.tradeTypeMap[orderJSON.Get("type").MustString()],
 			StockType:  stockType,
 		})
 	}
@@ -499,7 +482,7 @@ func (e *Poloniex) GetTrades(stockType string) interface{} {
 // CancelOrder : cancel an order
 func (e *Poloniex) CancelOrder(order Order) bool {
 	if e.simulate {
-		e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
+		e.logger.Log(constant.CANCEL, order.StockType, order.Price, order.Amount-order.DealAmount, order)
 		return true
 	}
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
@@ -507,21 +490,21 @@ func (e *Poloniex) CancelOrder(order Order) bool {
 		"orderNumber=" + order.ID,
 	})
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "CancelOrder() error, ", err)
 		return false
 	}
 	if errMsg := json.Get("error").MustString(); errMsg != "" {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "CancelOrder() error, ", errMsg)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "CancelOrder() error, ", errMsg)
 		return false
 	}
-	e.logger.Log(constant.CANCEL, order.Price, order.Amount-order.DealAmount, order)
+	e.logger.Log(constant.CANCEL, order.StockType, order.Price, order.Amount-order.DealAmount, order)
 	return true
 }
 
 // getTicker : get market ticker & depth
 func (e *Poloniex) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
 	e.lastTimes++
-	if _, ok := e.stockMap[stockType]; !ok {
+	if _, ok := e.stockTypeMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
 		return
 	}
@@ -529,7 +512,7 @@ func (e *Poloniex) getTicker(stockType string, sizes ...interface{}) (ticker Tic
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprintf("%vpublic?command=returnOrderBook&currencyPair=%v&depth=%v", e.host, e.stockMap[stockType], size))
+	resp, err := get(fmt.Sprintf("%vpublic?command=returnOrderBook&stockType=%v&depth=%v", e.host, e.stockTypeMap[stockType], size))
 	if err != nil {
 		err = fmt.Errorf("GetTicker() error, %+v", err)
 		return
@@ -569,7 +552,7 @@ func (e *Poloniex) getTicker(stockType string, sizes ...interface{}) (ticker Tic
 func (e *Poloniex) GetTicker(stockType string, sizes ...interface{}) interface{} {
 	ticker, err := e.getTicker(stockType, sizes...)
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, err)
 		return false
 	}
 	return ticker
@@ -578,31 +561,31 @@ func (e *Poloniex) GetTicker(stockType string, sizes ...interface{}) interface{}
 // GetRecords : get candlestick data
 func (e *Poloniex) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	e.lastTimes++
-	if _, ok := e.stockMap[stockType]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
+	if _, ok := e.stockTypeMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
 		return false
 	}
-	if _, ok := e.periodMap[period]; !ok {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
+	if _, ok := e.recordsPeriodMap[period]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
 		return false
 	}
 	size := 200
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	interval := conver.Int64Must(e.periodMap[period])
+	interval := conver.Int64Must(e.recordsPeriodMap[period])
 	start := time.Now().Unix() - interval*int64(size)
 	if start < 0 {
 		start = 0
 	}
-	resp, err := get(fmt.Sprintf("%vpublic?command=returnChartData&currencyPair=%v&start=%v&end=9999999999&period=%v", e.host, e.stockMap[stockType], start, e.periodMap[period]))
+	resp, err := get(fmt.Sprintf("%vpublic?command=returnChartData&stockType=%v&start=%v&end=9999999999&period=%v", e.host, e.stockTypeMap[stockType], start, e.recordsPeriodMap[period]))
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, ", err)
 		return false
 	}
 	json, err := simplejson.NewJson(resp)
 	if err != nil {
-		e.logger.Log(constant.ERROR, 0.0, 0.0, "GetRecords() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, ", err)
 		return false
 	}
 	timeLast := int64(0)

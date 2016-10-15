@@ -16,6 +16,7 @@ type Log struct {
 	Timestamp    int64
 	ExchangeType string `gorm:"type:varchar(50)"`
 	Type         int    // ["error", "info", "profit", "buy", "sell", "cancel"]
+	StockType    string `gorm:"type:varchar(20)"`
 	Price        float64
 	Amount       float64
 	Message      string `gorm:"type:text"`
@@ -30,7 +31,7 @@ type Logger struct {
 }
 
 // Log ...
-func (l Logger) Log(method int, price, amount float64, messages ...interface{}) {
+func (l Logger) Log(method int, stockType string, price, amount float64, messages ...interface{}) {
 	go func() {
 		message := ""
 		for _, m := range messages {
@@ -51,6 +52,7 @@ func (l Logger) Log(method int, price, amount float64, messages ...interface{}) 
 			Timestamp:    time.Now().Unix(),
 			ExchangeType: l.ExchangeType,
 			Type:         method,
+			StockType:    stockType,
 			Price:        price,
 			Amount:       amount,
 			Message:      message,
