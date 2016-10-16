@@ -24,7 +24,7 @@ type OKCoinCn struct {
 	option           Option
 
 	simulate bool
-	account  Account
+	account  map[string]float64
 	orders   map[string]Order
 
 	limit     float64
@@ -34,8 +34,7 @@ type OKCoinCn struct {
 
 // NewOKCoinCn : create an exchange struct of okcoin.cn
 func NewOKCoinCn(opt Option) *OKCoinCn {
-	opt.MainStock = constant.BTC
-	e := OKCoinCn{
+	return &OKCoinCn{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "btc",
 			"LTC/CNY": "ltc",
@@ -64,13 +63,11 @@ func NewOKCoinCn(opt Option) *OKCoinCn {
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:  opt,
 
+		account: make(map[string]float64),
+
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
-	if _, ok := e.stockTypeMap[e.option.MainStock]; !ok {
-		e.option.MainStock = constant.BTC
-	}
-	return &e
 }
 
 // Log : print something to console
@@ -86,19 +83,6 @@ func (e *OKCoinCn) GetType() string {
 // GetName : get the name of this exchange
 func (e *OKCoinCn) GetName() string {
 	return e.option.Name
-}
-
-// GetMainStock : get the MainStock of this exchange
-func (e *OKCoinCn) GetMainStock() string {
-	return e.option.MainStock
-}
-
-// SetMainStock : set the MainStock of this exchange
-func (e *OKCoinCn) SetMainStock(stock string) string {
-	if _, ok := e.stockTypeMap[stock]; ok {
-		e.option.MainStock = stock
-	}
-	return e.option.MainStock
 }
 
 // SetLimit : set the limit calls amount per second of this exchange
@@ -137,13 +121,11 @@ func (e *OKCoinCn) getAuthJSON(url string, params []string) (json *simplejson.Js
 }
 
 // Simulate : set the account of simulation
-func (e *OKCoinCn) Simulate(balance, btc, ltc interface{}) bool {
+func (e *OKCoinCn) Simulate(acc map[string]interface{}) bool {
 	e.simulate = true
 	// e.orders = make(map[string]Order)
-	e.account = Account{
-		Balance: conver.Float64Must(balance),
-		BTC:     conver.Float64Must(btc),
-		LTC:     conver.Float64Must(ltc),
+	for k, v := range acc {
+		e.account[k] = conver.Float64Must(v)
 	}
 	return true
 }
@@ -151,27 +133,6 @@ func (e *OKCoinCn) Simulate(balance, btc, ltc interface{}) bool {
 // GetAccount : get the account detail of this exchange
 func (e *OKCoinCn) GetAccount() interface{} {
 	if e.simulate {
-		e.account.Total = e.account.Balance + e.account.FrozenBalance
-		ticker, err := e.getTicker(constant.BTC, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
-			return false
-		}
-		e.account.Total += ticker.Mid * (e.account.BTC + e.account.FrozenBTC)
-		ticker, err = e.getTicker(constant.LTC, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
-			return false
-		}
-		e.account.Total += ticker.Mid * (e.account.LTC + e.account.FrozenLTC)
-		e.account.Net = e.account.Total
-		if e.option.MainStock == constant.LTC {
-			e.account.Stock = e.account.LTC
-			e.account.FrozenStock = e.account.FrozenLTC
-		} else {
-			e.account.Stock = e.account.BTC
-			e.account.FrozenStock = e.account.FrozenBTC
-		}
 		return e.account
 	}
 	json, err := e.getAuthJSON(e.host+"userinfo.do", []string{})
@@ -184,22 +145,18 @@ func (e *OKCoinCn) GetAccount() interface{} {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
-	return Account{
-		Total:         conver.Float64Must(json.GetPath("info", "funds", "asset", "total").Interface()),
-		Net:           conver.Float64Must(json.GetPath("info", "funds", "asset", "net").Interface()),
-		Balance:       conver.Float64Must(json.GetPath("info", "funds", "free", "cny").Interface()),
-		FrozenBalance: conver.Float64Must(json.GetPath("info", "funds", "freezed", "cny").Interface()),
-		BTC:           conver.Float64Must(json.GetPath("info", "funds", "free", "btc").Interface()),
-		FrozenBTC:     conver.Float64Must(json.GetPath("info", "funds", "freezed", "btc").Interface()),
-		LTC:           conver.Float64Must(json.GetPath("info", "funds", "free", "ltc").Interface()),
-		FrozenLTC:     conver.Float64Must(json.GetPath("info", "funds", "freezed", "ltc").Interface()),
-		Stock:         conver.Float64Must(json.GetPath("info", "funds", "free", e.stockTypeMap[e.option.MainStock]).Interface()),
-		FrozenStock:   conver.Float64Must(json.GetPath("info", "funds", "freezed", e.stockTypeMap[e.option.MainStock]).Interface()),
+	return map[string]float64{
+		"CNY":       conver.Float64Must(json.GetPath("info", "funds", "free", "cny").Interface()),
+		"FrozenCNY": conver.Float64Must(json.GetPath("info", "funds", "freezed", "cny").Interface()),
+		"BTC":       conver.Float64Must(json.GetPath("info", "funds", "free", "btc").Interface()),
+		"FrozenBTC": conver.Float64Must(json.GetPath("info", "funds", "freezed", "btc").Interface()),
+		"LTC":       conver.Float64Must(json.GetPath("info", "funds", "free", "ltc").Interface()),
+		"FrozenLTC": conver.Float64Must(json.GetPath("info", "funds", "freezed", "ltc").Interface()),
 	}
 }
 
 // Trade : place an order
-func (e *OKCoinCn) Trade(stockType string, tradeType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *OKCoinCn) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	stockType = strings.ToUpper(stockType)
 	tradeType = strings.ToUpper(tradeType)
 	price := conver.Float64Must(_price)
@@ -207,26 +164,6 @@ func (e *OKCoinCn) Trade(stockType string, tradeType string, _price, _amount int
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
-			return false
-		}
-		total := simulateBuy(amount, ticker)
-		if total > e.account.Balance {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, balance is not enough")
-			return false
-		}
-		e.account.Balance -= total
-		if stockType == constant.LTC {
-			e.account.LTC += amount
-		} else {
-			e.account.BTC += amount
-		}
-		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
 	}
 	switch tradeType {
 	case constant.TradeTypeBuy:
@@ -240,6 +177,27 @@ func (e *OKCoinCn) Trade(stockType string, tradeType string, _price, _amount int
 }
 
 func (e *OKCoinCn) buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
+			return false
+		}
+		total := simulateBuy(amount, ticker)
+		if total > e.account[currencies[1]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", currencies[1], " is not enough")
+			return false
+		}
+		e.account[currencies[0]] += amount
+		e.account[currencies[1]] -= total
+		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	params := []string{
 		"symbol=" + e.stockTypeMap[stockType] + "_cny",
 	}
@@ -265,6 +223,27 @@ func (e *OKCoinCn) buy(stockType string, price, amount float64, msgs ...interfac
 }
 
 func (e *OKCoinCn) sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
+			return false
+		}
+		if amount > e.account[currencies[0]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", currencies[0], " is not enough")
+			return false
+		}
+		total := simulateSell(amount, ticker)
+		e.account[currencies[0]] -= amount
+		e.account[currencies[1]] += total
+		e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	params := []string{
 		"symbol=" + e.stockTypeMap[stockType] + "_cny",
 		fmt.Sprintf("amount=%f", amount),

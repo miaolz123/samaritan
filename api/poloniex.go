@@ -36,8 +36,7 @@ type Poloniex struct {
 
 // NewPoloniex : create an exchange struct of poloniex
 func NewPoloniex(opt Option) *Poloniex {
-	opt.MainStock = "BTC/XMR"
-	e := Poloniex{
+	return &Poloniex{
 		stockTypeMap: map[string]string{
 			"BTC/1CR":    "BTC_1CR",
 			"BTC/BBR":    "BTC_BBR",
@@ -178,10 +177,6 @@ func NewPoloniex(opt Option) *Poloniex {
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
-	if _, ok := e.stockTypeMap[e.option.MainStock]; !ok {
-		e.option.MainStock = "BTC_XMR"
-	}
-	return &e
 }
 
 // Log : print something to console
@@ -197,19 +192,6 @@ func (e *Poloniex) GetType() string {
 // GetName : get the name of this exchange
 func (e *Poloniex) GetName() string {
 	return e.option.Name
-}
-
-// GetMainStock : get the MainStock of this exchange
-func (e *Poloniex) GetMainStock() string {
-	return e.option.MainStock
-}
-
-// SetMainStock : set the MainStock of this exchange
-func (e *Poloniex) SetMainStock(stock string) string {
-	if _, ok := e.stockTypeMap[stock]; ok {
-		e.option.MainStock = stock
-	}
-	return e.option.MainStock
 }
 
 // SetLimit : set the limit calls amount per second of this exchange
@@ -300,25 +282,16 @@ func (e *Poloniex) GetAccount() interface{} {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
-	account := map[string]float64{
-		"Total":         0.0,
-		"Net":           0.0,
-		"Balance":       0.0,
-		"FrozenBalance": 0.0,
-		"Stock":         0.0,
-		"FrozenStock":   0.0,
-	}
+	account := map[string]float64{}
 	for k, v := range resp {
 		account[k] = conver.Float64Must(v.Available)
 		account["Frozen"+k] = conver.Float64Must(v.OnOrders)
-		account["Total"] += conver.Float64Must(v.BtcValue)
 	}
-	account["Net"] = account["Total"]
 	return account
 }
 
 // Trade : place an order
-func (e *Poloniex) Trade(stockType string, tradeType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *Poloniex) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	stockType = strings.ToUpper(stockType)
 	tradeType = strings.ToUpper(tradeType)
 	price := conver.Float64Must(_price)
@@ -326,26 +299,6 @@ func (e *Poloniex) Trade(stockType string, tradeType string, _price, _amount int
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
-			return false
-		}
-		total := simulateBuy(amount, ticker)
-		if total > e.account["Balance"] {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, balance is not enough")
-			return false
-		}
-		e.account["Balance"] -= total
-		if stockType == constant.LTC {
-			e.account["LTC"] += amount
-		} else {
-			e.account["BTC"] += amount
-		}
-		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
 	}
 	switch tradeType {
 	case constant.TradeTypeBuy:
@@ -359,6 +312,27 @@ func (e *Poloniex) Trade(stockType string, tradeType string, _price, _amount int
 }
 
 func (e *Poloniex) buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
+			return false
+		}
+		total := simulateBuy(amount, ticker)
+		if total > e.account[currencies[1]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", currencies[1], " is not enough")
+			return false
+		}
+		e.account[currencies[0]] += amount
+		e.account[currencies[1]] -= total
+		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=buy",
 		"stockType=" + stockType,
@@ -378,6 +352,27 @@ func (e *Poloniex) buy(stockType string, price, amount float64, msgs ...interfac
 }
 
 func (e *Poloniex) sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
+			return false
+		}
+		if amount > e.account[currencies[0]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", currencies[0], " is not enough")
+			return false
+		}
+		total := simulateSell(amount, ticker)
+		e.account[currencies[0]] -= amount
+		e.account[currencies[1]] += total
+		e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	_, json, err := e.getAuthJSON(e.host+"tradingApi", []string{
 		"command=sell",
 		"stockType=" + stockType,
@@ -398,6 +393,7 @@ func (e *Poloniex) sell(stockType string, price, amount float64, msgs ...interfa
 
 // GetOrder : get details of an order
 func (e *Poloniex) GetOrder(stockType, id string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
 		return false
@@ -407,6 +403,7 @@ func (e *Poloniex) GetOrder(stockType, id string) interface{} {
 
 // GetOrders : get all unfilled orders
 func (e *Poloniex) GetOrders(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
@@ -444,6 +441,7 @@ func (e *Poloniex) GetOrders(stockType string) interface{} {
 
 // GetTrades : get all filled orders recently
 func (e *Poloniex) GetTrades(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
@@ -504,6 +502,7 @@ func (e *Poloniex) CancelOrder(order Order) bool {
 // getTicker : get market ticker & depth
 func (e *Poloniex) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
 	e.lastTimes++
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
 		return
@@ -561,6 +560,7 @@ func (e *Poloniex) GetTicker(stockType string, sizes ...interface{}) interface{}
 // GetRecords : get candlestick data
 func (e *Poloniex) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	e.lastTimes++
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
 		return false

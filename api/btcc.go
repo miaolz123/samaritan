@@ -28,7 +28,7 @@ type Btcc struct {
 	option           Option
 
 	simulate bool
-	account  Account
+	account  map[string]float64
 	orders   map[string]Order
 
 	limit     float64
@@ -38,8 +38,7 @@ type Btcc struct {
 
 // NewBtcc : create an exchange struct of okcoin.cn
 func NewBtcc(opt Option) *Btcc {
-	opt.MainStock = constant.BTC
-	e := Btcc{
+	return &Btcc{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "BTCCNY",
 			"LTC/CNY": "BTCCNY",
@@ -68,13 +67,11 @@ func NewBtcc(opt Option) *Btcc {
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:  opt,
 
+		account: make(map[string]float64),
+
 		limit:     5.0,
 		lastSleep: time.Now().UnixNano(),
 	}
-	if _, ok := e.stockTypeMap[e.option.MainStock]; !ok {
-		e.option.MainStock = constant.BTC
-	}
-	return &e
 }
 
 // Log : print something to console
@@ -90,19 +87,6 @@ func (e *Btcc) GetType() string {
 // GetName : get the name of this exchange
 func (e *Btcc) GetName() string {
 	return e.option.Name
-}
-
-// GetMainStock : get the MainStock of this exchange
-func (e *Btcc) GetMainStock() string {
-	return e.option.MainStock
-}
-
-// SetMainStock : set the MainStock of this exchange
-func (e *Btcc) SetMainStock(stock string) string {
-	if _, ok := e.stockTypeMap[stock]; ok {
-		e.option.MainStock = stock
-	}
-	return e.option.MainStock
 }
 
 // SetLimit : set the limit calls amount per second of this exchange
@@ -193,13 +177,11 @@ func (e *Btcc) getAuthJSON(method string, params ...interface{}) (jsoner *simple
 }
 
 // Simulate : set the account of simulation
-func (e *Btcc) Simulate(balance, btc, ltc interface{}) bool {
+func (e *Btcc) Simulate(acc map[string]interface{}) bool {
 	e.simulate = true
 	// e.orders = make(map[string]Order)
-	e.account = Account{
-		Balance: conver.Float64Must(balance),
-		BTC:     conver.Float64Must(btc),
-		LTC:     conver.Float64Must(ltc),
+	for k, v := range acc {
+		e.account[k] = conver.Float64Must(v)
 	}
 	return true
 }
@@ -207,27 +189,6 @@ func (e *Btcc) Simulate(balance, btc, ltc interface{}) bool {
 // GetAccount : get the account detail of this exchange
 func (e *Btcc) GetAccount() interface{} {
 	if e.simulate {
-		e.account.Total = e.account.Balance + e.account.FrozenBalance
-		ticker, err := e.getTicker(constant.BTC, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
-			return false
-		}
-		e.account.Total += ticker.Mid * (e.account.BTC + e.account.FrozenBTC)
-		ticker, err = e.getTicker(constant.LTC, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
-			return false
-		}
-		e.account.Total += ticker.Mid * (e.account.LTC + e.account.FrozenLTC)
-		e.account.Net = e.account.Total
-		if e.option.MainStock == constant.LTC {
-			e.account.Stock = e.account.LTC
-			e.account.FrozenStock = e.account.FrozenLTC
-		} else {
-			e.account.Stock = e.account.BTC
-			e.account.FrozenStock = e.account.FrozenBTC
-		}
 		return e.account
 	}
 	json, err := e.getAuthJSON("getAccountInfo")
@@ -239,20 +200,18 @@ func (e *Btcc) GetAccount() interface{} {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", errMsg)
 		return false
 	}
-	return Account{
-		Balance:       conver.Float64Must(json.GetPath("result", "balance", "cny", "amount").Interface()),
-		FrozenBalance: conver.Float64Must(json.GetPath("result", "frozen", "cny", "amount").Interface()),
-		BTC:           conver.Float64Must(json.GetPath("result", "balance", "btc", "amount").Interface()),
-		FrozenBTC:     conver.Float64Must(json.GetPath("result", "frozen", "btc", "amount").Interface()),
-		LTC:           conver.Float64Must(json.GetPath("result", "balance", "ltc", "amount").Interface()),
-		FrozenLTC:     conver.Float64Must(json.GetPath("result", "frozen", "ltc", "amount").Interface()),
-		Stock:         conver.Float64Must(json.GetPath("result", "balance", strings.ToLower(e.option.MainStock), "amount").Interface()),
-		FrozenStock:   conver.Float64Must(json.GetPath("result", "frozen", strings.ToLower(e.option.MainStock), "amount").Interface()),
+	return map[string]float64{
+		"CNY":       conver.Float64Must(json.GetPath("result", "balance", "cny", "amount").Interface()),
+		"FrozenCNY": conver.Float64Must(json.GetPath("result", "frozen", "cny", "amount").Interface()),
+		"BTC":       conver.Float64Must(json.GetPath("result", "balance", "btc", "amount").Interface()),
+		"FrozenBTC": conver.Float64Must(json.GetPath("result", "frozen", "btc", "amount").Interface()),
+		"LTC":       conver.Float64Must(json.GetPath("result", "balance", "ltc", "amount").Interface()),
+		"FrozenLTC": conver.Float64Must(json.GetPath("result", "frozen", "ltc", "amount").Interface()),
 	}
 }
 
 // Trade : place an order
-func (e *Btcc) Trade(stockType string, tradeType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *Btcc) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	stockType = strings.ToUpper(stockType)
 	tradeType = strings.ToUpper(tradeType)
 	price := conver.Float64Must(_price)
@@ -260,26 +219,6 @@ func (e *Btcc) Trade(stockType string, tradeType string, _price, _amount interfa
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
-			return false
-		}
-		total := simulateBuy(amount, ticker)
-		if total > e.account.Balance {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, balance is not enough")
-			return false
-		}
-		e.account.Balance -= total
-		if stockType == constant.LTC {
-			e.account.LTC += amount
-		} else {
-			e.account.BTC += amount
-		}
-		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
 	}
 	switch tradeType {
 	case constant.TradeTypeBuy:
@@ -293,6 +232,27 @@ func (e *Btcc) Trade(stockType string, tradeType string, _price, _amount interfa
 }
 
 func (e *Btcc) buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
+			return false
+		}
+		total := simulateBuy(amount, ticker)
+		if total > e.account[currencies[1]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", currencies[1], " is not enough")
+			return false
+		}
+		e.account[currencies[0]] += amount
+		e.account[currencies[1]] -= total
+		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	params := []interface{}{fmt.Sprintf("%f", price), fmt.Sprintf("%f", amount), e.stockTypeMap[stockType]}
 	if price <= 0 {
 		ticker, err := e.getTicker(stockType, 5)
@@ -326,6 +286,27 @@ func (e *Btcc) buy(stockType string, price, amount float64, msgs ...interface{})
 }
 
 func (e *Btcc) sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
+			return false
+		}
+		if amount > e.account[currencies[0]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", currencies[0], " is not enough")
+			return false
+		}
+		total := simulateSell(amount, ticker)
+		e.account[currencies[0]] -= amount
+		e.account[currencies[1]] += total
+		e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	params := []interface{}{fmt.Sprintf("%f", price), fmt.Sprintf("%f", amount), e.stockTypeMap[stockType]}
 	if price <= 0 {
 		params[0] = nil
@@ -345,6 +326,7 @@ func (e *Btcc) sell(stockType string, price, amount float64, msgs ...interface{}
 
 // GetOrder : get details of an order
 func (e *Btcc) GetOrder(stockType, id string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
 		return false
@@ -373,6 +355,7 @@ func (e *Btcc) GetOrder(stockType, id string) interface{} {
 
 // GetOrders : get all unfilled orders
 func (e *Btcc) GetOrders(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
@@ -408,6 +391,7 @@ func (e *Btcc) GetOrders(stockType string) interface{} {
 
 // GetTrades : get all filled orders recently
 func (e *Btcc) GetTrades(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
@@ -469,6 +453,7 @@ func (e *Btcc) CancelOrder(order Order) bool {
 
 // getTicker : get market ticker & depth
 func (e *Btcc) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
 		return
@@ -525,6 +510,7 @@ func (e *Btcc) GetTicker(stockType string, sizes ...interface{}) interface{} {
 
 // GetRecords : get candlestick data
 func (e *Btcc) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.recordsPeriodMap[period]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, unrecognized period: ", period)
 		return false

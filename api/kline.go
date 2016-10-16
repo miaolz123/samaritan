@@ -9,8 +9,8 @@ import (
 
 var sosobtcSymbolMap = map[string]map[string]string{
 	constant.Btcc: map[string]string{
-		constant.BTC: "btcchinabtccny",
-		constant.LTC: "btcchinaltccny",
+		"BTC/CNY": "btcchinabtccny",
+		"LTC/CNY": "btcchinaltccny",
 	},
 }
 

@@ -24,7 +24,7 @@ type Huobi struct {
 	option           Option
 
 	simulate bool
-	account  Account
+	account  map[string]float64
 	orders   map[string]Order
 
 	limit     float64
@@ -34,8 +34,7 @@ type Huobi struct {
 
 // NewHuobi : create an exchange struct of huobi.com
 func NewHuobi(opt Option) *Huobi {
-	opt.MainStock = constant.BTC
-	e := Huobi{
+	return &Huobi{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "1",
 			"LTC/CNY": "2",
@@ -64,13 +63,11 @@ func NewHuobi(opt Option) *Huobi {
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:  opt,
 
+		account: make(map[string]float64),
+
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
-	if _, ok := e.stockTypeMap[e.option.MainStock]; !ok {
-		e.option.MainStock = constant.BTC
-	}
-	return &e
 }
 
 // Log : print something to console
@@ -86,19 +83,6 @@ func (e *Huobi) GetType() string {
 // GetName : get the name of this exchange
 func (e *Huobi) GetName() string {
 	return e.option.Name
-}
-
-// GetMainStock : get the MainStock of this exchange
-func (e *Huobi) GetMainStock() string {
-	return e.option.MainStock
-}
-
-// SetMainStock : set the MainStock of this exchange
-func (e *Huobi) SetMainStock(stock string) string {
-	if _, ok := e.stockTypeMap[stock]; ok {
-		e.option.MainStock = stock
-	}
-	return e.option.MainStock
 }
 
 // SetLimit : set the limit calls amount per second of this exchange
@@ -140,13 +124,11 @@ func (e *Huobi) getAuthJSON(url string, params []string, optionals ...string) (j
 }
 
 // Simulate : set the account of simulation
-func (e *Huobi) Simulate(balance, btc, ltc interface{}) bool {
+func (e *Huobi) Simulate(acc map[string]interface{}) bool {
 	e.simulate = true
 	// e.orders = make(map[string]Order)
-	e.account = Account{
-		Balance: conver.Float64Must(balance),
-		BTC:     conver.Float64Must(btc),
-		LTC:     conver.Float64Must(ltc),
+	for k, v := range acc {
+		e.account[k] = conver.Float64Must(v)
 	}
 	return true
 }
@@ -154,27 +136,6 @@ func (e *Huobi) Simulate(balance, btc, ltc interface{}) bool {
 // GetAccount : get the account detail of this exchange
 func (e *Huobi) GetAccount() interface{} {
 	if e.simulate {
-		e.account.Total = e.account.Balance + e.account.FrozenBalance
-		ticker, err := e.getTicker(constant.BTC, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
-			return false
-		}
-		e.account.Total += ticker.Mid * (e.account.BTC + e.account.FrozenBTC)
-		ticker, err = e.getTicker(constant.LTC, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
-			return false
-		}
-		e.account.Total += ticker.Mid * (e.account.LTC + e.account.FrozenLTC)
-		e.account.Net = e.account.Total
-		if e.option.MainStock == constant.LTC {
-			e.account.Stock = e.account.LTC
-			e.account.FrozenStock = e.account.FrozenLTC
-		} else {
-			e.account.Stock = e.account.BTC
-			e.account.FrozenStock = e.account.FrozenBTC
-		}
 		return e.account
 	}
 	params := []string{
@@ -189,29 +150,18 @@ func (e *Huobi) GetAccount() interface{} {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", strings.TrimSpace(json.Get("msg").MustString()))
 		return false
 	}
-	account := Account{
-		Total:         conver.Float64Must(json.Get("total").Interface()),
-		Net:           conver.Float64Must(json.Get("net_asset").Interface()),
-		Balance:       conver.Float64Must(json.Get("available_cny_display").Interface()),
-		FrozenBalance: conver.Float64Must(json.Get("frozen_cny_display").Interface()),
-		BTC:           conver.Float64Must(json.Get("available_btc_display").Interface()),
-		FrozenBTC:     conver.Float64Must(json.Get("frozen_btc_display").Interface()),
-		LTC:           conver.Float64Must(json.Get("available_ltc_display").Interface()),
-		FrozenLTC:     conver.Float64Must(json.Get("frozen_ltc_display").Interface()),
+	return map[string]float64{
+		"CNY":       conver.Float64Must(json.Get("available_cny_display").Interface()),
+		"FrozenCNY": conver.Float64Must(json.Get("frozen_cny_display").Interface()),
+		"BTC":       conver.Float64Must(json.Get("available_btc_display").Interface()),
+		"FrozenBTC": conver.Float64Must(json.Get("frozen_btc_display").Interface()),
+		"LTC":       conver.Float64Must(json.Get("available_ltc_display").Interface()),
+		"FrozenLTC": conver.Float64Must(json.Get("frozen_ltc_display").Interface()),
 	}
-	switch e.option.MainStock {
-	case "BTC":
-		account.Stock = account.BTC
-		account.FrozenStock = account.FrozenBTC
-	case "LTC":
-		account.Stock = account.LTC
-		account.FrozenStock = account.FrozenLTC
-	}
-	return account
 }
 
 // Trade : place an order
-func (e *Huobi) Trade(stockType string, tradeType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *Huobi) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	stockType = strings.ToUpper(stockType)
 	tradeType = strings.ToUpper(tradeType)
 	price := conver.Float64Must(_price)
@@ -219,26 +169,6 @@ func (e *Huobi) Trade(stockType string, tradeType string, _price, _amount interf
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
-			return false
-		}
-		total := simulateBuy(amount, ticker)
-		if total > e.account.Balance {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, balance is not enough")
-			return false
-		}
-		e.account.Balance -= total
-		if stockType == constant.LTC {
-			e.account.LTC += amount
-		} else {
-			e.account.BTC += amount
-		}
-		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
 	}
 	switch tradeType {
 	case constant.TradeTypeBuy:
@@ -252,6 +182,27 @@ func (e *Huobi) Trade(stockType string, tradeType string, _price, _amount interf
 }
 
 func (e *Huobi) buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
+			return false
+		}
+		total := simulateBuy(amount, ticker)
+		if total > e.account[currencies[1]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", currencies[1], " is not enough")
+			return false
+		}
+		e.account[currencies[0]] += amount
+		e.account[currencies[1]] -= total
+		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	params := []string{
 		"coin_type=" + e.stockTypeMap[stockType],
 		fmt.Sprintf("amount=%f", amount),
@@ -276,6 +227,27 @@ func (e *Huobi) buy(stockType string, price, amount float64, msgs ...interface{}
 }
 
 func (e *Huobi) sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
+	if e.simulate {
+		currencies := strings.Split(stockType, "/")
+		if len(currencies) < 2 {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
+			return false
+		}
+		ticker, err := e.getTicker(stockType, 10)
+		if err != nil {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
+			return false
+		}
+		if amount > e.account[currencies[0]] {
+			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", currencies[0], " is not enough")
+			return false
+		}
+		total := simulateSell(amount, ticker)
+		e.account[currencies[0]] -= amount
+		e.account[currencies[1]] += total
+		e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
+		return fmt.Sprint(time.Now().Unix())
+	}
 	params := []string{
 		"coin_type=" + e.stockTypeMap[stockType],
 		fmt.Sprintf("amount=%f", amount),
@@ -301,6 +273,7 @@ func (e *Huobi) sell(stockType string, price, amount float64, msgs ...interface{
 
 // GetOrder : get details of an order
 func (e *Huobi) GetOrder(stockType, id string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
 		return false
@@ -334,6 +307,7 @@ func (e *Huobi) GetOrder(stockType, id string) interface{} {
 
 // GetOrders : get all unfilled orders
 func (e *Huobi) GetOrders(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
@@ -372,6 +346,7 @@ func (e *Huobi) GetOrders(stockType string) interface{} {
 
 // GetTrades : get all filled orders recently
 func (e *Huobi) GetTrades(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
@@ -438,6 +413,7 @@ func (e *Huobi) CancelOrder(order Order) bool {
 
 // getTicker : get market ticker & depth
 func (e *Huobi) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
 		return
@@ -494,6 +470,7 @@ func (e *Huobi) GetTicker(stockType string, sizes ...interface{}) interface{} {
 
 // GetRecords : get candlestick data
 func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
+	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)
 		return false
