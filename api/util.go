@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+var client = http.DefaultClient
+
 // // Account struct
 // type Account struct {
 // 	Total         float64
@@ -35,6 +37,7 @@ type Position struct {
 	ConfirmAmount float64
 	FrozenAmount  float64
 	Profit        float64
+	ContractType  string
 	TradeType     string
 	StockType     string
 }
@@ -105,9 +108,13 @@ func signChbtc(params []string, key string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func post(url string, data []string) ([]byte, error) {
-	var ret []byte
-	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(strings.Join(data, "&")))
+func post(url string, data []string) (ret []byte, err error) {
+	req, err := http.NewRequest("POST", url, strings.NewReader(strings.Join(data, "&")))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
 	if resp == nil {
 		err = fmt.Errorf("[POST %s] HTTP Error Info: %v", url, err)
 	} else if resp.StatusCode == 200 {
@@ -119,9 +126,13 @@ func post(url string, data []string) ([]byte, error) {
 	return ret, err
 }
 
-func get(url string) ([]byte, error) {
-	var ret []byte
-	resp, err := http.Get(url)
+func get(url string) (ret []byte, err error) {
+	req, err := http.NewRequest("GET", url, strings.NewReader(""))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
 	if resp == nil {
 		err = fmt.Errorf("[GET %s] HTTP Error Info: %v", url, err)
 	} else if resp.StatusCode == 200 {

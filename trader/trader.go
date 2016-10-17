@@ -78,6 +78,8 @@ func Run(trader Global) (err error) {
 			trader.es = append(trader.es, api.NewBtcc(opt))
 		case constant.Chbtc:
 			trader.es = append(trader.es, api.NewChbtc(opt))
+		case constant.OkcoinFuture:
+			trader.es = append(trader.es, api.NewOKCoinFuture(opt))
 		}
 	}
 	if len(trader.es) == 0 {
