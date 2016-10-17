@@ -5,11 +5,10 @@ import "github.com/robertkrimen/otto"
 // Option : exchange option
 type Option struct {
 	TraderID  uint
-	Type      string // one of ["okcoin.cn", "huobi"]
+	Type      string
 	Name      string
 	AccessKey string
 	SecretKey string
-	MainStock string
 	Ctx       *otto.Otto
 }
 
@@ -18,14 +17,11 @@ type Exchange interface {
 	Log(...interface{})
 	GetType() string
 	GetName() string
-	GetMainStock() string
-	SetMainStock(stock string) string
 	SetLimit(times interface{}) float64
 	AutoSleep()
 	GetMinAmount(stock string) float64
 	GetAccount() interface{}
-	Buy(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
-	Sell(stockType string, price, amount interface{}, msgs ...interface{}) interface{}
+	Trade(tradeType string, stockType string, price, amount interface{}, msgs ...interface{}) interface{}
 	GetOrder(stockType, id string) interface{}
 	GetOrders(stockType string) interface{}
 	GetTrades(stockType string) interface{}

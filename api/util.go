@@ -13,18 +13,30 @@ import (
 	"strings"
 )
 
-// Account struct
-type Account struct {
-	Total         float64
-	Net           float64
-	Balance       float64
-	FrozenBalance float64
-	BTC           float64
-	FrozenBTC     float64
-	LTC           float64
-	FrozenLTC     float64
-	Stock         float64
-	FrozenStock   float64
+// // Account struct
+// type Account struct {
+// 	Total         float64
+// 	Net           float64
+// 	Balance       float64
+// 	FrozenBalance float64
+// 	BTC           float64
+// 	FrozenBTC     float64
+// 	LTC           float64
+// 	FrozenLTC     float64
+// 	Stock         float64
+// 	FrozenStock   float64
+// }
+
+// Position struct
+type Position struct {
+	Price         float64
+	Leverage      int
+	Amount        float64
+	ConfirmAmount float64
+	FrozenAmount  float64
+	Profit        float64
+	TradeType     string
+	StockType     string
 }
 
 // Order struct
@@ -33,7 +45,7 @@ type Order struct {
 	Price      float64
 	Amount     float64
 	DealAmount float64
-	OrderType  int
+	TradeType  string
 	StockType  string
 }
 
@@ -80,6 +92,15 @@ func signSha512(params []string, key string) string {
 
 func signSha1(params []string, key string) string {
 	h := hmac.New(sha1.New, []byte(key))
+	h.Write([]byte(strings.Join(params, "&")))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func signChbtc(params []string, key string) string {
+	sha := sha1.New()
+	sha.Write([]byte(key))
+	secret := hex.EncodeToString(sha.Sum(nil))
+	h := hmac.New(md5.New, []byte(secret))
 	h.Write([]byte(strings.Join(params, "&")))
 	return hex.EncodeToString(h.Sum(nil))
 }
