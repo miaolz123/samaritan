@@ -17,5 +17,9 @@ module.exports = {
     '2': 'BUY',
     '3': 'SELL',
     '4': 'CANCEL',
+    '5': 'LONG',
+    '6': 'SHORT',
+    '7': 'LONG_CLOSE',
+    '8': 'SHORT_CLOSE',
   },
 };

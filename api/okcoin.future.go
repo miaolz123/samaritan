@@ -14,15 +14,18 @@ import (
 
 // OKCoinFuture : the exchange struct of okcoin.com future
 type OKCoinFuture struct {
-	stockTypeMap     map[string]string
-	tradeTypeMap     map[string]string
-	contractTypeMap  map[string]string
-	recordsPeriodMap map[string]string
-	minAmountMap     map[string]float64
-	records          map[string][]Record
-	host             string
-	logger           model.Logger
-	option           Option
+	stockTypeMap        map[string][2]string
+	tradeTypeMap        map[string]string
+	tradeTypeAntiMap    map[int]string
+	tradeTypeLogMap     map[string]int
+	contractTypeAntiMap map[string]string
+	leverageMap         map[string]string
+	recordsPeriodMap    map[string]string
+	minAmountMap        map[string]float64
+	records             map[string][]Record
+	host                string
+	logger              model.Logger
+	option              Option
 
 	simulate bool
 	account  map[string]float64
@@ -36,12 +39,13 @@ type OKCoinFuture struct {
 // NewOKCoinFuture : create an exchange struct of okcoin.cn
 func NewOKCoinFuture(opt Option) *OKCoinFuture {
 	return &OKCoinFuture{
-		stockTypeMap: map[string]string{
-			"BTC/USD": "btc",
-			"LTC/USD": "ltc",
-
-			"btc_usd": "BTC/USD",
-			"ltc_usd": "LTC/USD",
+		stockTypeMap: map[string][2]string{
+			"BTC.WEEK/USD":   [2]string{"btc_usd", "this_week"},
+			"BTC.WEEK2/USD":  [2]string{"btc_usd", "next_week"},
+			"BTC.MONTH3/USD": [2]string{"btc_usd", "quarter"},
+			"LTC.WEEK/USD":   [2]string{"ltc_usd", "this_week"},
+			"LTC.WEEK2/USD":  [2]string{"ltc_usd", "next_week"},
+			"LTC.MONTH3/USD": [2]string{"ltc_usd", "quarter"},
 		},
 		tradeTypeMap: map[string]string{
 			constant.TradeTypeLong:       "1",
@@ -49,18 +53,40 @@ func NewOKCoinFuture(opt Option) *OKCoinFuture {
 			constant.TradeTypeLongClose:  "3",
 			constant.TradeTypeShortClose: "4",
 		},
-		contractTypeMap: map[string]string{
+		tradeTypeAntiMap: map[int]string{
+			1: constant.TradeTypeLong,
+			2: constant.TradeTypeShort,
+			3: constant.TradeTypeLongClose,
+			4: constant.TradeTypeShortClose,
+		},
+		tradeTypeLogMap: map[string]int{
+			constant.TradeTypeLong:       5,
+			constant.TradeTypeShort:      6,
+			constant.TradeTypeLongClose:  7,
+			constant.TradeTypeShortClose: 8,
+		},
+		contractTypeAntiMap: map[string]string{
 			"this_week": "WEEK",
 			"next_week": "WEEK2",
-			"quarter":   "QUARTER",
+			"quarter":   "MONTH3",
+		},
+		leverageMap: map[string]string{
+			"10": "10",
+			"20": "20",
 		},
 		recordsPeriodMap: map[string]string{
 			"M":   "1min",
+			"M3":  "3min",
 			"M5":  "5min",
 			"M15": "15min",
 			"M30": "30min",
 			"H":   "1hour",
+			"H2":  "2hour",
+			"H4":  "4hour",
+			"H6":  "6hour",
+			"H12": "12hour",
 			"D":   "1day",
+			"D3":  "3day",
 			"W":   "1week",
 		},
 		minAmountMap: map[string]float64{
@@ -163,12 +189,21 @@ func (e *OKCoinFuture) GetAccount() interface{} {
 }
 
 // GetPositions : get the positions detail of this exchange
-func (e *OKCoinFuture) GetPositions() interface{} {
+func (e *OKCoinFuture) GetPositions(stockType string) interface{} {
+	stockType = strings.ToUpper(stockType)
+	if _, ok := e.stockTypeMap[stockType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetPositions() error, unrecognized stockType: ", stockType)
+		return false
+	}
 	positions := []Position{}
 	if e.simulate {
 		return positions
 	}
-	json, err := e.getAuthJSON(e.host+"future_position.do", []string{})
+	params := []string{
+		"symbol=" + e.stockTypeMap[stockType][0],
+		"contract_type=" + e.stockTypeMap[stockType][1],
+	}
+	json, err := e.getAuthJSON(e.host+"future_position.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetPositions() error, ", err)
 		return false
@@ -184,10 +219,12 @@ func (e *OKCoinFuture) GetPositions() interface{} {
 		positionJSON := positionsJSON.GetIndex(i)
 		side := "sell"
 		tradeType := constant.TradeTypeShort
-		buyAmount := conver.Float64Must(positionJSON.Get("buy_amount").Interface())
-		if buyAmount > 0 {
+		amount := conver.Float64Must(positionJSON.Get("buy_amount").Interface())
+		if amount > 0 {
 			side = "buy"
 			tradeType = constant.TradeTypeLong
+		} else if amount = conver.Float64Must(positionJSON.Get("sell_amount").Interface()); amount == 0.0 {
+			continue
 		}
 		positions = append(positions, Position{
 			Price:         conver.Float64Must(positionJSON.Get(side + "_price_avg").Interface()),
@@ -196,9 +233,9 @@ func (e *OKCoinFuture) GetPositions() interface{} {
 			ConfirmAmount: conver.Float64Must(positionJSON.Get(side + "_available").Interface()),
 			FrozenAmount:  0.0,
 			Profit:        conver.Float64Must(positionJSON.Get(side + "_profit_real").Interface()),
-			ContractType:  e.contractTypeMap[positionJSON.Get("contract_type").MustString()],
+			ContractType:  e.contractTypeAntiMap[positionJSON.Get("contract_type").MustString()],
 			TradeType:     tradeType,
-			StockType:     e.stockTypeMap[positionJSON.Get("symbol").MustString()],
+			StockType:     stockType,
 		})
 	}
 	return positions
@@ -206,113 +243,53 @@ func (e *OKCoinFuture) GetPositions() interface{} {
 
 // Trade : place an order
 func (e *OKCoinFuture) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
-	stockType = strings.ToUpper(stockType)
 	tradeType = strings.ToUpper(tradeType)
+	stockType = strings.ToUpper(stockType)
 	price := conver.Float64Must(_price)
 	amount := conver.Float64Must(_amount)
+	if _, ok := e.tradeTypeMap[tradeType]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized tradeType: ", tradeType)
+		return false
+	}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized stockType: ", stockType)
 		return false
 	}
-	switch tradeType {
-	case constant.TradeTypeBuy:
-		return e.buy(stockType, price, amount, msgs...)
-	case constant.TradeTypeSell:
-		return e.sell(stockType, price, amount, msgs...)
-	default:
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized tradeType: ", tradeType)
+	if len(msgs) < 1 {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized leverage")
 		return false
 	}
-}
-
-func (e *OKCoinFuture) buy(stockType string, price, amount float64, msgs ...interface{}) interface{} {
-	if e.simulate {
-		currencies := strings.Split(stockType, "/")
-		if len(currencies) < 2 {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, unrecognized stockType: ", stockType)
-			return false
-		}
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
-			return false
-		}
-		total := simulateBuy(amount, ticker)
-		if total > e.account[currencies[1]] {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", currencies[1], " is not enough")
-			return false
-		}
-		e.account[currencies[0]] += amount
-		e.account[currencies[1]] -= total
-		e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
+	leverage := fmt.Sprint(msgs[0])
+	if _, ok := e.leverageMap[leverage]; !ok {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, unrecognized leverage: ", leverage)
+		return false
+	}
+	matchPrice := "match_price=1"
+	if price > 0.0 {
+		matchPrice = "match_price=0"
+	} else {
+		price = 0.0
 	}
 	params := []string{
-		"symbol=" + e.stockTypeMap[stockType] + "_cny",
-	}
-	typeParam := "type=buy_market"
-	amountParam := fmt.Sprintf("price=%f", amount)
-	if price > 0 {
-		typeParam = "type=buy"
-		amountParam = fmt.Sprintf("amount=%f", amount)
-		params = append(params, fmt.Sprintf("price=%f", price))
-	}
-	params = append(params, typeParam, amountParam)
-	json, err := e.getAuthJSON(e.host+"trade.do", params)
-	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, ", err)
-		return false
-	}
-	if result := json.Get("result").MustBool(); !result {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Buy() error, the error number is ", json.Get("error_code").MustInt())
-		return false
-	}
-	e.logger.Log(constant.BUY, stockType, price, amount, msgs...)
-	return fmt.Sprint(json.Get("order_id").Interface())
-}
-
-func (e *OKCoinFuture) sell(stockType string, price, amount float64, msgs ...interface{}) interface{} {
-	if e.simulate {
-		currencies := strings.Split(stockType, "/")
-		if len(currencies) < 2 {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, unrecognized stockType: ", stockType)
-			return false
-		}
-		ticker, err := e.getTicker(stockType, 10)
-		if err != nil {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
-			return false
-		}
-		if amount > e.account[currencies[0]] {
-			e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", currencies[0], " is not enough")
-			return false
-		}
-		total := simulateSell(amount, ticker)
-		e.account[currencies[0]] -= amount
-		e.account[currencies[1]] += total
-		e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
-		return fmt.Sprint(time.Now().Unix())
-	}
-	params := []string{
-		"symbol=" + e.stockTypeMap[stockType] + "_cny",
+		"symbol=" + e.stockTypeMap[stockType][0],
+		"contract_type=" + e.stockTypeMap[stockType][1],
+		fmt.Sprintf("price=%f", price),
 		fmt.Sprintf("amount=%f", amount),
+		"type=" + e.tradeTypeMap[tradeType],
+		matchPrice,
+		"lever_rate=" + leverage,
 	}
-	typeParam := "type=sell_market"
-	if price > 0 {
-		typeParam = "type=sell"
-		params = append(params, fmt.Sprintf("price=%f", price))
-	}
-	params = append(params, typeParam)
-	json, err := e.getAuthJSON(e.host+"trade.do", params)
+	json, err := e.getAuthJSON(e.host+"future_trade.do", params)
 	if err != nil {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, ", err)
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
 		return false
 	}
 	if result := json.Get("result").MustBool(); !result {
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Sell() error, the error number is ", json.Get("error_code").MustInt())
+		err = fmt.Errorf("Trade() error, the error number is %v", json.Get("error_code").MustInt())
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
 		return false
 	}
-	e.logger.Log(constant.SELL, stockType, price, amount, msgs...)
+	e.logger.Log(e.tradeTypeLogMap[tradeType], stockType, price, amount, msgs[2:]...)
 	return fmt.Sprint(json.Get("order_id").Interface())
 }
 
@@ -327,10 +304,11 @@ func (e *OKCoinFuture) GetOrder(stockType, id string) interface{} {
 		return Order{ID: id, StockType: stockType}
 	}
 	params := []string{
-		"symbol=" + e.stockTypeMap[stockType] + "_cny",
+		"symbol=" + e.stockTypeMap[stockType][0],
+		"contract_type=" + e.stockTypeMap[stockType][1],
 		"order_id=" + id,
 	}
-	json, err := e.getAuthJSON(e.host+"order_info.do", params)
+	json, err := e.getAuthJSON(e.host+"future_orders_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, ", err)
 		return false
@@ -347,7 +325,8 @@ func (e *OKCoinFuture) GetOrder(stockType, id string) interface{} {
 			Price:      orderJSON.Get("price").MustFloat64(),
 			Amount:     orderJSON.Get("amount").MustFloat64(),
 			DealAmount: orderJSON.Get("deal_amount").MustFloat64(),
-			TradeType:  e.tradeTypeMap[orderJSON.Get("type").MustString()],
+			Fee:        orderJSON.Get("fee").MustFloat64(),
+			TradeType:  e.tradeTypeAntiMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		}
 	}
@@ -366,10 +345,14 @@ func (e *OKCoinFuture) GetOrders(stockType string) interface{} {
 		return orders
 	}
 	params := []string{
-		"symbol=" + e.stockTypeMap[stockType] + "_cny",
+		"symbol=" + e.stockTypeMap[stockType][0],
+		"contract_type=" + e.stockTypeMap[stockType][1],
+		"status=1",
 		"order_id=-1",
+		"current_page=1",
+		"page_length=50",
 	}
-	json, err := e.getAuthJSON(e.host+"order_info.do", params)
+	json, err := e.getAuthJSON(e.host+"future_order_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, ", err)
 		return false
@@ -387,7 +370,8 @@ func (e *OKCoinFuture) GetOrders(stockType string) interface{} {
 			Price:      orderJSON.Get("price").MustFloat64(),
 			Amount:     orderJSON.Get("amount").MustFloat64(),
 			DealAmount: orderJSON.Get("deal_amount").MustFloat64(),
-			TradeType:  e.tradeTypeMap[orderJSON.Get("type").MustString()],
+			Fee:        orderJSON.Get("fee").MustFloat64(),
+			TradeType:  e.tradeTypeAntiMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		})
 	}
@@ -406,12 +390,14 @@ func (e *OKCoinFuture) GetTrades(stockType string) interface{} {
 		return orders
 	}
 	params := []string{
-		"symbol=" + e.stockTypeMap[stockType] + "_cny",
-		"status=1",
+		"symbol=" + e.stockTypeMap[stockType][0],
+		"contract_type=" + e.stockTypeMap[stockType][1],
+		"status=2",
+		"order_id=-1",
 		"current_page=1",
-		"page_length=200",
+		"page_length=50",
 	}
-	json, err := e.getAuthJSON(e.host+"order_history.do", params)
+	json, err := e.getAuthJSON(e.host+"future_order_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, ", err)
 		return false
@@ -429,7 +415,8 @@ func (e *OKCoinFuture) GetTrades(stockType string) interface{} {
 			Price:      orderJSON.Get("price").MustFloat64(),
 			Amount:     orderJSON.Get("amount").MustFloat64(),
 			DealAmount: orderJSON.Get("deal_amount").MustFloat64(),
-			TradeType:  e.tradeTypeMap[orderJSON.Get("type").MustString()],
+			Fee:        orderJSON.Get("fee").MustFloat64(),
+			TradeType:  e.tradeTypeAntiMap[orderJSON.Get("type").MustInt()],
 			StockType:  stockType,
 		})
 	}
@@ -443,10 +430,11 @@ func (e *OKCoinFuture) CancelOrder(order Order) bool {
 		return true
 	}
 	params := []string{
-		"symbol=" + e.stockTypeMap[order.StockType] + "_cny",
+		"symbol=" + e.stockTypeMap[order.StockType][0],
 		"order_id=" + order.ID,
+		"contract_type=" + e.stockTypeMap[order.StockType][1],
 	}
-	json, err := e.getAuthJSON(e.host+"cancel_order.do", params)
+	json, err := e.getAuthJSON(e.host+"future_cancel.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "CancelOrder() error, ", err)
 		return false
@@ -470,7 +458,7 @@ func (e *OKCoinFuture) getTicker(stockType string, sizes ...interface{}) (ticker
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprintf("%vdepth.do?symbol=%v_cny&size=%v", e.host, e.stockTypeMap[stockType], size))
+	resp, err := get(fmt.Sprintf("%vfuture_depth.do?symbol=%v&contract_type=%v&size=%v", e.host, e.stockTypeMap[stockType][0], e.stockTypeMap[stockType][1], size))
 	if err != nil {
 		err = fmt.Errorf("GetTicker() error, %+v", err)
 		return
@@ -531,7 +519,7 @@ func (e *OKCoinFuture) GetRecords(stockType, period string, sizes ...interface{}
 	if len(sizes) > 0 && conver.IntMust(sizes[0]) > 0 {
 		size = conver.IntMust(sizes[0])
 	}
-	resp, err := get(fmt.Sprintf("%vkline.do?symbol=%v_cny&type=%v&size=%v", e.host, e.stockTypeMap[stockType], e.recordsPeriodMap[period], size))
+	resp, err := get(fmt.Sprintf("%vfuture_kline.do?symbol=%v&contract_type=%v&type=%v&size=%v", e.host, e.stockTypeMap[stockType][0], e.stockTypeMap[stockType][1], e.recordsPeriodMap[period], size))
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, ", err)
 		return false

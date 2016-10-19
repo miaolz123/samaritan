@@ -48,6 +48,7 @@ type Order struct {
 	Price      float64
 	Amount     float64
 	DealAmount float64
+	Fee        float64
 	TradeType  string
 	StockType  string
 }
