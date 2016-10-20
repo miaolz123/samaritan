@@ -15,20 +15,6 @@ import (
 
 var client = http.DefaultClient
 
-// // Account struct
-// type Account struct {
-// 	Total         float64
-// 	Net           float64
-// 	Balance       float64
-// 	FrozenBalance float64
-// 	BTC           float64
-// 	FrozenBTC     float64
-// 	LTC           float64
-// 	FrozenLTC     float64
-// 	Stock         float64
-// 	FrozenStock   float64
-// }
-
 // Position struct
 type Position struct {
 	Price         float64

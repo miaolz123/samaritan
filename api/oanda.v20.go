@@ -1,8 +1,11 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"sort"
+	"io/ioutil"
+	"net/http"
 	"strings"
 	"time"
 
@@ -12,8 +15,8 @@ import (
 	"github.com/miaolz123/samaritan/model"
 )
 
-// OKCoinFuture : the exchange struct of okcoin.com future
-type OKCoinFuture struct {
+// OandaV20 : the exchange struct of oanda.com v20
+type OandaV20 struct {
 	stockTypeMap        map[string][2]string
 	tradeTypeMap        map[string]string
 	tradeTypeAntiMap    map[int]string
@@ -21,6 +24,7 @@ type OKCoinFuture struct {
 	contractTypeAntiMap map[string]string
 	leverageMap         map[string]string
 	recordsPeriodMap    map[string]string
+	minAmountMap        map[string]float64
 	records             map[string][]Record
 	host                string
 	logger              model.Logger
@@ -35,9 +39,9 @@ type OKCoinFuture struct {
 	lastTimes int64
 }
 
-// NewOKCoinFuture : create an exchange struct of okcoin.cn
-func NewOKCoinFuture(opt Option) *OKCoinFuture {
-	return &OKCoinFuture{
+// NewOandaV20 : create an exchange struct of okcoin.cn
+func NewOandaV20(opt Option) *OandaV20 {
+	return &OandaV20{
 		stockTypeMap: map[string][2]string{
 			"BTC.WEEK/USD":   [2]string{"btc_usd", "this_week"},
 			"BTC.WEEK2/USD":  [2]string{"btc_usd", "next_week"},
@@ -88,8 +92,12 @@ func NewOKCoinFuture(opt Option) *OKCoinFuture {
 			"D3":  "3day",
 			"W":   "1week",
 		},
+		minAmountMap: map[string]float64{
+			"BTC/CNY": 0.01,
+			"LTC/CNY": 0.1,
+		},
 		records: make(map[string][]Record),
-		host:    "https://www.okcoin.com/api/v1/",
+		host:    "https://api-fxtrade.oanda.com",
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:  opt,
 
@@ -101,28 +109,28 @@ func NewOKCoinFuture(opt Option) *OKCoinFuture {
 }
 
 // Log : print something to console
-func (e *OKCoinFuture) Log(msgs ...interface{}) {
+func (e *OandaV20) Log(msgs ...interface{}) {
 	e.logger.Log(constant.INFO, "", 0.0, 0.0, msgs...)
 }
 
 // GetType : get the type of this exchange
-func (e *OKCoinFuture) GetType() string {
+func (e *OandaV20) GetType() string {
 	return e.option.Type
 }
 
 // GetName : get the name of this exchange
-func (e *OKCoinFuture) GetName() string {
+func (e *OandaV20) GetName() string {
 	return e.option.Name
 }
 
 // SetLimit : set the limit calls amount per second of this exchange
-func (e *OKCoinFuture) SetLimit(times interface{}) float64 {
+func (e *OandaV20) SetLimit(times interface{}) float64 {
 	e.limit = conver.Float64Must(times)
 	return e.limit
 }
 
 // AutoSleep : auto sleep to achieve the limit calls amount per second of this exchange
-func (e *OKCoinFuture) AutoSleep() {
+func (e *OandaV20) AutoSleep() {
 	now := time.Now().UnixNano()
 	interval := 1e+9/e.limit*conver.Float64Must(e.lastTimes) - conver.Float64Must(now-e.lastSleep)
 	if interval > 0.0 {
@@ -133,111 +141,123 @@ func (e *OKCoinFuture) AutoSleep() {
 }
 
 // GetMinAmount : get the min trade amonut of this exchange
-func (e *OKCoinFuture) GetMinAmount(stock string) float64 {
-	return 1.0
+func (e *OandaV20) GetMinAmount(stock string) float64 {
+	return e.minAmountMap[stock]
 }
 
-func (e *OKCoinFuture) getAuthJSON(url string, params []string) (json *simplejson.Json, err error) {
+func (e *OandaV20) getAuthJSON(method, url string, body interface{}) (statusCode int, resp *simplejson.Json, err error) {
 	e.lastTimes++
-	params = append(params, "api_key="+e.option.AccessKey)
-	sort.Strings(params)
-	params = append(params, "secret_key="+e.option.SecretKey)
-	params = append(params, "sign="+strings.ToUpper(signMd5(params)))
-	resp, err := post(url, params)
+	bs := []byte{}
+	if body != nil {
+		if bs, err = json.Marshal(body); err != nil {
+			err = fmt.Errorf("[%s %s] HTTP Error Info: %v", method, url, err)
+			return
+		}
+	}
+	req, err := http.NewRequest(method, e.host+url, bytes.NewReader(bs))
 	if err != nil {
+		err = fmt.Errorf("[%s %s] HTTP Error Info: %v", method, url, err)
 		return
 	}
-	return simplejson.NewJson(resp)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+e.option.SecretKey)
+	response, err := client.Do(req)
+	rets := []byte{}
+	if response == nil {
+		err = fmt.Errorf("[%s %s] HTTP Error", method, url)
+	} else {
+		statusCode = response.StatusCode
+		rets, _ = ioutil.ReadAll(response.Body)
+		response.Body.Close()
+	}
+	resp, err = simplejson.NewJson(rets)
+	return
 }
 
 // Simulate : set the account of simulation
-func (e *OKCoinFuture) Simulate(acc map[string]interface{}) bool {
-	e.simulate = true
-	// e.orders = make(map[string]Order)
-	for k, v := range acc {
-		e.account[k] = conver.Float64Must(v)
-	}
+func (e *OandaV20) Simulate() bool {
+	e.host = "https://api-fxpractice.oanda.com"
 	return true
 }
 
 // GetAccount : get the account detail of this exchange
-func (e *OKCoinFuture) GetAccount() interface{} {
-	if e.simulate {
-		return e.account
-	}
-	json, err := e.getAuthJSON(e.host+"future_userinfo.do", []string{})
+func (e *OandaV20) GetAccount() interface{} {
+	statusCode, json, err := e.getAuthJSON("GET", "/v3/accounts/11"+e.option.AccessKey+"/summary", nil)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
 		return false
 	}
-	if result := json.Get("result").MustBool(); !result {
-		err = fmt.Errorf("GetAccount() error, the error number is %v", json.Get("error_code").MustInt())
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
+	if statusCode > 200 {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", json.Get("errorMessage").Interface())
+		return false
+	}
+	currency := json.GetPath("account", "currency").MustString()
+	if currency == "" {
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, can not get the currency")
 		return false
 	}
 	return map[string]float64{
-		"BTC":       conver.Float64Must(json.GetPath("info", "btc", "account_rights").Interface()),
-		"FrozenBTC": 0.0,
-		"LTC":       conver.Float64Must(json.GetPath("info", "ltc", "account_rights").Interface()),
-		"FrozenLTC": 0.0,
+		currency:            conver.Float64Must(json.GetPath("account", "marginAvailable").Interface()),
+		"Frozen" + currency: 0.0,
 	}
 }
 
 // GetPositions : get the positions detail of this exchange
-func (e *OKCoinFuture) GetPositions(stockType string) interface{} {
-	stockType = strings.ToUpper(stockType)
-	if _, ok := e.stockTypeMap[stockType]; !ok {
+func (e *OandaV20) GetPositions(stockType string) interface{} {
+	stockTypeRaw := strings.ToUpper(stockType)
+	stockType = strings.Replace(stockTypeRaw, "/", "_", -1)
+	if !strings.Contains(stockType, "_") {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetPositions() error, unrecognized stockType: ", stockType)
 		return false
 	}
 	positions := []Position{}
-	if e.simulate {
-		return positions
-	}
-	params := []string{
-		"symbol=" + e.stockTypeMap[stockType][0],
-		"contract_type=" + e.stockTypeMap[stockType][1],
-	}
-	json, err := e.getAuthJSON(e.host+"future_position.do", params)
+	statusCode, json, err := e.getAuthJSON("GET", "/v3/accounts/"+e.option.AccessKey+"/positions/"+stockType, nil)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetPositions() error, ", err)
 		return false
 	}
-	if result := json.Get("result").MustBool(); !result {
-		err = fmt.Errorf("GetPositions() error, the error number is %v", json.Get("error_code").MustInt())
-		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetPositions() error, ", err)
+	if statusCode > 200 {
+		if json.Get("errorCode").MustString() == "NO_SUCH_POSITION" {
+			return positions
+		}
+		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", json.Get("errorMessage").Interface())
 		return false
 	}
-	positionsJSON := json.Get("holding")
-	count := len(positionsJSON.MustArray())
-	for i := 0; i < count; i++ {
-		positionJSON := positionsJSON.GetIndex(i)
-		side := "sell"
-		tradeType := constant.TradeTypeShort
-		amount := conver.Float64Must(positionJSON.Get("buy_amount").Interface())
-		if amount > 0 {
-			side = "buy"
-			tradeType = constant.TradeTypeLong
-		} else if amount = conver.Float64Must(positionJSON.Get("sell_amount").Interface()); amount == 0.0 {
-			continue
-		}
+	positionJSON := json.GetPath("position", "long")
+	amount := conver.Float64Must(positionJSON.Get("units").Interface())
+	if amount > 0.0 {
 		positions = append(positions, Position{
-			Price:         conver.Float64Must(positionJSON.Get(side + "_price_avg").Interface()),
-			Leverage:      conver.IntMust(positionJSON.Get("lever_rate").Interface()),
-			Amount:        conver.Float64Must(positionJSON.Get(side + "_amount").Interface()),
-			ConfirmAmount: conver.Float64Must(positionJSON.Get(side + "_available").Interface()),
+			Price:         conver.Float64Must(positionJSON.Get("averagePrice").Interface()),
+			Leverage:      1,
+			Amount:        amount,
+			ConfirmAmount: amount,
 			FrozenAmount:  0.0,
-			Profit:        conver.Float64Must(positionJSON.Get(side + "_profit_real").Interface()),
-			ContractType:  e.contractTypeAntiMap[positionJSON.Get("contract_type").MustString()],
-			TradeType:     tradeType,
-			StockType:     stockType,
+			Profit:        conver.Float64Must(positionJSON.Get("resettablePL").Interface()),
+			ContractType:  "",
+			TradeType:     constant.TradeTypeLong,
+			StockType:     stockTypeRaw,
+		})
+	}
+	positionJSON = json.GetPath("position", "short")
+	amount = conver.Float64Must(positionJSON.Get("units").Interface())
+	if amount > 0.0 {
+		positions = append(positions, Position{
+			Price:         conver.Float64Must(positionJSON.Get("averagePrice").Interface()),
+			Leverage:      1,
+			Amount:        amount,
+			ConfirmAmount: amount,
+			FrozenAmount:  0.0,
+			Profit:        conver.Float64Must(positionJSON.Get("resettablePL").Interface()),
+			ContractType:  "",
+			TradeType:     constant.TradeTypeLong,
+			StockType:     stockTypeRaw,
 		})
 	}
 	return positions
 }
 
 // Trade : place an order
-func (e *OKCoinFuture) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
+func (e *OandaV20) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	tradeType = strings.ToUpper(tradeType)
 	stockType = strings.ToUpper(stockType)
 	price := conver.Float64Must(_price)
@@ -274,7 +294,7 @@ func (e *OKCoinFuture) Trade(tradeType string, stockType string, _price, _amount
 		matchPrice,
 		"lever_rate=" + leverage,
 	}
-	json, err := e.getAuthJSON(e.host+"future_trade.do", params)
+	_, json, err := e.getAuthJSON("GET", e.host+"future_trade.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "Trade() error, ", err)
 		return false
@@ -289,7 +309,7 @@ func (e *OKCoinFuture) Trade(tradeType string, stockType string, _price, _amount
 }
 
 // GetOrder : get details of an order
-func (e *OKCoinFuture) GetOrder(stockType, id string) interface{} {
+func (e *OandaV20) GetOrder(stockType, id string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
@@ -303,7 +323,7 @@ func (e *OKCoinFuture) GetOrder(stockType, id string) interface{} {
 		"contract_type=" + e.stockTypeMap[stockType][1],
 		"order_id=" + id,
 	}
-	json, err := e.getAuthJSON(e.host+"future_orders_info.do", params)
+	_, json, err := e.getAuthJSON("GET", e.host+"future_orders_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, ", err)
 		return false
@@ -329,7 +349,7 @@ func (e *OKCoinFuture) GetOrder(stockType, id string) interface{} {
 }
 
 // GetOrders : get all unfilled orders
-func (e *OKCoinFuture) GetOrders(stockType string) interface{} {
+func (e *OandaV20) GetOrders(stockType string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
@@ -347,7 +367,7 @@ func (e *OKCoinFuture) GetOrders(stockType string) interface{} {
 		"current_page=1",
 		"page_length=50",
 	}
-	json, err := e.getAuthJSON(e.host+"future_order_info.do", params)
+	_, json, err := e.getAuthJSON("GET", e.host+"future_order_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, ", err)
 		return false
@@ -374,7 +394,7 @@ func (e *OKCoinFuture) GetOrders(stockType string) interface{} {
 }
 
 // GetTrades : get all filled orders recently
-func (e *OKCoinFuture) GetTrades(stockType string) interface{} {
+func (e *OandaV20) GetTrades(stockType string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
@@ -392,7 +412,7 @@ func (e *OKCoinFuture) GetTrades(stockType string) interface{} {
 		"current_page=1",
 		"page_length=50",
 	}
-	json, err := e.getAuthJSON(e.host+"future_order_info.do", params)
+	_, json, err := e.getAuthJSON("GET", e.host+"future_order_info.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, ", err)
 		return false
@@ -419,7 +439,7 @@ func (e *OKCoinFuture) GetTrades(stockType string) interface{} {
 }
 
 // CancelOrder : cancel an order
-func (e *OKCoinFuture) CancelOrder(order Order) bool {
+func (e *OandaV20) CancelOrder(order Order) bool {
 	if e.simulate {
 		e.logger.Log(constant.CANCEL, order.StockType, order.Price, order.Amount-order.DealAmount, order)
 		return true
@@ -429,7 +449,7 @@ func (e *OKCoinFuture) CancelOrder(order Order) bool {
 		"order_id=" + order.ID,
 		"contract_type=" + e.stockTypeMap[order.StockType][1],
 	}
-	json, err := e.getAuthJSON(e.host+"future_cancel.do", params)
+	_, json, err := e.getAuthJSON("GET", e.host+"future_cancel.do", params)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "CancelOrder() error, ", err)
 		return false
@@ -443,7 +463,7 @@ func (e *OKCoinFuture) CancelOrder(order Order) bool {
 }
 
 // getTicker : get market ticker & depth
-func (e *OKCoinFuture) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
+func (e *OandaV20) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		err = fmt.Errorf("GetTicker() error, unrecognized stockType: %+v", stockType)
@@ -490,7 +510,7 @@ func (e *OKCoinFuture) getTicker(stockType string, sizes ...interface{}) (ticker
 }
 
 // GetTicker : get market ticker & depth
-func (e *OKCoinFuture) GetTicker(stockType string, sizes ...interface{}) interface{} {
+func (e *OandaV20) GetTicker(stockType string, sizes ...interface{}) interface{} {
 	ticker, err := e.getTicker(stockType, sizes...)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, err)
@@ -500,7 +520,7 @@ func (e *OKCoinFuture) GetTicker(stockType string, sizes ...interface{}) interfa
 }
 
 // GetRecords : get candlestick data
-func (e *OKCoinFuture) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
+func (e *OandaV20) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetRecords() error, unrecognized stockType: ", stockType)

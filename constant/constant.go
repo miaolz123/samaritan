@@ -22,6 +22,7 @@ const (
 	Btcc         = "btcc"
 	Chbtc        = "chbtc"
 	OkcoinFuture = "okcoin.future"
+	OandaV20     = "oanda.v20"
 
 	// trade type
 	TradeTypeBuy        = "BUY"

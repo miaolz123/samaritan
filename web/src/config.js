@@ -8,6 +8,7 @@ module.exports = {
     'btcc',
     'chbtc',
     'okcoin.future',
+    'oanda.v20',
     'global',
   ],
   logTypes: {
