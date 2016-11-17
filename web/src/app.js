@@ -36,7 +36,9 @@ class App extends React.Component {
   componentWillMount() {
     const client = hprose.Client.create('http://127.0.0.1:9888', ['hello']);
     client.hello('hahahah', (resp) => {
-      console.log(383838, resp);
+      console.log(383838, resp.message);
+    }, (resp, err) => {
+      console.log(414141, resp, err);
     });
     axios.post(`${config.api}/token`, null, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {

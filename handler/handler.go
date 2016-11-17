@@ -2,16 +2,29 @@ package handler
 
 import (
 	"fmt"
+	// "reflect"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	// "github.com/iris-contrib/middleware/cors"
+	// "github.com/hprose/hprose-golang/rpc"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/iris-contrib/middleware/logger"
 	"github.com/iris-contrib/middleware/recovery"
 	"github.com/kataras/iris"
 	"github.com/miaolz123/samaritan/config"
 )
+
+type response struct {
+	Status  int64
+	Message string
+	Data    interface{}
+}
+
+// func middlewareAuth(name string, args []reflect.Value, ctx rpc.HTTPContext, next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+// 	fmt.Println("middlewareAuth")
+// 	return next(name, args, ctx)
+// }
 
 var (
 	signKey = []byte("XXXXXXXXXXXXXXXX") // JWT sign key
