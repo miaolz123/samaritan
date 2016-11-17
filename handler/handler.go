@@ -2,12 +2,12 @@ package handler
 
 import (
 	"fmt"
-	// "reflect"
+	"log"
+	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	// "github.com/iris-contrib/middleware/cors"
-	// "github.com/hprose/hprose-golang/rpc"
+	"github.com/hprose/hprose-golang/rpc"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/iris-contrib/middleware/logger"
 	"github.com/iris-contrib/middleware/recovery"
@@ -16,15 +16,38 @@ import (
 )
 
 type response struct {
-	Status  int64
+	Success bool
 	Message string
 	Data    interface{}
 }
 
-// func middlewareAuth(name string, args []reflect.Value, ctx rpc.HTTPContext, next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
-// 	fmt.Println("middlewareAuth")
-// 	return next(name, args, ctx)
-// }
+type event struct{}
+
+func (e event) OnSendHeader(ctx *rpc.HTTPContext) {
+	ctx.Response.Header().Set("Access-Control-Allow-Headers", "Authorization")
+}
+
+// Server ...
+func Server() {
+	port := config.String("port")
+	service := rpc.NewHTTPService()
+	handler := struct {
+		User user
+	}{}
+	service.Event = event{}
+	service.AddBeforeFilterHandler(func(request []byte, ctx rpc.Context, next rpc.NextFilterHandler) (response []byte, err error) {
+		httpContext := ctx.(*rpc.HTTPContext)
+		if httpContext != nil {
+			ctx.SetString("username", parseToken(httpContext.Request.Header.Get("Authorization")))
+		}
+		return next(request, ctx)
+	})
+	service.AddAllMethods(handler)
+	log.Printf("Smaritan running at http://0.0.0.0:%v\n", port)
+	http.ListenAndServe(":"+port, service)
+}
+
+// [begin] delete later
 
 var (
 	signKey = []byte("XXXXXXXXXXXXXXXX") // JWT sign key
@@ -84,3 +107,5 @@ func Run() {
 	fmt.Println(time.Now().Format("01/02 - 15:04:05"), "Smaritan running at http://127.0.0.1:"+port)
 	server.Listen(":" + port)
 }
+
+// [end] delete later

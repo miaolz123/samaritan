@@ -5,10 +5,35 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/hprose/hprose-golang/rpc"
 	"github.com/kataras/iris"
 	"github.com/miaolz123/samaritan/model"
 	"github.com/miaolz123/samaritan/trader"
 )
+
+type user struct{}
+
+// Login ...
+func (user) Login(username, password string, ctx rpc.Context) (resp response) {
+	user := model.User{
+		Name:     username,
+		Password: password,
+	}
+	if user.Name == "" || user.Password == "" {
+		resp.Message = "Username and Password can not be empty"
+		return
+	}
+	if err := model.DB.Where(&user).First(&user).Error; err != nil {
+		resp.Message = "Username or Password wrong"
+		return
+	}
+	if resp.Data = makeToken(user.Name); resp.Data != "" {
+		resp.Success = true
+	} else {
+		resp.Message = "Make token error"
+	}
+	return
+}
 
 type userHandler struct {
 	*iris.Context

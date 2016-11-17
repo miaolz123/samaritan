@@ -34,11 +34,21 @@ class App extends React.Component {
   }
 
   componentWillMount() {
-    const client = hprose.Client.create('http://127.0.0.1:9888', ['hello']);
-    client.hello('hahahah', (resp) => {
-      console.log(383838, resp.message);
+    const client = hprose.Client.create('http://127.0.0.1:9876', { User: ['Login'] });
+    client.setHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Nzk0ODYwNjAsImp0aSI6ImFkbWluIn0.xrnu0E8rq8vjFLr6I4tSdQ5L8aCBp4lfG7CcpIqv_2w');
+    // client.hello('hahahah', (resp) => {
+    //   console.log(383838, resp.message);
+    // }, (resp, err) => {
+    //   console.log(414141, resp, err);
+    // });
+    client.User.Login('admin', 'admin', (resp) => {
+      if (resp.success) {
+        console.log(454545, resp.data);
+      } else {
+        console.log(484848, resp.message);
+      }
     }, (resp, err) => {
-      console.log(414141, resp, err);
+      console.log(474747, resp, err);
     });
     axios.post(`${config.api}/token`, null, { headers: { Authorization: `Bearer ${this.state.token}` } })
       .then((response) => {
