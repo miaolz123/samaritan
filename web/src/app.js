@@ -7,6 +7,7 @@ import { LocaleProvider, Menu, Icon, Modal } from 'antd';
 import enUS from 'antd/lib/locale-provider/en_US';
 import axios from 'axios';
 
+import configureStore from './store/configureStore';
 import config from './config';
 import Home from './pages/Home';
 import Users from './pages/Users';
@@ -14,6 +15,8 @@ import Exchanges from './pages/Exchanges';
 import Strategies from './pages/Strategies';
 import Traders from './pages/Traders';
 import Login from './pages/Login';
+
+const store = configureStore();
 
 class App extends React.Component {
   constructor(props) {
@@ -163,4 +166,4 @@ class App extends React.Component {
   }
 }
 
-render(<App />, document.getElementById('react-app'));
+render(<App store={store} />, document.getElementById('react-app'));

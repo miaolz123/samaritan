@@ -3,7 +3,7 @@ var path = require('path');
 
 cooking.set({
   entry: {
-    app: './src/app.js',
+    app: './src/index.js',
     vendor: ['react', 'react-dom']
   },
   dist: './dist',

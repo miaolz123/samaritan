@@ -12,16 +12,16 @@ var (
 	tokenKey = []byte("XXXXXXXXXXXXXXXX")
 )
 
-func makeToken(id string) (token string) {
+func makeToken(sub string) (token string) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
-		Id:        id,
+		Subject:   sub,
 	})
 	token, _ = t.SignedString(tokenKey)
 	return
 }
 
-func parseToken(token string) (id string) {
+func parseToken(token string) (sub string) {
 	token = strings.TrimPrefix(token, "Bearer ")
 	if token == "" {
 		return
@@ -34,7 +34,7 @@ func parseToken(token string) (id string) {
 	})
 	if t != nil {
 		if claims, ok := t.Claims.(*jwt.StandardClaims); ok && t.Valid {
-			return claims.Id
+			return claims.Subject
 		}
 	}
 	return
