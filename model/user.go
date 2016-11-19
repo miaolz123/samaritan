@@ -1,13 +1,18 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"time"
+)
 
 // User struct
 type User struct {
-	gorm.Model
-	Name     string `gorm:"type:varchar(25);unique_index"`
-	Password string `gorm:"not null" json:"-"`
-	Level    int
+	ID        uint       `gorm:"primary_key" json:"id"`
+	Name      string     `gorm:"type:varchar(25);unique_index" json:"name"`
+	Password  string     `gorm:"not null" json:"-"`
+	Level     int        `json:"level"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+	DeletedAt *time.Time `sql:"index" json:"-"`
 }
 
 // GetUserByID ...

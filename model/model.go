@@ -7,6 +7,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	// for db SQL
+	"github.com/hprose/hprose-golang/io"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -21,6 +22,7 @@ var (
 )
 
 func init() {
+	io.Register((*User)(nil), "User", "json")
 	var err error
 	DB, err = gorm.Open(strings.ToLower(dbType), dbURL)
 	if err != nil {

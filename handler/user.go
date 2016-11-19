@@ -13,6 +13,25 @@ import (
 
 type user struct{}
 
+// Get ...
+func (user) Get(_ string, ctx rpc.Context) (resp response) {
+	username := ctx.GetString("username")
+	if username == "" {
+		resp.Message = "Authorization wrong"
+		return
+	}
+	user := model.User{
+		Name: username,
+	}
+	if err := model.DB.Where(&user).First(&user).Error; err != nil {
+		resp.Message = "Authorization username wrong"
+		return
+	}
+	resp.Data = user
+	resp.Success = true
+	return
+}
+
 // Login ...
 func (user) Login(username, password string, ctx rpc.Context) (resp response) {
 	user := model.User{

@@ -2,6 +2,7 @@ import { ResetError } from '../actions';
 import { UserLogin } from '../actions/user';
 import React from 'react';
 import { connect } from 'react-redux';
+import { browserHistory } from 'react-router';
 import { Button, Form, Input, Icon, Tooltip, notification } from 'antd';
 
 class Login extends React.Component {
@@ -10,7 +11,7 @@ class Login extends React.Component {
 
     this.state = {
       windowHeight: window.innerHeight || 720,
-      messageShowed: false,
+      messageErrorKey: '',
     };
 
     this.handleOk = this.handleOk.bind(this);
@@ -18,20 +19,39 @@ class Login extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     const { dispatch } = this.props;
-    const { messageShowed } = this.state;
+    const { messageErrorKey } = this.state;
     const { user } = nextProps;
 
-    if (!messageShowed && user.message) {
-      this.setState({ messageShowed: true });
+    if (!messageErrorKey && user.message) {
+      this.setState({
+        messageErrorKey: 'userLoginError',
+      });
       notification['error']({
+        key: 'userLoginError',
         message: 'Error',
         description: String(user.message),
         onClose: () => {
-          this.setState({ messageShowed: false });
+          if (this.state.messageErrorKey) {
+            this.setState({ messageErrorKey: '' });
+          }
           dispatch(ResetError());
         },
       });
     }
+
+    if (!user.loading && user.token) {
+      if (this.state.messageErrorKey) {
+        this.setState({ messageErrorKey: '' });
+        notification.close(this.state.messageErrorKey);
+      }
+      browserHistory.push('/');
+    }
+  }
+
+  componentWillUnmount() {
+    const { dispatch } = this.props;
+
+    dispatch(ResetError());
   }
 
   handleOk(e) {
@@ -46,7 +66,7 @@ class Login extends React.Component {
         return;
       }
 
-      return dispatch(UserLogin(values.cluster, values.username, values.password));
+      dispatch(UserLogin(values.cluster, values.username, values.password));
     });
   }
 
@@ -72,7 +92,7 @@ class Login extends React.Component {
           >
             <Tooltip placement="right" title="Cluster Path">
               {getFieldDecorator('cluster', {
-                rules: [{ required: true }],
+                rules: [{ type: 'url', required: true }],
                 initialValue: cluster,
               })(
                 <Input addonBefore={<Icon type="appstore-o" />} placeholder="http://127.0.0.1:9876" />
