@@ -90,12 +90,12 @@ class Login extends React.Component {
           <Form.Item
             {...formItemLayout}
           >
-            <Tooltip placement="right" title="Cluster Path">
+            <Tooltip placement="right" title="Cluster URL">
               {getFieldDecorator('cluster', {
                 rules: [{ type: 'url', required: true }],
                 initialValue: cluster,
               })(
-                <Input addonBefore={<Icon type="appstore-o" />} placeholder="http://127.0.0.1:9876" />
+                <Input addonBefore={<Icon type="link" />} placeholder="http://127.0.0.1:9876" />
               )}
             </Tooltip>
           </Form.Item>

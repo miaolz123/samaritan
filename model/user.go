@@ -27,6 +27,14 @@ func GetUser(name interface{}) (user User, err error) {
 	return
 }
 
+// UserList ...
+func (user User) UserList(size, page int64) (total int64, users []User, err error) {
+	err = DB.Order("id").Limit(size).Offset((page-1)*size).Where("level < ?", user.Level).Find(&users).Count(&total).Error
+	users = append([]User{user}, users...)
+	total++
+	return
+}
+
 // GetUsers ...
 func GetUsers(self User, order ...string) (users []User, err error) {
 	orderKey := "id"

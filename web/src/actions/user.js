@@ -16,8 +16,9 @@ function userLoginFailure(message) {
 
 export function UserLogin(cluster, username, password) {
   return (dispatch, getState) => {
-    dispatch(userLoginRequest());
     const client = hprose.Client.create(cluster, { User: ['Login'] });
+
+    dispatch(userLoginRequest());
     client.User.Login(username, password, (resp) => {
       if (resp.success) {
         dispatch(userLoginSuccess(resp.data, cluster));
@@ -47,10 +48,10 @@ function userGetFailure(message) {
 
 export function UserGet() {
   return (dispatch, getState) => {
-    dispatch(userGetRequest());
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
 
+    dispatch(userGetRequest());
     if (!cluster || !token) {
       dispatch(userGetFailure('No authorization'));
       return;
@@ -60,7 +61,6 @@ export function UserGet() {
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Get(null, (resp) => {
-      console.log('【Hprose】User.Get OK!', resp);
       if (resp.success) {
         dispatch(userGetSuccess(resp.message.data));
       } else {
@@ -69,6 +69,48 @@ export function UserGet() {
     }, (resp, err) => {
       dispatch(userGetFailure('Server error'));
       console.log('【Hprose】User.Get Error:', resp, err);
+    });
+  };
+}
+
+// List
+
+function userListRequest() {
+  return { type: actions.USER_LIST_REQUEST };
+}
+
+function userListSuccess(total, list) {
+  return { type: actions.USER_LIST_SUCCESS, total, list };
+}
+
+function userListFailure(message) {
+  return { type: actions.USER_LIST_FAILURE, message };
+}
+
+export function UserList(size, page) {
+  return (dispatch, getState) => {
+    const cluster = localStorage.getItem('cluster');
+    const token = localStorage.getItem('token');
+
+    dispatch(userListRequest());
+    if (!cluster || !token) {
+      dispatch(userGetFailure('No authorization'));
+      dispatch(userListFailure('No authorization'));
+      return;
+    }
+
+    const client = hprose.Client.create(cluster, { User: ['List'] });
+
+    client.setHeader('Authorization', `Bearer ${token}`);
+    client.User.List(size, page, (resp) => {
+      if (resp.success) {
+        dispatch(userListSuccess(resp.data.total, resp.data.list));
+      } else {
+        dispatch(userListFailure(resp.message));
+      }
+    }, (resp, err) => {
+      dispatch(userListFailure('Server error'));
+      console.log('【Hprose】User.List Error:', resp, err);
     });
   };
 }

@@ -9,5 +9,9 @@ export const USER_LOGIN_FAILURE = 'USER_LOGIN_FAILURE';
 export const USER_GET_REQUEST = 'USER_GET_REQUEST';
 export const USER_GET_SUCCESS = 'USER_GET_SUCCESS';
 export const USER_GET_FAILURE = 'USER_GET_FAILURE';
+// User.List
+export const USER_LIST_REQUEST = 'USER_LIST_REQUEST';
+export const USER_LIST_SUCCESS = 'USER_LIST_SUCCESS';
+export const USER_LIST_FAILURE = 'USER_LIST_FAILURE';
 // Logout
 export const LOGOUT = 'LOGOUT';

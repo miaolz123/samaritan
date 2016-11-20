@@ -21,29 +21,41 @@ class App extends Component {
   }
 
   componentWillMount() {
-    const { dispatch } = this.props;
+    const { dispatch, user } = this.props;
 
-    dispatch(UserGet());
+    if (user.status <= 0) {
+      dispatch(UserGet());
+    }
   }
 
   componentWillReceiveProps(nextProps) {
+    const { dispatch } = this.props;
     const { user } = nextProps;
 
-    if (!user.loading && user.message) {
+    if (!user.loading && user.status < 0) {
+      dispatch(Logout());
       browserHistory.push('/login');
     }
   }
 
   handleClick(e) {
+    const { dispatch } = this.props;
+
     this.setState({
       current: e.key,
     });
 
-    if (e.key === 'logout') {
-      const { dispatch } = this.props;
-
-      dispatch(Logout());
-      browserHistory.push('/login');
+    switch (e.key) {
+      case 'trader':
+        browserHistory.push('/');
+        break;
+      case 'user':
+        browserHistory.push('/user');
+        break;
+      case 'logout':
+        dispatch(Logout());
+        browserHistory.push('/login');
+        break;
     }
   }
 
@@ -64,21 +76,21 @@ class App extends Component {
             {collapse ? '' : <div className="ant-layout-logo"></div>}
             <Menu theme="dark"
               onClick={this.handleClick}
-              defaultOpenKeys={['traders']}
+              defaultOpenKeys={['trader']}
               selectedKeys={[current]}
               mode="inline"
             >
-              <Menu.Item key="traders">
-                <Icon type="appstore-o" /><span className="nav-text">Traders</span>
+              <Menu.Item key="trader">
+                <Icon type="appstore-o" /><span className="nav-text">Trader</span>
               </Menu.Item>
-              <Menu.Item key="strategies">
-                <Icon type="copy" /><span className="nav-text">Strategies</span>
+              <Menu.Item key="strategy">
+                <Icon type="copy" /><span className="nav-text">Strategy</span>
               </Menu.Item>
-              <Menu.Item key="exchanges">
-                <Icon type="solution" /><span className="nav-text">Exchanges</span>
+              <Menu.Item key="exchange">
+                <Icon type="solution" /><span className="nav-text">Exchange</span>
               </Menu.Item>
-              <Menu.Item key="users">
-                <Icon type="team" /><span className="nav-text">Users</span>
+              <Menu.Item key="user">
+                <Icon type="team" /><span className="nav-text">User</span>
               </Menu.Item>
               <Menu.Item key="logout">
                 <Icon type="poweroff" /><span className="nav-text">Logout</span>

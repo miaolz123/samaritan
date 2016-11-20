@@ -13,25 +13,6 @@ import (
 
 type user struct{}
 
-// Get ...
-func (user) Get(_ string, ctx rpc.Context) (resp response) {
-	username := ctx.GetString("username")
-	if username == "" {
-		resp.Message = "Authorization wrong"
-		return
-	}
-	user := model.User{
-		Name: username,
-	}
-	if err := model.DB.Where(&user).First(&user).Error; err != nil {
-		resp.Message = "Authorization username wrong"
-		return
-	}
-	resp.Data = user
-	resp.Success = true
-	return
-}
-
 // Login ...
 func (user) Login(username, password string, ctx rpc.Context) (resp response) {
 	user := model.User{
@@ -51,6 +32,53 @@ func (user) Login(username, password string, ctx rpc.Context) (resp response) {
 	} else {
 		resp.Message = "Make token error"
 	}
+	return
+}
+
+// Get ...
+func (user) Get(_ string, ctx rpc.Context) (resp response) {
+	username := ctx.GetString("username")
+	if username == "" {
+		resp.Message = "Authorization wrong"
+		return
+	}
+	user := model.User{
+		Name: username,
+	}
+	if err := model.DB.Where(&user).First(&user).Error; err != nil {
+		resp.Message = "Authorization username wrong"
+		return
+	}
+	resp.Data = user
+	resp.Success = true
+	return
+}
+
+// List ...
+func (user) List(size, page int64, ctx rpc.Context) (resp response) {
+	username := ctx.GetString("username")
+	if username == "" {
+		resp.Message = "Authorization wrong"
+		return
+	}
+	self, err := model.GetUser(username)
+	if err != nil {
+		resp.Message = fmt.Sprint(err)
+		return
+	}
+	total, users, err := self.UserList(size, page)
+	if err != nil {
+		resp.Message = fmt.Sprint(err)
+		return
+	}
+	resp.Data = struct {
+		Total int64
+		List  []model.User
+	}{
+		Total: total,
+		List:  users,
+	}
+	resp.Success = true
 	return
 }
 
