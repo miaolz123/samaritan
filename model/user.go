@@ -6,10 +6,10 @@ import (
 
 // User struct
 type User struct {
-	ID        uint       `gorm:"primary_key" json:"id"`
+	ID        int64      `gorm:"primary_key" json:"id"`
 	Username  string     `gorm:"type:varchar(25);unique_index" json:"username"`
 	Password  string     `gorm:"not null" json:"-"`
-	Level     int        `json:"level"`
+	Level     int64      `json:"level"`
 	CreatedAt time.Time  `json:"createdAt"`
 	UpdatedAt time.Time  `json:"updatedAt"`
 	DeletedAt *time.Time `sql:"index" json:"-"`
@@ -33,7 +33,7 @@ func (user User) UserList(size, page int64) (total int64, users []User, err erro
 	if err != nil {
 		return
 	}
-	err = DB.Order("id").Limit(size).Offset((page-1)*size).Where("level < ? OR id = ?", user.Level, user.ID).Find(&users).Error
+	err = DB.Where("level < ? OR id = ?", user.Level, user.ID).Order("id").Limit(size).Offset((page - 1) * size).Find(&users).Error
 	return
 }
 

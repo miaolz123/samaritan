@@ -9,7 +9,7 @@ import (
 // Trader struct
 type Trader struct {
 	gorm.Model
-	UserID     uint   `gorm:"index"`
+	UserID     int64  `gorm:"index"`
 	StrategyID uint   `gorm:"index"`
 	Name       string `gorm:"type:varchar(200)"`
 
@@ -23,7 +23,7 @@ type Trader struct {
 type TraderExchange struct {
 	ID         int64 `gorm:"primary_key;AUTO_INCREMENT"`
 	TraderID   uint  `gorm:"index"`
-	ExchangeID uint  `gorm:"index"`
+	ExchangeID int64 `gorm:"index"`
 	Exchange   `gorm:"-"`
 }
 
@@ -33,7 +33,7 @@ func GetTraders(self User) (traders []Trader, err error) {
 	if err != nil {
 		return
 	}
-	userIDs := []uint{}
+	userIDs := []int64{}
 	for _, u := range users {
 		userIDs = append(userIDs, u.ID)
 	}

@@ -1,6 +1,7 @@
 import '../styles/app.less';
 import '../styles/app.css';
 import { UserGet, Logout } from '../actions/user';
+import { ExchangeTypes } from '../actions/exchange';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
@@ -24,15 +25,17 @@ class App extends Component {
     const { dispatch } = this.props;
     const { user } = nextProps;
 
-    if (!user.loading) {
-      if (!user.data) {
-        dispatch(UserGet());
-      }
-      if (user.status < 0) {
-        dispatch(Logout());
-        browserHistory.push('/login');
-      }
+    if (user.status < 0) {
+      dispatch(Logout());
+      browserHistory.push('/login');
     }
+  }
+
+  componentWillMount() {
+    const { dispatch } = this.props;
+
+    dispatch(UserGet());
+    dispatch(ExchangeTypes());
   }
 
   handleClick(e) {
@@ -48,6 +51,9 @@ class App extends Component {
         break;
       case 'user':
         browserHistory.push('/user');
+        break;
+      case 'exchange':
+        browserHistory.push('/exchange');
         break;
       case 'logout':
         dispatch(Logout());

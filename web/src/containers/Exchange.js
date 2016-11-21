@@ -1,13 +1,14 @@
 import { ResetError } from '../actions';
-import { UserList, UserPut, UserDelete } from '../actions/user';
+import { ExchangeList, ExchangePut, ExchangeDelete } from '../actions/exchange';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Button, Table, Modal, Form, Input, InputNumber, notification } from 'antd';
+import { Button, Table, Modal, Form, Input, Select, notification } from 'antd';
 import map from 'lodash/map';
 
 const FormItem = Form.Item;
+const Option = Select.Option;
 
-class User extends React.Component {
+class Exchange extends React.Component {
   constructor(props) {
     super(props);
 
@@ -35,16 +36,16 @@ class User extends React.Component {
   componentWillReceiveProps(nextProps) {
     const { dispatch } = this.props;
     const { messageErrorKey, pagination } = this.state;
-    const { user } = nextProps;
+    const { exchange } = nextProps;
 
-    if (!messageErrorKey && user.message) {
+    if (!messageErrorKey && exchange.message) {
       this.setState({
-        messageErrorKey: 'userError',
+        messageErrorKey: 'exchangeError',
       });
       notification['error']({
-        key: 'userError',
+        key: 'exchangeError',
         message: 'Error',
-        description: String(user.message),
+        description: String(exchange.message),
         onClose: () => {
           if (this.state.messageErrorKey) {
             this.setState({ messageErrorKey: '' });
@@ -53,7 +54,7 @@ class User extends React.Component {
         },
       });
     }
-    pagination.total = user.total;
+    pagination.total = exchange.total;
     this.setState({ pagination });
   }
 
@@ -69,7 +70,7 @@ class User extends React.Component {
     const { pagination } = this.state;
     const { dispatch } = this.props;
 
-    dispatch(UserList(pagination.pageSize, pagination.current));
+    dispatch(ExchangeList(pagination.pageSize, pagination.current));
   }
 
   onSelectChange(selectedRowKeys) {
@@ -85,12 +86,12 @@ class User extends React.Component {
   }
 
   handleDelete() {
-    const { dispatch, user } = this.props;
+    const { dispatch, exchange } = this.props;
     const { selectedRowKeys, pagination } = this.state;
 
     if (selectedRowKeys.length > 0) {
-      dispatch(UserDelete(
-        map(selectedRowKeys, (i) => user.list[i].id),
+      dispatch(ExchangeDelete(
+        map(selectedRowKeys, (i) => exchange.list[i].id),
         pagination.pageSize,
         pagination.current
       ));
@@ -99,12 +100,13 @@ class User extends React.Component {
   }
 
   handleInfoShow(info) {
-    if (!info.username) {
-      const { user } = this.props;
+    if (!info.id) {
       info = {
         id: 0,
-        username: '',
-        level: user.data ? user.data.level - 1 : 0,
+        name: '',
+        type: '',
+        accessKey: '',
+        secretKey: '',
       };
     }
     this.setState({ info, infoModalShow: true });
@@ -120,11 +122,13 @@ class User extends React.Component {
       const { info, pagination } = this.state;
       const req = {
         id: info.id,
-        username: values.username,
-        level: values.level,
+        name: values.name,
+        type: values.type,
+        accessKey: values.accessKey,
+        secretKey: values.secretKey,
       };
 
-      dispatch(UserPut(req, values.password, pagination.pageSize, pagination.current));
+      dispatch(ExchangePut(req, pagination.pageSize, pagination.current));
       this.setState({ infoModalShow: false });
       this.props.form.resetFields();
     });
@@ -137,15 +141,15 @@ class User extends React.Component {
 
   render() {
     const { selectedRowKeys, pagination, info, infoModalShow } = this.state;
-    const { user } = this.props;
-    const { getFieldDecorator, getFieldValue } = this.props.form;
+    const { exchange } = this.props;
+    const { getFieldDecorator } = this.props.form;
     const columns = [{
-      title: 'Username',
-      dataIndex: 'username',
+      title: 'Name',
+      dataIndex: 'name',
       render: (v, r) => <a onClick={this.handleInfoShow.bind(this, r)}>{String(v)}</a>,
     }, {
-      title: 'Level',
-      dataIndex: 'level',
+      title: 'Type',
+      dataIndex: 'type',
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
@@ -159,29 +163,6 @@ class User extends React.Component {
       labelCol: { span: 7 },
       wrapperCol: { span: 12 },
     };
-    const checkPassword = (rule, value, callback) => {
-      if (value && value !== getFieldValue('password')) {
-        callback('Confirm fail');
-      } else {
-        callback();
-      }
-    };
-    const passwdProps = info.id ? getFieldDecorator('password', {
-      rules: [{ required: false, whitespace: true }],
-    }) : getFieldDecorator('password', {
-      rules: [{ required: true, whitespace: true }],
-    });
-    const repasswdProps = info.id && !getFieldValue('password') ? getFieldDecorator('rePassword', {
-      rules: [
-        { required: false, whitespace: true },
-        { validator: checkPassword },
-      ],
-    }) : getFieldDecorator('rePassword', {
-      rules: [
-        { required: true, whitespace: true },
-        { validator: checkPassword },
-      ],
-    });
     const rowSelection = {
       selectedRowKeys,
       onChange: this.onSelectChange,
@@ -197,16 +178,16 @@ class User extends React.Component {
           </Button.Group>
         </div>
         <Table columns={columns}
-          dataSource={user.list}
+          dataSource={exchange.list}
           rowSelection={rowSelection}
           pagination={pagination}
-          loading={user.loading}
+          loading={exchange.loading}
           onChange={this.handleTableChange}
         />
         <Modal closable
           maskClosable={false}
           width="50%"
-          title={info.username ? `User - ${info.username}` : 'New User'}
+          title={info.name ? `Exchange - ${info.name}` : 'New Exchange'}
           visible={infoModalShow}
           footer=""
           onCancel={this.handleInfoCancel}
@@ -214,44 +195,52 @@ class User extends React.Component {
           <Form horizontal>
             <FormItem
               {...formItemLayout}
-              label="Username"
+              label="Name"
             >
-              {getFieldDecorator('username', {
+              {getFieldDecorator('name', {
                 rules: [{ required: true }],
-                initialValue: info.username,
+                initialValue: info.name,
               })(
-                <Input disabled={info.id > 0} />
+                <Input />
               )}
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Level"
+              label="Type"
             >
-              {getFieldDecorator('level', {
+              {getFieldDecorator('type', {
                 rules: [{ required: true }],
-                initialValue: info.level,
+                initialValue: info.type,
               })(
-                <InputNumber disabled={user.data && info.username === user.data.username} min={0} max={user.data ? user.data.level : 0} />
+                <Select disabled={info.id > 0}>
+                  {exchange.types.map((v, i) => <Option key={i} value={v}>{v}</Option>)}
+                </Select>
               )}
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Password"
+              label="AccessKey"
             >
-              {passwdProps(
-                <Input type="password" />
+              {getFieldDecorator('accessKey', {
+                rules: [{ required: true }],
+                initialValue: info.accessKey,
+              })(
+                <Input />
               )}
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Repeat"
+              label="SecretKey"
             >
-              {repasswdProps(
-                <Input type="Password" />
+              {getFieldDecorator('secretKey', {
+                rules: [{ required: true }],
+                initialValue: info.secretKey,
+              })(
+                <Input />
               )}
             </FormItem>
             <Form.Item wrapperCol={{ span: 12, offset: 7 }} style={{ marginTop: 24 }}>
-              <Button type="primary" onClick={this.handleInfoSubmit} loading={user.loading}>Submit</Button>
+              <Button type="primary" onClick={this.handleInfoSubmit} loading={exchange.loading}>Submit</Button>
             </Form.Item>
           </Form>
         </Modal>
@@ -262,6 +251,7 @@ class User extends React.Component {
 
 const mapStateToProps = (state) => ({
   user: state.user,
+  exchange: state.exchange,
 });
 
-export default Form.create()(connect(mapStateToProps)(User));
+export default Form.create()(connect(mapStateToProps)(Exchange));

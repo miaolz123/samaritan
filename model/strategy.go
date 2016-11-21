@@ -9,7 +9,7 @@ import (
 // Strategy struct
 type Strategy struct {
 	gorm.Model
-	UserID      uint   `gorm:"index"`
+	UserID      int64  `gorm:"index"`
 	Name        string `gorm:"type:varchar(200)"`
 	Description string `gorm:"type:text"`
 	Script      string `gorm:"type:text"`
@@ -21,7 +21,7 @@ func GetStrategies(self User) (strategies []Strategy, err error) {
 	if err != nil {
 		return
 	}
-	userIDs := []uint{}
+	userIDs := []int64{}
 	for _, u := range users {
 		userIDs = append(userIDs, u.ID)
 	}

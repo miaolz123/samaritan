@@ -134,3 +134,7 @@ td .ant-badge-status-with-text {
 .login-form-button {
   width: 100%;
 }
+
+.ant-select-dropdown-menu {
+  max-height: 125px;
+}

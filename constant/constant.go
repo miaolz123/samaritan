@@ -39,5 +39,6 @@ const (
 
 var (
 	// CONSTS : Javascript Global Constants
-	CONSTS = []string{"BTC", "LTC", "M", "M5", "M15", "M30", "H", "D", "W"}
+	CONSTS        = []string{"BTC", "LTC", "M", "M5", "M15", "M30", "H", "D", "W"}
+	ExchangeTypes = []string{"okcoin.cn", "huobi", "poloniex", "btcc", "chbtc", "okcoin.future", "oanda.v20"}
 )

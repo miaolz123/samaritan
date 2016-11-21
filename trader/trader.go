@@ -148,7 +148,7 @@ func Stop(id uint) (err error) {
 }
 
 // Clean ...
-func Clean(userID uint) {
+func Clean(userID int64) {
 	for _, t := range Executor {
 		if t.UserID == userID {
 			Stop(t.ID)
