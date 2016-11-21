@@ -126,3 +126,11 @@
 td .ant-badge-status-with-text {
   top: 3px;
 }
+
+.table-operations {
+  margin-bottom: 16px;
+}
+
+.login-form-button {
+  width: 100%;
+}

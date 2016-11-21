@@ -14,7 +14,7 @@ class Login extends React.Component {
       messageErrorKey: '',
     };
 
-    this.handleOk = this.handleOk.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -54,7 +54,7 @@ class Login extends React.Component {
     dispatch(ResetError());
   }
 
-  handleOk(e) {
+  handleSubmit(e) {
     const { form, dispatch } = this.props;
 
     if (e) {
@@ -86,7 +86,7 @@ class Login extends React.Component {
           fontSize: '30px',
           textAlign: 'center',
         }}>Samaritan</h1>
-        <Form horizontal onSubmit={this.handleOk}>
+        <Form horizontal onSubmit={this.handleSubmit}>
           <Form.Item
             {...formItemLayout}
           >
@@ -121,8 +121,8 @@ class Login extends React.Component {
               )}
             </Tooltip>
           </Form.Item>
-          <Form.Item wrapperCol={{ span: 15, offset: 9 }} style={{ marginTop: 24 }}>
-            <Button type="primary" htmlType="submit" loading={user.loading}>Login</Button>
+          <Form.Item wrapperCol={{ span: 6, offset: 9 }} style={{ marginTop: 24 }}>
+            <Button type="primary" htmlType="submit" loading={user.loading} className="login-form-button">Login</Button>
           </Form.Item>
         </Form>
       </div>

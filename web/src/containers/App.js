@@ -20,21 +20,18 @@ class App extends Component {
     this.onCollapseChange = this.onCollapseChange.bind(this);
   }
 
-  componentWillMount() {
-    const { dispatch, user } = this.props;
-
-    if (user.status <= 0) {
-      dispatch(UserGet());
-    }
-  }
-
   componentWillReceiveProps(nextProps) {
     const { dispatch } = this.props;
     const { user } = nextProps;
 
-    if (!user.loading && user.status < 0) {
-      dispatch(Logout());
-      browserHistory.push('/login');
+    if (!user.loading) {
+      if (!user.data) {
+        dispatch(UserGet());
+      }
+      if (user.status < 0) {
+        dispatch(Logout());
+        browserHistory.push('/login');
+      }
     }
   }
 

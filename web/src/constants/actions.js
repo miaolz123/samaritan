@@ -13,5 +13,9 @@ export const USER_GET_FAILURE = 'USER_GET_FAILURE';
 export const USER_LIST_REQUEST = 'USER_LIST_REQUEST';
 export const USER_LIST_SUCCESS = 'USER_LIST_SUCCESS';
 export const USER_LIST_FAILURE = 'USER_LIST_FAILURE';
+// User.Put
+export const USER_PUT_REQUEST = 'USER_PUT_REQUEST';
+export const USER_PUT_SUCCESS = 'USER_PUT_SUCCESS';
+export const USER_PUT_FAILURE = 'USER_PUT_FAILURE';
 // Logout
 export const LOGOUT = 'LOGOUT';

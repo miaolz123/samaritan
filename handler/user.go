@@ -82,6 +82,124 @@ func (user) List(size, page int64, ctx rpc.Context) (resp response) {
 	return
 }
 
+// Put ...
+func (user) Put(req model.User, password string, ctx rpc.Context) (resp response) {
+	username := ctx.GetString("username")
+	if username == "" {
+		resp.Message = "Authorization wrong"
+		return
+	}
+	if req.Name == "" {
+		resp.Message = "Request data wrong"
+		return
+	}
+	self, err := model.GetUser(username)
+	if err != nil {
+		resp.Message = fmt.Sprint(err)
+		return
+	}
+	user := model.User{
+		Name:     req.Name,
+		Level:    req.Level,
+		Password: password,
+	}
+	if req.ID > 0 {
+		if err := model.DB.First(&user, req.ID).Error; err != nil {
+			resp.Message = fmt.Sprint(err)
+			return
+		}
+		user.Level = req.Level
+		if user.Level >= self.Level {
+			if user.ID == self.ID {
+				user.Level = self.Level
+			} else {
+				user.Level = self.Level - 1
+			}
+		}
+		if password != "" {
+			user.Password = password
+		}
+		if err := model.DB.Save(&user).Error; err != nil {
+			resp.Message = fmt.Sprint(err)
+			return
+		}
+		resp.Success = true
+		return
+	}
+	if password == "" {
+		resp.Message = "Password can't be empty"
+		return
+	}
+	if user.Level >= self.Level {
+		user.Level = self.Level - 1
+	}
+	if err := model.DB.Create(&user).Error; err != nil {
+		resp.Message = fmt.Sprint(err)
+		return
+	}
+	resp.Success = true
+	return
+}
+
+// Delete ...
+func (user) Delete(req model.User, password string, ctx rpc.Context) (resp response) {
+	username := ctx.GetString("username")
+	if username == "" {
+		resp.Message = "Authorization wrong"
+		return
+	}
+	if req.Name == "" {
+		resp.Message = "Request data wrong"
+		return
+	}
+	self, err := model.GetUser(username)
+	if err != nil {
+		resp.Message = fmt.Sprint(err)
+		return
+	}
+	user := model.User{
+		Name:     req.Name,
+		Level:    req.Level,
+		Password: password,
+	}
+	if req.ID > 0 {
+		if err := model.DB.First(&user, req.ID).Error; err != nil {
+			resp.Message = fmt.Sprint(err)
+			return
+		}
+		user.Level = req.Level
+		if user.Level >= self.Level {
+			if user.ID == self.ID {
+				user.Level = self.Level
+			} else {
+				user.Level = self.Level - 1
+			}
+		}
+		if password != "" {
+			user.Password = password
+		}
+		if err := model.DB.Save(&user).Error; err != nil {
+			resp.Message = fmt.Sprint(err)
+			return
+		}
+		resp.Success = true
+		return
+	}
+	if password == "" {
+		resp.Message = "Password can't be empty"
+		return
+	}
+	if user.Level >= self.Level {
+		user.Level = self.Level - 1
+	}
+	if err := model.DB.Create(&user).Error; err != nil {
+		resp.Message = fmt.Sprint(err)
+		return
+	}
+	resp.Success = true
+	return
+}
+
 type userHandler struct {
 	*iris.Context
 }

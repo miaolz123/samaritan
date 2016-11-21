@@ -62,7 +62,7 @@ export function UserGet() {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Get(null, (resp) => {
       if (resp.success) {
-        dispatch(userGetSuccess(resp.message.data));
+        dispatch(userGetSuccess(resp.data));
       } else {
         dispatch(userGetFailure(resp.message));
       }
@@ -111,6 +111,49 @@ export function UserList(size, page) {
     }, (resp, err) => {
       dispatch(userListFailure('Server error'));
       console.log('【Hprose】User.List Error:', resp, err);
+    });
+  };
+}
+
+// Put
+
+function userPutRequest() {
+  return { type: actions.USER_PUT_REQUEST };
+}
+
+function userPutSuccess() {
+  return { type: actions.USER_PUT_SUCCESS };
+}
+
+function userPutFailure(message) {
+  return { type: actions.USER_PUT_FAILURE, message };
+}
+
+export function UserPut(req, password) {
+  return (dispatch, getState) => {
+    const cluster = localStorage.getItem('cluster');
+    const token = localStorage.getItem('token');
+
+    dispatch(userPutRequest());
+    if (!cluster || !token) {
+      dispatch(userGetFailure('No authorization'));
+      dispatch(userPutFailure('No authorization'));
+      return;
+    }
+
+    const client = hprose.Client.create(cluster, { User: ['Put'] });
+
+    client.setHeader('Authorization', `Bearer ${token}`);
+    client.User.Put(req, password, (resp) => {
+      if (resp.success) {
+        dispatch(UserList());
+        dispatch(userPutSuccess());
+      } else {
+        dispatch(userPutFailure(resp.message));
+      }
+    }, (resp, err) => {
+      dispatch(userPutFailure('Server error'));
+      console.log('【Hprose】User.Put Error:', resp, err);
     });
   };
 }

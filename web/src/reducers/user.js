@@ -73,6 +73,19 @@ function user(state = USER_INIT, action) {
         loading: false,
         message: action.message,
       });
+    case actions.USER_PUT_REQUEST:
+      return merge({}, state, {
+        loading: true,
+      });
+    case actions.USER_PUT_SUCCESS:
+      return merge({}, state, {
+        loading: false,
+      });
+    case actions.USER_PUT_FAILURE:
+      return merge({}, state, {
+        loading: false,
+        message: action.message,
+      });
     case actions.LOGOUT:
       localStorage.removeItem('cluster');
       localStorage.removeItem('token');
