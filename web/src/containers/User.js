@@ -1,8 +1,9 @@
 import { ResetError } from '../actions';
-import { UserList, UserPut } from '../actions/user';
+import { UserList, UserPut, UserDelete } from '../actions/user';
 import React from 'react';
 import { connect } from 'react-redux';
 import { Button, Table, Modal, Form, Input, InputNumber, notification } from 'antd';
+import map from 'lodash/map';
 
 const FormItem = Form.Item;
 
@@ -75,27 +76,34 @@ class Users extends React.Component {
     this.setState({ selectedRowKeys });
   }
 
-  handleTableChange(pagination, filters, sorter) {
-    this.setState({ pagination: pagination });
+  handleTableChange(newPagination, filters, sorter) {
+    const { pagination } = this.state;
+
+    pagination.current = newPagination.current;
+    this.setState({ pagination });
     this.reload();
   }
 
   handleDelete() {
-    const { list } = this.props.user;
-    const { selectedRowKeys } = this.state;
-    const ids = selectedRowKeys.each((i) => {
-      console.log(list[i].id);
-      return 111;
-    });
-    console.log(878787, ids);
+    const { dispatch, user } = this.props;
+    const { selectedRowKeys, pagination } = this.state;
+
+    if (selectedRowKeys.length > 0) {
+      dispatch(UserDelete(
+        map(selectedRowKeys, (i) => user.list[i].id),
+        pagination.pageSize,
+        pagination.current
+      ));
+      this.setState({ selectedRowKeys: [] });
+    }
   }
 
   handleInfoShow(info) {
-    if (!info.name) {
+    if (!info.username) {
       const { user } = this.props;
       info = {
         id: 0,
-        name: '',
+        username: '',
         level: user.data ? user.data.level - 1 : 0,
       };
     }
@@ -112,12 +120,13 @@ class Users extends React.Component {
       const { info } = this.state;
       const req = {
         id: info.id,
-        name: values.name,
+        username: values.username,
         level: values.level,
       };
 
       dispatch(UserPut(req, values.password));
       this.setState({ infoModalShow: false });
+      this.props.form.resetFields();
     });
   }
 
@@ -132,7 +141,7 @@ class Users extends React.Component {
     const { getFieldDecorator, getFieldValue } = this.props.form;
     const columns = [{
       title: 'Username',
-      dataIndex: 'name',
+      dataIndex: 'username',
       render: (v, r) => <a onClick={this.handleInfoShow.bind(this, r)}>{String(v)}</a>,
     }, {
       title: 'Level',
@@ -197,7 +206,7 @@ class Users extends React.Component {
         <Modal closable
           maskClosable={false}
           width="50%"
-          title={`User - ${info.name}` || 'New User'}
+          title={`User - ${info.username}` || 'New User'}
           visible={infoModalShow}
           footer=""
           onCancel={this.handleInfoCancel}
@@ -207,9 +216,9 @@ class Users extends React.Component {
               {...formItemLayout}
               label="Username"
             >
-              {getFieldDecorator('name', {
+              {getFieldDecorator('username', {
                 rules: [{ required: true }],
-                initialValue: info.name,
+                initialValue: info.username,
               })(
                 <Input disabled={info.id > 0} />
               )}
@@ -222,7 +231,7 @@ class Users extends React.Component {
                 rules: [{ required: true }],
                 initialValue: info.level,
               })(
-                <InputNumber disabled={user.data && info.name === user.data.name} min={0} max={user.data ? user.data.level : 0} />
+                <InputNumber disabled={user.data && info.username === user.data.username} min={0} max={user.data ? user.data.level : 0} />
               )}
             </FormItem>
             <FormItem
@@ -235,7 +244,7 @@ class Users extends React.Component {
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Password Confirm"
+              label="Repeat"
             >
               {repasswdProps(
                 <Input type="Password" />

@@ -2,18 +2,20 @@ package model
 
 import (
 	"fmt"
-
-	"github.com/jinzhu/gorm"
+	"time"
 )
 
 // Exchange struct
 type Exchange struct {
-	gorm.Model
-	UserID    uint   `gorm:"index"`
-	Name      string `gorm:"type:varchar(50)"`
-	Type      string `gorm:"type:varchar(50)"`
-	AccessKey string `gorm:"type:varchar(200)"`
-	SecretKey string `gorm:"type:varchar(200)"`
+	ID        uint       `gorm:"primary_key" json:"id"`
+	UserID    uint       `gorm:"index"`
+	Name      string     `gorm:"type:varchar(50)"`
+	Type      string     `gorm:"type:varchar(50)"`
+	AccessKey string     `gorm:"type:varchar(200)"`
+	SecretKey string     `gorm:"type:varchar(200)"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+	DeletedAt *time.Time `sql:"index" json:"-"`
 }
 
 // GetExchanges ...

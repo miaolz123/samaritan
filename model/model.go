@@ -39,7 +39,7 @@ func init() {
 	DB.Find(&users)
 	if len(users) == 0 {
 		admin := User{
-			Name:     "admin",
+			Username: "admin",
 			Password: "admin",
 			Level:    99,
 		}

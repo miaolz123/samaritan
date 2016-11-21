@@ -7,7 +7,7 @@ import (
 // User struct
 type User struct {
 	ID        uint       `gorm:"primary_key" json:"id"`
-	Name      string     `gorm:"type:varchar(25);unique_index" json:"name"`
+	Username  string     `gorm:"type:varchar(25);unique_index" json:"username"`
 	Password  string     `gorm:"not null" json:"-"`
 	Level     int        `json:"level"`
 	CreatedAt time.Time  `json:"createdAt"`
@@ -22,16 +22,18 @@ func GetUserByID(id interface{}) (user User, err error) {
 }
 
 // GetUser ...
-func GetUser(name interface{}) (user User, err error) {
-	err = DB.Where("name = ?", name).First(&user).Error
+func GetUser(username interface{}) (user User, err error) {
+	err = DB.Where("username = ?", username).First(&user).Error
 	return
 }
 
 // UserList ...
 func (user User) UserList(size, page int64) (total int64, users []User, err error) {
-	err = DB.Order("id").Limit(size).Offset((page-1)*size).Where("level < ?", user.Level).Find(&users).Count(&total).Error
-	users = append([]User{user}, users...)
-	total++
+	err = DB.Model(&User{}).Where("level < ? OR id = ?", user.Level, user.ID).Count(&total).Error
+	if err != nil {
+		return
+	}
+	err = DB.Order("id").Limit(size).Offset((page-1)*size).Where("level < ? OR id = ?", user.Level, user.ID).Find(&users).Error
 	return
 }
 

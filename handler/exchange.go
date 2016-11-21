@@ -8,6 +8,8 @@ import (
 	"github.com/miaolz123/samaritan/model"
 )
 
+type exchange struct{}
+
 type exchangeHandler struct {
 	*iris.Context
 }

@@ -129,7 +129,7 @@ function userPutFailure(message) {
   return { type: actions.USER_PUT_FAILURE, message };
 }
 
-export function UserPut(req, password) {
+export function UserPut(req, password, size, page) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -146,7 +146,7 @@ export function UserPut(req, password) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Put(req, password, (resp) => {
       if (resp.success) {
-        dispatch(UserList());
+        dispatch(UserList(size, page));
         dispatch(userPutSuccess());
       } else {
         dispatch(userPutFailure(resp.message));
@@ -154,6 +154,49 @@ export function UserPut(req, password) {
     }, (resp, err) => {
       dispatch(userPutFailure('Server error'));
       console.log('【Hprose】User.Put Error:', resp, err);
+    });
+  };
+}
+
+// Delete
+
+function userDeleteRequest() {
+  return { type: actions.USER_DELETE_REQUEST };
+}
+
+function userDeleteSuccess() {
+  return { type: actions.USER_DELETE_SUCCESS };
+}
+
+function userDeleteFailure(message) {
+  return { type: actions.USER_DELETE_FAILURE, message };
+}
+
+export function UserDelete(ids, size, page) {
+  return (dispatch, getState) => {
+    const cluster = localStorage.getItem('cluster');
+    const token = localStorage.getItem('token');
+
+    dispatch(userDeleteRequest());
+    if (!cluster || !token) {
+      dispatch(userGetFailure('No authorization'));
+      dispatch(userDeleteFailure('No authorization'));
+      return;
+    }
+
+    const client = hprose.Client.create(cluster, { User: ['Delete'] });
+
+    client.setHeader('Authorization', `Bearer ${token}`);
+    client.User.Delete(ids, (resp) => {
+      if (resp.success) {
+        dispatch(UserList(size, page));
+        dispatch(userDeleteSuccess());
+      } else {
+        dispatch(userDeleteFailure(resp.message));
+      }
+    }, (resp, err) => {
+      dispatch(userDeleteFailure('Server error'));
+      console.log('【Hprose】User.Delete Error:', resp, err);
     });
   };
 }
