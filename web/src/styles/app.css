@@ -40,6 +40,7 @@
 }
 
 .ant-layout-aside .ant-layout-sider>.ant-menu>.ant-menu-item .nav-text {
+  margin-left: 6px;
   vertical-align: baseline;
   display: inline-block;
 }
@@ -50,8 +51,9 @@
 }
 
 .ant-layout-aside-collapse .ant-layout-sider>.ant-menu>.ant-menu-item {
-  margin: 16px 0px 16px -4px;
-  transition: all 0s ease;
+  margin: 16px 0 16px -9px;
+  padding: 4px 0;
+  transition: all 0.3s ease;
 }
 
 .ant-layout-aside-collapse .ant-layout-sider>.ant-menu>.ant-menu-item>.anticon {

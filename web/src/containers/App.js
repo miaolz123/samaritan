@@ -5,7 +5,8 @@ import { ExchangeTypes } from '../actions/exchange';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { LocaleProvider, Menu, Icon } from 'antd';
+import { LocaleProvider, Menu } from 'antd';
+import { Icon } from 'react-fa';
 import enUS from 'antd/lib/locale-provider/en_US';
 
 class App extends Component {
@@ -13,7 +14,7 @@ class App extends Component {
     super(props);
 
     this.state = {
-      collapse: true,
+      collapse: false,
       current: 'traders',
     };
 
@@ -84,23 +85,23 @@ class App extends Component {
               mode="inline"
             >
               <Menu.Item key="trader">
-                <Icon type="appstore-o" /><span className="nav-text">Trader</span>
+                <Icon name="tachometer" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Trader</span>
               </Menu.Item>
-              <Menu.Item key="strategy">
-                <Icon type="copy" /><span className="nav-text">Strategy</span>
+              <Menu.Item key="algorithm">
+                <Icon name="file-code-o" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Algorithm</span>
               </Menu.Item>
               <Menu.Item key="exchange">
-                <Icon type="solution" /><span className="nav-text">Exchange</span>
+                <Icon name="id-card" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Exchange</span>
               </Menu.Item>
               <Menu.Item key="user">
-                <Icon type="team" /><span className="nav-text">User</span>
+                <Icon name="users" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">User</span>
               </Menu.Item>
               <Menu.Item key="logout">
-                <Icon type="poweroff" /><span className="nav-text">Logout</span>
+                <Icon name="sign-out" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Logout</span>
               </Menu.Item>
             </Menu>
             <div className="ant-aside-action" onClick={this.onCollapseChange}>
-              {collapse ? <Icon type="right" /> : <Icon type="left" />}
+              {collapse ? <Icon name="chevron-right" /> : <Icon name="chevron-left" />}
             </div>
           </aside>
           <div className="ant-layout-main">
