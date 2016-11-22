@@ -5,6 +5,8 @@ import Home from './containers/Home';
 import Login from './containers/Login';
 import User from './containers/User';
 import Exchange from './containers/Exchange';
+import Algorithm from './containers/Algorithm';
+import AlgorithmEdit from './containers/AlgorithmEdit';
 
 export default (
   <Route>
@@ -12,6 +14,8 @@ export default (
       <IndexRoute component={Home} />
       <Route path="/user" component={User} />
       <Route path="/exchange" component={Exchange} />
+      <Route path="/algorithm" component={Algorithm} />
+      <Route path="/algorithm/edit" component={AlgorithmEdit} />
     </Route>
     <Route path="/login" component={Login} />
   </Route>

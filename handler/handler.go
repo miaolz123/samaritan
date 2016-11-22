@@ -32,8 +32,9 @@ func Server() {
 	port := config.String("port")
 	service := rpc.NewHTTPService()
 	handler := struct {
-		User     user
-		Exchange exchange
+		User      user
+		Exchange  exchange
+		Algorithm algorithm
 	}{}
 	service.Event = event{}
 	service.AddBeforeFilterHandler(func(request []byte, ctx rpc.Context, next rpc.NextFilterHandler) (response []byte, err error) {

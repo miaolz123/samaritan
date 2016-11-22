@@ -24,6 +24,7 @@ var (
 func init() {
 	io.Register((*User)(nil), "User", "json")
 	io.Register((*Exchange)(nil), "Exchange", "json")
+	io.Register((*Algorithm)(nil), "Algorithm", "json")
 	var err error
 	DB, err = gorm.Open(strings.ToLower(dbType), dbURL)
 	if err != nil {
@@ -35,7 +36,7 @@ func init() {
 			log.Fatalln("Connect to database error:", err)
 		}
 	}
-	DB.AutoMigrate(&User{}, &Exchange{}, &Strategy{}, &TraderExchange{}, &Trader{}, &Log{})
+	DB.AutoMigrate(&User{}, &Exchange{}, &Algorithm{}, &Strategy{}, &TraderExchange{}, &Trader{}, &Log{})
 	users := []User{}
 	DB.Find(&users)
 	if len(users) == 0 {

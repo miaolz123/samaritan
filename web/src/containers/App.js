@@ -5,7 +5,7 @@ import { ExchangeTypes } from '../actions/exchange';
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { LocaleProvider, Menu } from 'antd';
+import { LocaleProvider, Menu, Modal } from 'antd';
 import { Icon } from 'react-fa';
 import enUS from 'antd/lib/locale-provider/en_US';
 
@@ -42,9 +42,11 @@ class App extends Component {
   handleClick(e) {
     const { dispatch } = this.props;
 
-    this.setState({
-      current: e.key,
-    });
+    if (e.key !== 'logout') {
+      this.setState({
+        current: e.key,
+      });
+    }
 
     switch (e.key) {
       case 'trader':
@@ -56,9 +58,18 @@ class App extends Component {
       case 'exchange':
         browserHistory.push('/exchange');
         break;
+      case 'algorithm':
+        browserHistory.push('/algorithm');
+        break;
       case 'logout':
-        dispatch(Logout());
-        browserHistory.push('/login');
+        Modal.confirm({
+          title: 'Are you sure to log out ?',
+          onOk: () => {
+            dispatch(Logout());
+            browserHistory.push('/login');
+          },
+          iconType: 'exclamation-circle',
+        });
         break;
     }
   }
@@ -91,13 +102,13 @@ class App extends Component {
                 <Icon name="file-code-o" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Algorithm</span>
               </Menu.Item>
               <Menu.Item key="exchange">
-                <Icon name="id-card" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Exchange</span>
+                <Icon name="bank" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Exchange</span>
               </Menu.Item>
               <Menu.Item key="user">
-                <Icon name="users" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">User</span>
+                <Icon name="id-card-o" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">User</span>
               </Menu.Item>
               <Menu.Item key="logout">
-                <Icon name="sign-out" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Logout</span>
+                <Icon name="power-off" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Logout</span>
               </Menu.Item>
             </Menu>
             <div className="ant-aside-action" onClick={this.onCollapseChange}>

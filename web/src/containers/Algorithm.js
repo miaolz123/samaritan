@@ -1,14 +1,14 @@
 import { ResetError } from '../actions';
-import { ExchangeList, ExchangePut, ExchangeDelete } from '../actions/exchange';
+import { AlgorithmList, AlgorithmCache, AlgorithmPut, AlgorithmDelete } from '../actions/algorithm';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Button, Table, Modal, Form, Input, Select, notification } from 'antd';
+import { browserHistory } from 'react-router';
+import { Button, Table, Modal, Form, Input, notification } from 'antd';
 import map from 'lodash/map';
 
 const FormItem = Form.Item;
-const Option = Select.Option;
 
-class Exchange extends React.Component {
+class Algorithm extends React.Component {
   constructor(props) {
     super(props);
 
@@ -36,16 +36,16 @@ class Exchange extends React.Component {
   componentWillReceiveProps(nextProps) {
     const { dispatch } = this.props;
     const { messageErrorKey, pagination } = this.state;
-    const { exchange } = nextProps;
+    const { algorithm } = nextProps;
 
-    if (!messageErrorKey && exchange.message) {
+    if (!messageErrorKey && algorithm.message) {
       this.setState({
-        messageErrorKey: 'exchangeError',
+        messageErrorKey: 'algorithmError',
       });
       notification['error']({
-        key: 'exchangeError',
+        key: 'algorithmError',
         message: 'Error',
-        description: String(exchange.message),
+        description: String(algorithm.message),
         onClose: () => {
           if (this.state.messageErrorKey) {
             this.setState({ messageErrorKey: '' });
@@ -54,7 +54,7 @@ class Exchange extends React.Component {
         },
       });
     }
-    pagination.total = exchange.total;
+    pagination.total = algorithm.total;
     this.setState({ pagination });
   }
 
@@ -70,7 +70,7 @@ class Exchange extends React.Component {
     const { pagination } = this.state;
     const { dispatch } = this.props;
 
-    dispatch(ExchangeList(pagination.pageSize, pagination.current));
+    dispatch(AlgorithmList(pagination.pageSize, pagination.current));
   }
 
   onSelectChange(selectedRowKeys) {
@@ -86,12 +86,12 @@ class Exchange extends React.Component {
   }
 
   handleDelete() {
-    const { dispatch, exchange } = this.props;
+    const { dispatch, algorithm } = this.props;
     const { selectedRowKeys, pagination } = this.state;
 
     if (selectedRowKeys.length > 0) {
-      dispatch(ExchangeDelete(
-        map(selectedRowKeys, (i) => exchange.list[i].id),
+      dispatch(AlgorithmDelete(
+        map(selectedRowKeys, (i) => algorithm.list[i].id),
         pagination.pageSize,
         pagination.current
       ));
@@ -100,16 +100,19 @@ class Exchange extends React.Component {
   }
 
   handleInfoShow(info) {
+    const { dispatch } = this.props;
+
     if (!info.id) {
       info = {
         id: 0,
         name: '',
-        type: '',
-        accessKey: '',
-        secretKey: '',
+        description: '',
+        script: '',
       };
     }
-    this.setState({ info, infoModalShow: true });
+    dispatch(AlgorithmCache(info));
+    browserHistory.push('/algorithm/edit');
+    // this.setState({ info, infoModalShow: true });
   }
 
   handleInfoSubmit() {
@@ -123,12 +126,11 @@ class Exchange extends React.Component {
       const req = {
         id: info.id,
         name: values.name,
-        type: values.type,
-        accessKey: values.accessKey,
-        secretKey: values.secretKey,
+        description: values.description,
+        script: values.script,
       };
 
-      dispatch(ExchangePut(req, pagination.pageSize, pagination.current));
+      dispatch(AlgorithmPut(req, pagination.pageSize, pagination.current));
       this.setState({ infoModalShow: false });
       this.props.form.resetFields();
     });
@@ -141,15 +143,16 @@ class Exchange extends React.Component {
 
   render() {
     const { selectedRowKeys, pagination, info, infoModalShow } = this.state;
-    const { exchange } = this.props;
+    const { algorithm } = this.props;
     const { getFieldDecorator } = this.props.form;
     const columns = [{
       title: 'Name',
       dataIndex: 'name',
       render: (v, r) => <a onClick={this.handleInfoShow.bind(this, r)}>{String(v)}</a>,
     }, {
-      title: 'Type',
-      dataIndex: 'type',
+      title: 'Description',
+      dataIndex: 'description',
+      render: (v) => v.substr(0, 36),
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
@@ -178,16 +181,16 @@ class Exchange extends React.Component {
           </Button.Group>
         </div>
         <Table columns={columns}
-          dataSource={exchange.list}
+          dataSource={algorithm.list}
           rowSelection={rowSelection}
           pagination={pagination}
-          loading={exchange.loading}
+          loading={algorithm.loading}
           onChange={this.handleTableChange}
         />
         <Modal closable
           maskClosable={false}
           width="50%"
-          title={info.name ? `Exchange - ${info.name}` : 'New Exchange'}
+          title={info.name ? `Algorithm - ${info.name}` : 'New Algorithm'}
           visible={infoModalShow}
           footer=""
           onCancel={this.handleInfoCancel}
@@ -206,41 +209,28 @@ class Exchange extends React.Component {
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="Type"
+              label="Description"
             >
-              {getFieldDecorator('type', {
+              {getFieldDecorator('description', {
                 rules: [{ required: true }],
-                initialValue: info.type,
-              })(
-                <Select disabled={info.id > 0}>
-                  {exchange.types.map((v, i) => <Option key={i} value={v}>{v}</Option>)}
-                </Select>
-              )}
-            </FormItem>
-            <FormItem
-              {...formItemLayout}
-              label="AccessKey"
-            >
-              {getFieldDecorator('accessKey', {
-                rules: [{ required: true }],
-                initialValue: info.accessKey,
+                initialValue: info.description,
               })(
                 <Input />
               )}
             </FormItem>
             <FormItem
               {...formItemLayout}
-              label="SecretKey"
+              label="Script"
             >
-              {getFieldDecorator('secretKey', {
+              {getFieldDecorator('script', {
                 rules: [{ required: true }],
-                initialValue: info.secretKey,
+                initialValue: info.script,
               })(
                 <Input />
               )}
             </FormItem>
             <Form.Item wrapperCol={{ span: 12, offset: 7 }} style={{ marginTop: 24 }}>
-              <Button type="primary" onClick={this.handleInfoSubmit} loading={exchange.loading}>Submit</Button>
+              <Button type="primary" onClick={this.handleInfoSubmit} loading={algorithm.loading}>Submit</Button>
             </Form.Item>
           </Form>
         </Modal>
@@ -251,7 +241,7 @@ class Exchange extends React.Component {
 
 const mapStateToProps = (state) => ({
   user: state.user,
-  exchange: state.exchange,
+  algorithm: state.algorithm,
 });
 
-export default Form.create()(connect(mapStateToProps)(Exchange));
+export default Form.create()(connect(mapStateToProps)(Algorithm));

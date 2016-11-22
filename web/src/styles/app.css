@@ -140,3 +140,9 @@ td .ant-badge-status-with-text {
 .ant-select-dropdown-menu {
   max-height: 125px;
 }
+
+.CodeMirror.cm-s-default {
+  height: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+}
