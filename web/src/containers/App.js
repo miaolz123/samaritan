@@ -14,6 +14,7 @@ class App extends Component {
     super(props);
 
     this.state = {
+      innerHeight: window.innerHeight > 500 ? window.innerHeight : 500,
       collapse: false,
       current: 'traders',
     };
@@ -81,7 +82,7 @@ class App extends Component {
   }
 
   render() {
-    const { collapse, current } = this.state;
+    const { innerHeight, collapse, current } = this.state;
     const { children } = this.props;
 
     return (
@@ -116,7 +117,7 @@ class App extends Component {
             </div>
           </aside>
           <div className="ant-layout-main">
-            <div className="ant-layout-container">
+            <div className="ant-layout-container" style={{minHeight: innerHeight - 65}}>
               <div className="ant-layout-content">
                 {children}
               </div>

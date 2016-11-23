@@ -86,17 +86,23 @@ class Exchange extends React.Component {
   }
 
   handleDelete() {
-    const { dispatch, exchange } = this.props;
-    const { selectedRowKeys, pagination } = this.state;
+    Modal.confirm({
+      title: 'Are you sure to delete ?',
+      onOk: () => {
+        const { dispatch, exchange } = this.props;
+        const { selectedRowKeys, pagination } = this.state;
 
-    if (selectedRowKeys.length > 0) {
-      dispatch(ExchangeDelete(
-        map(selectedRowKeys, (i) => exchange.list[i].id),
-        pagination.pageSize,
-        pagination.current
-      ));
-      this.setState({ selectedRowKeys: [] });
-    }
+        if (selectedRowKeys.length > 0) {
+          dispatch(ExchangeDelete(
+            map(selectedRowKeys, (i) => exchange.list[i].id),
+            pagination.pageSize,
+            pagination.current
+          ));
+          this.setState({ selectedRowKeys: [] });
+        }
+      },
+      iconType: 'exclamation-circle',
+    });
   }
 
   handleInfoShow(info) {

@@ -38,6 +38,7 @@ function algorithm(state = ALGORITHM_INIT, action) {
     case actions.ALGORITHM_PUT_SUCCESS:
       return assign({}, state, {
         loading: false,
+        cache: {},
       });
     case actions.ALGORITHM_PUT_FAILURE:
       return assign({}, state, {

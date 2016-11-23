@@ -1,12 +1,10 @@
 import { ResetError } from '../actions';
-import { AlgorithmList, AlgorithmCache, AlgorithmPut, AlgorithmDelete } from '../actions/algorithm';
+import { AlgorithmList, AlgorithmCache, AlgorithmDelete } from '../actions/algorithm';
 import React from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { Button, Table, Modal, Form, Input, notification } from 'antd';
+import { Button, Table, Modal, notification } from 'antd';
 import map from 'lodash/map';
-
-const FormItem = Form.Item;
 
 class Algorithm extends React.Component {
   constructor(props) {
@@ -20,17 +18,13 @@ class Algorithm extends React.Component {
         current: 1,
         total: 0,
       },
-      info: {},
-      infoModalShow: false,
     };
 
     this.reload = this.reload.bind(this);
     this.onSelectChange = this.onSelectChange.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
     this.handleDelete = this.handleDelete.bind(this);
-    this.handleInfoShow = this.handleInfoShow.bind(this);
-    this.handleInfoSubmit = this.handleInfoSubmit.bind(this);
-    this.handleInfoCancel = this.handleInfoCancel.bind(this);
+    this.handleEdit = this.handleEdit.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -86,69 +80,47 @@ class Algorithm extends React.Component {
   }
 
   handleDelete() {
-    const { dispatch, algorithm } = this.props;
-    const { selectedRowKeys, pagination } = this.state;
+    Modal.confirm({
+      title: 'Are you sure to delete ?',
+      onOk: () => {
+        const { dispatch, algorithm } = this.props;
+        const { selectedRowKeys, pagination } = this.state;
 
-    if (selectedRowKeys.length > 0) {
-      dispatch(AlgorithmDelete(
-        map(selectedRowKeys, (i) => algorithm.list[i].id),
-        pagination.pageSize,
-        pagination.current
-      ));
-      this.setState({ selectedRowKeys: [] });
-    }
+        if (selectedRowKeys.length > 0) {
+          dispatch(AlgorithmDelete(
+            map(selectedRowKeys, (i) => algorithm.list[i].id),
+            pagination.pageSize,
+            pagination.current
+          ));
+          this.setState({ selectedRowKeys: [] });
+        }
+      },
+      iconType: 'exclamation-circle',
+    });
   }
 
-  handleInfoShow(info) {
+  handleEdit(info) {
     const { dispatch } = this.props;
 
     if (!info.id) {
       info = {
         id: 0,
-        name: '',
+        name: 'New Algorithm Name',
         description: '',
         script: '',
       };
     }
     dispatch(AlgorithmCache(info));
     browserHistory.push('/algorithm/edit');
-    // this.setState({ info, infoModalShow: true });
-  }
-
-  handleInfoSubmit() {
-    this.props.form.validateFields((errors, values) => {
-      if (errors) {
-        return;
-      }
-
-      const { dispatch } = this.props;
-      const { info, pagination } = this.state;
-      const req = {
-        id: info.id,
-        name: values.name,
-        description: values.description,
-        script: values.script,
-      };
-
-      dispatch(AlgorithmPut(req, pagination.pageSize, pagination.current));
-      this.setState({ infoModalShow: false });
-      this.props.form.resetFields();
-    });
-  }
-
-  handleInfoCancel() {
-    this.setState({ infoModalShow: false });
-    this.props.form.resetFields();
   }
 
   render() {
-    const { selectedRowKeys, pagination, info, infoModalShow } = this.state;
+    const { selectedRowKeys, pagination } = this.state;
     const { algorithm } = this.props;
-    const { getFieldDecorator } = this.props.form;
     const columns = [{
       title: 'Name',
       dataIndex: 'name',
-      render: (v, r) => <a onClick={this.handleInfoShow.bind(this, r)}>{String(v)}</a>,
+      render: (v, r) => <a onClick={this.handleEdit.bind(this, r)}>{v}</a>,
     }, {
       title: 'Description',
       dataIndex: 'description',
@@ -162,10 +134,6 @@ class Algorithm extends React.Component {
       dataIndex: 'updatedAt',
       render: (v) => v.toLocaleString(),
     }];
-    const formItemLayout = {
-      labelCol: { span: 7 },
-      wrapperCol: { span: 12 },
-    };
     const rowSelection = {
       selectedRowKeys,
       onChange: this.onSelectChange,
@@ -176,7 +144,7 @@ class Algorithm extends React.Component {
         <div className="table-operations">
           <Button.Group>
             <Button type="primary" onClick={this.reload}>Reload</Button>
-            <Button onClick={this.handleInfoShow}>Add</Button>
+            <Button onClick={this.handleEdit}>Add</Button>
             <Button disabled={selectedRowKeys.length <= 0} onClick={this.handleDelete}>Delete</Button>
           </Button.Group>
         </div>
@@ -187,53 +155,6 @@ class Algorithm extends React.Component {
           loading={algorithm.loading}
           onChange={this.handleTableChange}
         />
-        <Modal closable
-          maskClosable={false}
-          width="50%"
-          title={info.name ? `Algorithm - ${info.name}` : 'New Algorithm'}
-          visible={infoModalShow}
-          footer=""
-          onCancel={this.handleInfoCancel}
-        >
-          <Form horizontal>
-            <FormItem
-              {...formItemLayout}
-              label="Name"
-            >
-              {getFieldDecorator('name', {
-                rules: [{ required: true }],
-                initialValue: info.name,
-              })(
-                <Input />
-              )}
-            </FormItem>
-            <FormItem
-              {...formItemLayout}
-              label="Description"
-            >
-              {getFieldDecorator('description', {
-                rules: [{ required: true }],
-                initialValue: info.description,
-              })(
-                <Input />
-              )}
-            </FormItem>
-            <FormItem
-              {...formItemLayout}
-              label="Script"
-            >
-              {getFieldDecorator('script', {
-                rules: [{ required: true }],
-                initialValue: info.script,
-              })(
-                <Input />
-              )}
-            </FormItem>
-            <Form.Item wrapperCol={{ span: 12, offset: 7 }} style={{ marginTop: 24 }}>
-              <Button type="primary" onClick={this.handleInfoSubmit} loading={algorithm.loading}>Submit</Button>
-            </Form.Item>
-          </Form>
-        </Modal>
       </div>
     );
   }
@@ -244,4 +165,4 @@ const mapStateToProps = (state) => ({
   algorithm: state.algorithm,
 });
 
-export default Form.create()(connect(mapStateToProps)(Algorithm));
+export default connect(mapStateToProps)(Algorithm);
