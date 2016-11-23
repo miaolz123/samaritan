@@ -87,7 +87,7 @@ function userListFailure(message) {
   return { type: actions.USER_LIST_FAILURE, message };
 }
 
-export function UserList(size, page) {
+export function UserList(size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -102,7 +102,7 @@ export function UserList(size, page) {
     const client = hprose.Client.create(cluster, { User: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
-    client.User.List(size, page, (resp) => {
+    client.User.List(size, page, order, (resp) => {
       if (resp.success) {
         dispatch(userListSuccess(resp.data.total, resp.data.list));
       } else {
@@ -129,7 +129,7 @@ function userPutFailure(message) {
   return { type: actions.USER_PUT_FAILURE, message };
 }
 
-export function UserPut(req, password, size, page) {
+export function UserPut(req, password, size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -146,7 +146,7 @@ export function UserPut(req, password, size, page) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Put(req, password, (resp) => {
       if (resp.success) {
-        dispatch(UserList(size, page));
+        dispatch(UserList(size, page, order));
         dispatch(userPutSuccess());
       } else {
         dispatch(userPutFailure(resp.message));
@@ -172,7 +172,7 @@ function userDeleteFailure(message) {
   return { type: actions.USER_DELETE_FAILURE, message };
 }
 
-export function UserDelete(ids, size, page) {
+export function UserDelete(ids, size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -189,7 +189,7 @@ export function UserDelete(ids, size, page) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Delete(ids, (resp) => {
       if (resp.success) {
-        dispatch(UserList(size, page));
+        dispatch(UserList(size, page, order));
         dispatch(userDeleteSuccess());
       } else {
         dispatch(userDeleteFailure(resp.message));

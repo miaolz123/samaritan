@@ -53,7 +53,7 @@ function exchangeListFailure(message) {
   return { type: actions.EXCHANGE_LIST_FAILURE, message };
 }
 
-export function ExchangeList(size, page) {
+export function ExchangeList(size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -67,7 +67,7 @@ export function ExchangeList(size, page) {
     const client = hprose.Client.create(cluster, { Exchange: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
-    client.Exchange.List(size, page, (resp) => {
+    client.Exchange.List(size, page, order, (resp) => {
       if (resp.success) {
         dispatch(exchangeListSuccess(resp.data.total, resp.data.list));
       } else {
@@ -94,7 +94,7 @@ function exchangePutFailure(message) {
   return { type: actions.EXCHANGE_PUT_FAILURE, message };
 }
 
-export function ExchangePut(req, size, page) {
+export function ExchangePut(req, size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -110,7 +110,7 @@ export function ExchangePut(req, size, page) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Exchange.Put(req, (resp) => {
       if (resp.success) {
-        dispatch(ExchangeList(size, page));
+        dispatch(ExchangeList(size, page, order));
         dispatch(exchangePutSuccess());
       } else {
         dispatch(exchangePutFailure(resp.message));
@@ -136,7 +136,7 @@ function exchangeDeleteFailure(message) {
   return { type: actions.EXCHANGE_DELETE_FAILURE, message };
 }
 
-export function ExchangeDelete(ids, size, page) {
+export function ExchangeDelete(ids, size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -152,7 +152,7 @@ export function ExchangeDelete(ids, size, page) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Exchange.Delete(ids, (resp) => {
       if (resp.success) {
-        dispatch(ExchangeList(size, page));
+        dispatch(ExchangeList(size, page, order));
         dispatch(exchangeDeleteSuccess());
       } else {
         dispatch(exchangeDeleteFailure(resp.message));

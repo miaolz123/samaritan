@@ -20,7 +20,7 @@ func (exchange) Types(_ string, ctx rpc.Context) (resp response) {
 }
 
 // List ...
-func (exchange) List(size, page int64, ctx rpc.Context) (resp response) {
+func (exchange) List(size, page int64, order string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
 		resp.Message = "Authorization wrong"
@@ -31,7 +31,7 @@ func (exchange) List(size, page int64, ctx rpc.Context) (resp response) {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	total, exchanges, err := self.ExchangeList(size, page)
+	total, exchanges, err := self.ExchangeList(size, page, order)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
@@ -98,7 +98,7 @@ func (exchange) Delete(ids []int64, ctx rpc.Context) (resp response) {
 		return
 	}
 	userIds := []int64{}
-	if _, users, err := self.UserList(-1, 1); err != nil {
+	if _, users, err := self.UserList(-1, 1, "id"); err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
 	} else {

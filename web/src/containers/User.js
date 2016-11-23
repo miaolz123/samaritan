@@ -58,6 +58,7 @@ class User extends React.Component {
   }
 
   componentWillMount() {
+    this.order = 'id';
     this.reload();
   }
 
@@ -69,7 +70,7 @@ class User extends React.Component {
     const { pagination } = this.state;
     const { dispatch } = this.props;
 
-    dispatch(UserList(pagination.pageSize, pagination.current));
+    dispatch(UserList(pagination.pageSize, pagination.current, this.order));
   }
 
   onSelectChange(selectedRowKeys) {
@@ -79,6 +80,11 @@ class User extends React.Component {
   handleTableChange(newPagination, filters, sorter) {
     const { pagination } = this.state;
 
+    if (sorter.field) {
+      this.order = `${sorter.field} ${sorter.order.replace('end', '')}`;
+    } else {
+      this.order = 'id';
+    }
     pagination.current = newPagination.current;
     this.setState({ pagination });
     this.reload();
@@ -95,7 +101,8 @@ class User extends React.Component {
           dispatch(UserDelete(
             map(selectedRowKeys, (i) => user.list[i].id),
             pagination.pageSize,
-            pagination.current
+            pagination.current,
+            this.order
           ));
           this.setState({ selectedRowKeys: [] });
         }
@@ -130,7 +137,7 @@ class User extends React.Component {
         level: values.level,
       };
 
-      dispatch(UserPut(req, values.password, pagination.pageSize, pagination.current));
+      dispatch(UserPut(req, values.password, pagination.pageSize, pagination.current, this.order));
       this.setState({ infoModalShow: false });
       this.props.form.resetFields();
     });
@@ -148,17 +155,21 @@ class User extends React.Component {
     const columns = [{
       title: 'Username',
       dataIndex: 'username',
+      sorter: true,
       render: (v, r) => <a onClick={this.handleInfoShow.bind(this, r)}>{String(v)}</a>,
     }, {
       title: 'Level',
       dataIndex: 'level',
+      sorter: true,
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
+      sorter: true,
       render: (v) => v.toLocaleString(),
     }, {
       title: 'UpdatedAt',
       dataIndex: 'updatedAt',
+      sorter: true,
       render: (v) => v.toLocaleString(),
     }];
     const formItemLayout = {

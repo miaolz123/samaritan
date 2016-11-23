@@ -14,7 +14,7 @@ function algorithmListFailure(message) {
   return { type: actions.ALGORITHM_LIST_FAILURE, message };
 }
 
-export function AlgorithmList(size, page) {
+export function AlgorithmList(size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -28,7 +28,7 @@ export function AlgorithmList(size, page) {
     const client = hprose.Client.create(cluster, { Algorithm: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
-    client.Algorithm.List(size, page, (resp) => {
+    client.Algorithm.List(size, page, order, (resp) => {
       if (resp.success) {
         dispatch(algorithmListSuccess(resp.data.total, resp.data.list));
       } else {
@@ -55,7 +55,7 @@ function algorithmPutFailure(message) {
   return { type: actions.ALGORITHM_PUT_FAILURE, message };
 }
 
-export function AlgorithmPut(req, size, page) {
+export function AlgorithmPut(req) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -71,7 +71,6 @@ export function AlgorithmPut(req, size, page) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Algorithm.Put(req, (resp) => {
       if (resp.success) {
-        dispatch(AlgorithmList(size, page));
         dispatch(algorithmPutSuccess());
       } else {
         dispatch(algorithmPutFailure(resp.message));
@@ -97,7 +96,7 @@ function algorithmDeleteFailure(message) {
   return { type: actions.ALGORITHM_DELETE_FAILURE, message };
 }
 
-export function AlgorithmDelete(ids, size, page) {
+export function AlgorithmDelete(ids, size, page, order) {
   return (dispatch, getState) => {
     const cluster = localStorage.getItem('cluster');
     const token = localStorage.getItem('token');
@@ -113,7 +112,7 @@ export function AlgorithmDelete(ids, size, page) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Algorithm.Delete(ids, (resp) => {
       if (resp.success) {
-        dispatch(AlgorithmList(size, page));
+        dispatch(AlgorithmList(size, page, order));
         dispatch(algorithmDeleteSuccess());
       } else {
         dispatch(algorithmDeleteFailure(resp.message));

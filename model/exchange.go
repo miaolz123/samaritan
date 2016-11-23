@@ -19,8 +19,8 @@ type Exchange struct {
 }
 
 // ExchangeList ...
-func (user User) ExchangeList(size, page int64) (total int64, exchanges []Exchange, err error) {
-	_, users, err := user.UserList(-1, 1)
+func (user User) ExchangeList(size, page int64, order string) (total int64, exchanges []Exchange, err error) {
+	_, users, err := user.UserList(-1, 1, "id")
 	if err != nil {
 		return
 	}
@@ -32,7 +32,7 @@ func (user User) ExchangeList(size, page int64) (total int64, exchanges []Exchan
 	if err != nil {
 		return
 	}
-	err = DB.Where("user_id in (?)", userIDs).Order("id").Limit(size).Offset((page - 1) * size).Find(&exchanges).Error
+	err = DB.Where("user_id in (?)", userIDs).Order(toUnderScoreCase(order)).Limit(size).Offset((page - 1) * size).Find(&exchanges).Error
 	return
 }
 

@@ -53,6 +53,7 @@ class Algorithm extends React.Component {
   }
 
   componentWillMount() {
+    this.order = 'id';
     this.reload();
   }
 
@@ -63,8 +64,7 @@ class Algorithm extends React.Component {
   reload() {
     const { pagination } = this.state;
     const { dispatch } = this.props;
-
-    dispatch(AlgorithmList(pagination.pageSize, pagination.current));
+    dispatch(AlgorithmList(pagination.pageSize, pagination.current, this.order));
   }
 
   onSelectChange(selectedRowKeys) {
@@ -74,6 +74,11 @@ class Algorithm extends React.Component {
   handleTableChange(newPagination, filters, sorter) {
     const { pagination } = this.state;
 
+    if (sorter.field) {
+      this.order = `${sorter.field} ${sorter.order.replace('end', '')}`;
+    } else {
+      this.order = 'id';
+    }
     pagination.current = newPagination.current;
     this.setState({ pagination });
     this.reload();
@@ -90,7 +95,8 @@ class Algorithm extends React.Component {
           dispatch(AlgorithmDelete(
             map(selectedRowKeys, (i) => algorithm.list[i].id),
             pagination.pageSize,
-            pagination.current
+            pagination.current,
+            this.order
           ));
           this.setState({ selectedRowKeys: [] });
         }
@@ -120,6 +126,7 @@ class Algorithm extends React.Component {
     const columns = [{
       title: 'Name',
       dataIndex: 'name',
+      sorter: true,
       render: (v, r) => <a onClick={this.handleEdit.bind(this, r)}>{v}</a>,
     }, {
       title: 'Description',
@@ -128,10 +135,12 @@ class Algorithm extends React.Component {
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
+      sorter: true,
       render: (v) => v.toLocaleString(),
     }, {
       title: 'UpdatedAt',
       dataIndex: 'updatedAt',
+      sorter: true,
       render: (v) => v.toLocaleString(),
     }];
     const rowSelection = {

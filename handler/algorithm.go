@@ -10,7 +10,7 @@ import (
 type algorithm struct{}
 
 // List ...
-func (algorithm) List(size, page int64, ctx rpc.Context) (resp response) {
+func (algorithm) List(size, page int64, order string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
 		resp.Message = "Authorization wrong"
@@ -21,7 +21,7 @@ func (algorithm) List(size, page int64, ctx rpc.Context) (resp response) {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	total, algorithms, err := self.AlgorithmList(size, page)
+	total, algorithms, err := self.AlgorithmList(size, page, order)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
@@ -87,7 +87,7 @@ func (algorithm) Delete(ids []int64, ctx rpc.Context) (resp response) {
 		return
 	}
 	userIds := []int64{}
-	if _, users, err := self.UserList(-1, 1); err != nil {
+	if _, users, err := self.UserList(-1, 1, "id"); err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
 	} else {

@@ -59,6 +59,7 @@ class Exchange extends React.Component {
   }
 
   componentWillMount() {
+    this.order = 'id';
     this.reload();
   }
 
@@ -70,7 +71,7 @@ class Exchange extends React.Component {
     const { pagination } = this.state;
     const { dispatch } = this.props;
 
-    dispatch(ExchangeList(pagination.pageSize, pagination.current));
+    dispatch(ExchangeList(pagination.pageSize, pagination.current, this.order));
   }
 
   onSelectChange(selectedRowKeys) {
@@ -80,6 +81,11 @@ class Exchange extends React.Component {
   handleTableChange(newPagination, filters, sorter) {
     const { pagination } = this.state;
 
+    if (sorter.field) {
+      this.order = `${sorter.field} ${sorter.order.replace('end', '')}`;
+    } else {
+      this.order = 'id';
+    }
     pagination.current = newPagination.current;
     this.setState({ pagination });
     this.reload();
@@ -96,7 +102,8 @@ class Exchange extends React.Component {
           dispatch(ExchangeDelete(
             map(selectedRowKeys, (i) => exchange.list[i].id),
             pagination.pageSize,
-            pagination.current
+            pagination.current,
+            this.order
           ));
           this.setState({ selectedRowKeys: [] });
         }
@@ -134,7 +141,7 @@ class Exchange extends React.Component {
         secretKey: values.secretKey,
       };
 
-      dispatch(ExchangePut(req, pagination.pageSize, pagination.current));
+      dispatch(ExchangePut(req, pagination.pageSize, pagination.current, this.order));
       this.setState({ infoModalShow: false });
       this.props.form.resetFields();
     });
@@ -152,17 +159,21 @@ class Exchange extends React.Component {
     const columns = [{
       title: 'Name',
       dataIndex: 'name',
+      sorter: true,
       render: (v, r) => <a onClick={this.handleInfoShow.bind(this, r)}>{String(v)}</a>,
     }, {
       title: 'Type',
       dataIndex: 'type',
+      sorter: true,
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
+      sorter: true,
       render: (v) => v.toLocaleString(),
     }, {
       title: 'UpdatedAt',
       dataIndex: 'updatedAt',
+      sorter: true,
       render: (v) => v.toLocaleString(),
     }];
     const formItemLayout = {

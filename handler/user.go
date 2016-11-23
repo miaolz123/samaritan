@@ -51,7 +51,7 @@ func (user) Get(_ string, ctx rpc.Context) (resp response) {
 }
 
 // List ...
-func (user) List(size, page int64, ctx rpc.Context) (resp response) {
+func (user) List(size, page int64, order string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
 		resp.Message = "Authorization wrong"
@@ -62,7 +62,7 @@ func (user) List(size, page int64, ctx rpc.Context) (resp response) {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	total, users, err := self.UserList(size, page)
+	total, users, err := self.UserList(size, page, order)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return

@@ -28,12 +28,12 @@ func GetUser(username interface{}) (user User, err error) {
 }
 
 // UserList ...
-func (user User) UserList(size, page int64) (total int64, users []User, err error) {
+func (user User) UserList(size, page int64, order string) (total int64, users []User, err error) {
 	err = DB.Model(&User{}).Where("level < ? OR id = ?", user.Level, user.ID).Count(&total).Error
 	if err != nil {
 		return
 	}
-	err = DB.Where("level < ? OR id = ?", user.Level, user.ID).Order("id").Limit(size).Offset((page - 1) * size).Find(&users).Error
+	err = DB.Where("level < ? OR id = ?", user.Level, user.ID).Order(toUnderScoreCase(order)).Limit(size).Offset((page - 1) * size).Find(&users).Error
 	return
 }
 

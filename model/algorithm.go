@@ -15,8 +15,8 @@ type Algorithm struct {
 }
 
 // AlgorithmList ...
-func (user User) AlgorithmList(size, page int64) (total int64, algorithms []Algorithm, err error) {
-	_, users, err := user.UserList(-1, 1)
+func (user User) AlgorithmList(size, page int64, order string) (total int64, algorithms []Algorithm, err error) {
+	_, users, err := user.UserList(-1, 1, "id")
 	if err != nil {
 		return
 	}
@@ -28,6 +28,6 @@ func (user User) AlgorithmList(size, page int64) (total int64, algorithms []Algo
 	if err != nil {
 		return
 	}
-	err = DB.Where("user_id in (?)", userIDs).Order("id").Limit(size).Offset((page - 1) * size).Find(&algorithms).Error
+	err = DB.Where("user_id in (?)", userIDs).Order(toUnderScoreCase(order)).Limit(size).Offset((page - 1) * size).Find(&algorithms).Error
 	return
 }
