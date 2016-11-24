@@ -148,18 +148,16 @@ class AlgorithmEdit extends Component {
               />
             </Tooltip>
           </Col>
-          <Col span={6} style={{textAlign: 'right'}}>
-            <Button.Group>
-              <Button
-                type="primary"
-                disabled={!name}
-                onClick={this.handleSubmit}
-              >Submit</Button>
-              <Button
-                type="ghost"
-                onClick={this.handleCancel}
-              >Cancel</Button>
-            </Button.Group>
+          <Col span={6} className="right-operations">
+            <Button
+              type="primary"
+              disabled={!name}
+              onClick={this.handleSubmit}
+            >Submit</Button>
+            <Button
+              type="ghost"
+              onClick={this.handleCancel}
+            >Cancel</Button>
           </Col>
         </Row>
         <Row style={{marginTop: 18}}>

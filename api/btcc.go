@@ -16,6 +16,10 @@ import (
 	"github.com/miaolz123/samaritan/model"
 )
 
+func init() {
+	constructor["btcc"] = NewBtcc
+}
+
 // Btcc : the exchange struct of btcc.com
 type Btcc struct {
 	stockTypeMap     map[string]string
@@ -37,7 +41,7 @@ type Btcc struct {
 }
 
 // NewBtcc : create an exchange struct of okcoin.cn
-func NewBtcc(opt Option) *Btcc {
+func NewBtcc(opt Option) Exchange {
 	return &Btcc{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "BTCCNY",

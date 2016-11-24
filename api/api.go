@@ -1,15 +1,13 @@
 package api
 
-import "github.com/robertkrimen/otto"
-
 // Option : exchange option
 type Option struct {
-	TraderID  uint
+	TraderID  int64
 	Type      string
 	Name      string
 	AccessKey string
 	SecretKey string
-	Ctx       *otto.Otto
+	// Ctx       *otto.Otto
 }
 
 // Exchange interface
@@ -29,3 +27,7 @@ type Exchange interface {
 	GetTicker(stockType string, sizes ...interface{}) interface{}
 	GetRecords(stockType, period string, sizes ...interface{}) interface{}
 }
+
+var (
+	constructor = map[string]func(Option) Exchange{}
+)

@@ -116,7 +116,7 @@ func logsDelete(c *iris.Context) {
 	switch timeType {
 	case constant.LastTime:
 		if t := trader.Executor[td.ID]; t != nil {
-			minTimestamp = t.LastRunAt
+			minTimestamp = t.LastRunAt.Unix()
 		} else {
 			resp["msg"] = "Not found running trader"
 			c.JSON(iris.StatusOK, resp)

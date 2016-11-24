@@ -8,7 +8,7 @@ import (
 // Exchange struct
 type Exchange struct {
 	ID        int64      `gorm:"primary_key" json:"id"`
-	UserID    int64      `gorm:"index" json:"userID"`
+	UserID    int64      `gorm:"index" json:"userId"`
 	Name      string     `gorm:"type:varchar(50)" json:"name"`
 	Type      string     `gorm:"type:varchar(50)" json:"type"`
 	AccessKey string     `gorm:"type:varchar(200)" json:"accessKey"`

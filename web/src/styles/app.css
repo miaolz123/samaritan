@@ -133,6 +133,18 @@ td .ant-badge-status-with-text {
   margin-bottom: 16px;
 }
 
+.table-operations button {
+  margin-right: 8px;
+}
+
+.right-operations {
+  text-align: right;
+}
+
+.right-operations button {
+  margin-right: 8px;
+}
+
 .login-form-button {
   width: 100%;
 }

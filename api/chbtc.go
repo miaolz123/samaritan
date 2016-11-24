@@ -31,8 +31,12 @@ type Chbtc struct {
 	lastTimes int64
 }
 
+func init() {
+	constructor["chbtc"] = NewChbtc
+}
+
 // NewChbtc : create an exchange struct of chbtc.com
-func NewChbtc(opt Option) *Chbtc {
+func NewChbtc(opt Option) Exchange {
 	return &Chbtc{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "btc_cny",

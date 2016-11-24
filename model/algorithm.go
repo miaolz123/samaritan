@@ -1,17 +1,22 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 // Algorithm struct
 type Algorithm struct {
 	ID          int64      `gorm:"primary_key" json:"id"`
-	UserID      int64      `gorm:"index" json:"userID"`
+	UserID      int64      `gorm:"index" json:"userId"`
 	Name        string     `gorm:"type:varchar(200)" json:"name"`
 	Description string     `gorm:"type:text" json:"description"`
 	Script      string     `gorm:"type:text" json:"script"`
+	EvnDefault  string     `gorm:"type:text" json:"evnDefault"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
 	DeletedAt   *time.Time `sql:"index" json:"-"`
+
+	Traders []Trader `gorm:"-" json:"traders"`
 }
 
 // AlgorithmList ...
@@ -29,5 +34,8 @@ func (user User) AlgorithmList(size, page int64, order string) (total int64, alg
 		return
 	}
 	err = DB.Where("user_id in (?)", userIDs).Order(toUnderScoreCase(order)).Limit(size).Offset((page - 1) * size).Find(&algorithms).Error
+	for i, agt := range algorithms {
+		algorithms[i].Traders, _ = user.GetTraders(agt.ID)
+	}
 	return
 }

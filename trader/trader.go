@@ -11,7 +11,7 @@ import (
 )
 
 // Executor ...
-var Executor = make(map[uint]*Global)
+var Executor = make(map[int64]*Global)
 var errHalt = fmt.Errorf("HALT")
 
 // Global ...
@@ -37,11 +37,11 @@ func Run(trader Global) (err error) {
 	if err != nil {
 		return
 	}
-	if trader.StrategyID <= 0 {
-		err = fmt.Errorf("Please select a strategy")
+	if trader.AlgorithmID <= 0 {
+		err = fmt.Errorf("Please select a algorithm")
 		return
 	}
-	if err = model.DB.First(&trader.Strategy, trader.StrategyID).Error; err != nil {
+	if err = model.DB.First(&trader.Algorithm, trader.AlgorithmID).Error; err != nil {
 		return
 	}
 	es, err := model.GetTraderExchanges(self, trader.ID)
@@ -65,7 +65,7 @@ func Run(trader Global) (err error) {
 			Name:      e.Name,
 			AccessKey: e.AccessKey,
 			SecretKey: e.SecretKey,
-			Ctx:       trader.Ctx,
+			// Ctx:       trader.Ctx,
 		}
 		switch opt.Type {
 		case constant.OkCoinCn:
@@ -107,10 +107,10 @@ func Run(trader Global) (err error) {
 			trader.Status = 0
 			trader.Logger.Log(constant.INFO, "", 0.0, 0.0, "The Trader stop running")
 		}()
-		trader.LastRunAt = time.Now().Unix()
+		trader.LastRunAt = time.Now()
 		trader.Status = 1
 		trader.Logger.Log(constant.INFO, "", 0.0, 0.0, "The Trader is running")
-		if _, err := trader.Ctx.Run(trader.Strategy.Script); err != nil {
+		if _, err := trader.Ctx.Run(trader.Algorithm.Script); err != nil {
 			trader.Logger.Log(constant.ERROR, "", 0.0, 0.0, err)
 		}
 		if main, err := trader.Ctx.Get("main"); err != nil || !main.IsFunction() {
@@ -126,7 +126,7 @@ func Run(trader Global) (err error) {
 }
 
 // GetStatus ...
-func GetStatus(id uint) string {
+func GetStatus(id int64) string {
 	t := Executor[id]
 	if t != nil {
 		return t.statusLog
@@ -135,7 +135,7 @@ func GetStatus(id uint) string {
 }
 
 // Stop ...
-func Stop(id uint) (err error) {
+func Stop(id int64) (err error) {
 	t := Executor[id]
 	if t == nil {
 		err = fmt.Errorf("Can not found the Trader")

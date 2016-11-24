@@ -3,8 +3,7 @@ import { AlgorithmList, AlgorithmCache, AlgorithmDelete } from '../actions/algor
 import React from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { Button, Table, Modal, notification } from 'antd';
-import map from 'lodash/map';
+import { Button, Table, Modal, Badge, notification } from 'antd';
 
 class Algorithm extends React.Component {
   constructor(props) {
@@ -88,12 +87,12 @@ class Algorithm extends React.Component {
     Modal.confirm({
       title: 'Are you sure to delete ?',
       onOk: () => {
-        const { dispatch, algorithm } = this.props;
+        const { dispatch } = this.props;
         const { selectedRowKeys, pagination } = this.state;
 
         if (selectedRowKeys.length > 0) {
           dispatch(AlgorithmDelete(
-            map(selectedRowKeys, (i) => algorithm.list[i].id),
+            selectedRowKeys,
             pagination.pageSize,
             pagination.current,
             this.order
@@ -147,17 +146,46 @@ class Algorithm extends React.Component {
       selectedRowKeys,
       onChange: this.onSelectChange,
     };
+    const expcolumns = [{
+      title: 'Name',
+      dataIndex: 'name',
+      // render: (v, r) => <a onClick={this.handleEdit.bind(this, r)}>{v}</a>,
+    }, {
+      title: 'Status',
+      dataIndex: 'status',
+      render: (v) => (v >= 0 ? <Badge status="processing" text="RUN" /> : <Badge status="error" text="HALT" />),
+    }, {
+      title: 'CreatedAt',
+      dataIndex: 'createdAt',
+      render: (v) => v.toLocaleDateString(),
+    }, {
+      title: 'UpdatedAt',
+      dataIndex: 'updatedAt',
+      render: (v) => v.toLocaleDateString(),
+    }];
+    const expandedRowRender = (r) => {
+      if (r.traders.length > 0) {
+        return (
+          <Table className="womende" rowKey="id"
+            size="middle"
+            pagination={false}
+            columns={expcolumns}
+            dataSource={r.traders}
+          />
+        );
+      }
+    };
 
     return (
       <div>
         <div className="table-operations">
-          <Button.Group>
-            <Button type="primary" onClick={this.reload}>Reload</Button>
-            <Button onClick={this.handleEdit}>Add</Button>
-            <Button disabled={selectedRowKeys.length <= 0} onClick={this.handleDelete}>Delete</Button>
-          </Button.Group>
+          <Button type="primary" onClick={this.reload}>Reload</Button>
+          <Button type="ghost" onClick={this.handleEdit}>Add</Button>
+          <Button disabled={selectedRowKeys.length <= 0} onClick={this.handleDelete}>Delete</Button>
         </div>
-        <Table columns={columns}
+        <Table rowKey="id"
+          columns={columns}
+          expandedRowRender={expandedRowRender}
           dataSource={algorithm.list}
           rowSelection={rowSelection}
           pagination={pagination}

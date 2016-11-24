@@ -78,7 +78,7 @@ func (c traderHandler) Post() {
 			return
 		}
 		td.Name = req.Name
-		td.StrategyID = req.StrategyID
+		td.AlgorithmID = req.AlgorithmID
 		rs, err := model.GetTraderExchanges(self, td.ID)
 		if err != nil {
 			db.Rollback()

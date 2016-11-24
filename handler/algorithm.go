@@ -58,10 +58,17 @@ func (algorithm) Put(req model.Algorithm, ctx rpc.Context) (resp response) {
 		algorithm.Name = req.Name
 		algorithm.Description = req.Description
 		algorithm.Script = req.Script
+		algorithm.EvnDefault = req.EvnDefault
 		if err := model.DB.Save(&algorithm).Error; err != nil {
 			resp.Message = fmt.Sprint(err)
 			return
 		}
+		t := model.Trader{
+			UserID:      self.ID,
+			AlgorithmID: 2,
+			Name:        "ceshi de a 222",
+		}
+		fmt.Println(717171, model.DB.Create(&t).Error)
 		resp.Success = true
 		return
 	}

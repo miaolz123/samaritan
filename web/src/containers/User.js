@@ -3,7 +3,6 @@ import { UserList, UserPut, UserDelete } from '../actions/user';
 import React from 'react';
 import { connect } from 'react-redux';
 import { Button, Table, Modal, Form, Input, InputNumber, notification } from 'antd';
-import map from 'lodash/map';
 
 const FormItem = Form.Item;
 
@@ -94,12 +93,12 @@ class User extends React.Component {
     Modal.confirm({
       title: 'Are you sure to delete ?',
       onOk: () => {
-        const { dispatch, user } = this.props;
+        const { dispatch } = this.props;
         const { selectedRowKeys, pagination } = this.state;
 
         if (selectedRowKeys.length > 0) {
           dispatch(UserDelete(
-            map(selectedRowKeys, (i) => user.list[i].id),
+            selectedRowKeys,
             pagination.pageSize,
             pagination.current,
             this.order
@@ -207,13 +206,12 @@ class User extends React.Component {
     return (
       <div>
         <div className="table-operations">
-          <Button.Group>
-            <Button type="primary" onClick={this.reload}>Reload</Button>
-            <Button onClick={this.handleInfoShow}>Add</Button>
-            <Button disabled={selectedRowKeys.length <= 0} onClick={this.handleDelete}>Delete</Button>
-          </Button.Group>
+          <Button type="primary" onClick={this.reload}>Reload</Button>
+          <Button type="ghost" onClick={this.handleInfoShow}>Add</Button>
+          <Button disabled={selectedRowKeys.length <= 0} onClick={this.handleDelete}>Delete</Button>
         </div>
-        <Table columns={columns}
+        <Table rowKey="id"
+          columns={columns}
           dataSource={user.list}
           rowSelection={rowSelection}
           pagination={pagination}
