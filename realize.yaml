@@ -1,0 +1,37 @@
+settings:
+  resources:
+    output: outputs.log
+    log: logs.log
+  server:
+    enable: false
+  config:
+    flimit: 0
+projects:
+- name: samaritan
+  path: /
+  run: true
+  bin: true
+  generate: false
+  build: false
+  fmt: false
+  test: false
+  params: []
+  watcher:
+    before: []
+    after: []
+    paths:
+    - /
+    ignore_paths:
+    - .git
+    - web
+    - vendor
+    exts:
+    - .go
+    - .ini
+    preview: false
+  cli:
+    streams: true
+  file:
+    streams: false
+    logs: false
+    errors: false

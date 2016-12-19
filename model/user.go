@@ -36,14 +36,3 @@ func (user User) UserList(size, page int64, order string) (total int64, users []
 	err = DB.Where("level < ? OR id = ?", user.Level, user.ID).Order(toUnderScoreCase(order)).Limit(size).Offset((page - 1) * size).Find(&users).Error
 	return
 }
-
-// GetUsers ...
-func GetUsers(self User, order ...string) (users []User, err error) {
-	orderKey := "id"
-	if len(order) > 0 && order[0] != "" {
-		orderKey = order[0]
-	}
-	err = DB.Order(orderKey).Where("level < ?", self.Level).Order("id").Find(&users).Error
-	users = append([]User{self}, users...)
-	return
-}

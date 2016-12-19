@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"time"
+
+	"github.com/miaolz123/samaritan/constant"
 )
 
 // Trader struct
@@ -30,31 +32,10 @@ type TraderExchange struct {
 	Exchange   `gorm:"-"`
 }
 
-// GetTraders ...
-func (user User) GetTraders(algorithmID int64) (traders []Trader, err error) {
-	err = DB.Where("algorithm_id = ?", algorithmID).Order("id desc").Find(&traders).Error
-	return
-}
-
-// GetTraders ...
-func GetTraders(self User) (traders []Trader, err error) {
-	users, err := GetUsers(self)
-	if err != nil {
-		return
-	}
-	userIDs := []int64{}
-	for _, u := range users {
-		userIDs = append(userIDs, u.ID)
-	}
-	if err = DB.Where("user_id in (?)", userIDs).Order("id").Find(&traders).Error; err != nil {
-		return
-	}
+// TraderList ...
+func (user User) TraderList(algorithmID int64) (traders []Trader, err error) {
+	err = DB.Where("user_id = ? AND algorithm_id = ?", user.ID, algorithmID).Find(&traders).Error
 	for i, t := range traders {
-		if t.AlgorithmID > 0 {
-			if err = DB.Where("id = ?", t.AlgorithmID).First(&traders[i].Algorithm).Error; err != nil {
-				return
-			}
-		}
 		if err = DB.Raw(`SELECT e.* FROM exchanges e, trader_exchanges r WHERE r.trader_id
 		= ? AND e.id = r.exchange_id`, t.ID).Scan(&traders[i].Exchanges).Error; err != nil {
 			return
@@ -64,16 +45,16 @@ func GetTraders(self User) (traders []Trader, err error) {
 }
 
 // GetTrader ...
-func GetTrader(self User, id interface{}) (trader Trader, err error) {
+func (user User) GetTrader(id interface{}) (trader Trader, err error) {
 	if err = DB.Where("id = ?", id).First(&trader).Error; err != nil {
 		return
 	}
-	user, err := GetUserByID(trader.UserID)
+	self, err := GetUserByID(trader.UserID)
 	if err != nil {
 		return
 	}
-	if user.Level >= self.Level && user.ID != self.ID {
-		err = fmt.Errorf("Insufficient permissions")
+	if user.Level < self.Level || user.ID != self.ID {
+		err = fmt.Errorf(constant.ErrInsufficientPermissions)
 	}
 	if trader.AlgorithmID > 0 {
 		if err = DB.Where("id = ?", trader.AlgorithmID).First(&trader.Algorithm).Error; err != nil {
@@ -86,8 +67,8 @@ func GetTrader(self User, id interface{}) (trader Trader, err error) {
 }
 
 // GetTraderExchanges ...
-func GetTraderExchanges(self User, id interface{}) (traderExchanges []TraderExchange, err error) {
-	if _, err = GetTrader(self, id); err != nil {
+func (user User) GetTraderExchanges(id interface{}) (traderExchanges []TraderExchange, err error) {
+	if _, err = user.GetTrader(id); err != nil {
 		return
 	}
 	if err = DB.Where("trader_id = ?", id).Find(&traderExchanges).Error; err != nil {

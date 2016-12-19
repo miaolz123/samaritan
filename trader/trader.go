@@ -44,7 +44,7 @@ func Run(trader Global) (err error) {
 	if err = model.DB.First(&trader.Algorithm, trader.AlgorithmID).Error; err != nil {
 		return
 	}
-	es, err := model.GetTraderExchanges(self, trader.ID)
+	es, err := self.GetTraderExchanges(trader.ID)
 	if err != nil {
 		return
 	}

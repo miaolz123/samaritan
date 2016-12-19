@@ -1,4 +1,5 @@
 import * as actions from '../constants/actions';
+import { Client } from 'hprose-html5/dist/hprose-html5';
 
 // Login
 
@@ -16,7 +17,7 @@ function userLoginFailure(message) {
 
 export function UserLogin(cluster, username, password) {
   return (dispatch, getState) => {
-    const client = hprose.Client.create(cluster, { User: ['Login'] });
+    const client = Client.create(cluster, { User: ['Login'] });
 
     dispatch(userLoginRequest());
     client.User.Login(username, password, (resp) => {
@@ -57,7 +58,7 @@ export function UserGet() {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { User: ['Get'] });
+    const client = Client.create(cluster, { User: ['Get'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Get(null, (resp) => {
@@ -99,7 +100,7 @@ export function UserList(size, page, order) {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { User: ['List'] });
+    const client = Client.create(cluster, { User: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.List(size, page, order, (resp) => {
@@ -141,7 +142,7 @@ export function UserPut(req, password, size, page, order) {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { User: ['Put'] });
+    const client = Client.create(cluster, { User: ['Put'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Put(req, password, (resp) => {
@@ -184,7 +185,7 @@ export function UserDelete(ids, size, page, order) {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { User: ['Delete'] });
+    const client = Client.create(cluster, { User: ['Delete'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Delete(ids, (resp) => {

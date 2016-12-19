@@ -3,9 +3,7 @@ package handler
 import (
 	"fmt"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/hprose/hprose-golang/rpc"
-	"github.com/kataras/iris"
 	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
 )
@@ -23,7 +21,7 @@ func (exchange) Types(_ string, ctx rpc.Context) (resp response) {
 func (exchange) List(size, page int64, order string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	self, err := model.GetUser(username)
@@ -51,7 +49,7 @@ func (exchange) List(size, page int64, order string, ctx rpc.Context) (resp resp
 func (exchange) Put(req model.Exchange, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	self, err := model.GetUser(username)
@@ -89,7 +87,7 @@ func (exchange) Put(req model.Exchange, ctx rpc.Context) (resp response) {
 func (exchange) Delete(ids []int64, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	self, err := model.GetUser(username)
@@ -98,13 +96,13 @@ func (exchange) Delete(ids []int64, ctx rpc.Context) (resp response) {
 		return
 	}
 	userIds := []int64{}
-	if _, users, err := self.UserList(-1, 1, "id"); err != nil {
+	_, users, err := self.UserList(-1, 1, "id")
+	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
-	} else {
-		for _, u := range users {
-			userIds = append(userIds, u.ID)
-		}
+	}
+	for _, u := range users {
+		userIds = append(userIds, u.ID)
 	}
 	if err := model.DB.Where("id in (?) AND user_id in (?)", ids, userIds).Delete(&model.Exchange{}).Error; err != nil {
 		resp.Message = fmt.Sprint(err)
@@ -112,144 +110,4 @@ func (exchange) Delete(ids []int64, ctx rpc.Context) (resp response) {
 		resp.Success = true
 	}
 	return
-}
-
-type exchangeHandler struct {
-	*iris.Context
-}
-
-// Get /exchange
-func (c exchangeHandler) Get() {
-	resp := iris.Map{
-		"success": false,
-		"msg":     "",
-	}
-	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	id := c.URLParam("id")
-	if id != "" && id != "0" {
-		td, err := model.GetTrader(self, id)
-		if err != nil {
-			resp["msg"] = fmt.Sprint(err)
-			c.JSON(iris.StatusOK, resp)
-			return
-		}
-		if self, err = model.GetUserByID(td.UserID); err != nil {
-			resp["msg"] = fmt.Sprint(err)
-			c.JSON(iris.StatusOK, resp)
-			return
-		}
-	}
-	exchanges, err := model.GetExchanges(self)
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	resp["success"] = true
-	resp["data"] = exchanges
-	c.JSON(iris.StatusOK, resp)
-}
-
-// Post /exchange
-func (c exchangeHandler) Post() {
-	resp := iris.Map{
-		"success": false,
-		"msg":     "",
-	}
-	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	req := model.Exchange{}
-	if err := c.ReadJSON(&req); err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	if req.ID > 0 {
-		exchange := model.Exchange{}
-		if err := model.DB.First(&exchange, req.ID).Error; err != nil {
-			resp["msg"] = fmt.Sprint(err)
-			c.JSON(iris.StatusOK, resp)
-			return
-		}
-		exchange.Name = req.Name
-		exchange.Type = req.Type
-		exchange.AccessKey = req.AccessKey
-		exchange.SecretKey = req.SecretKey
-		if err := model.DB.Save(&exchange).Error; err != nil {
-			resp["msg"] = fmt.Sprint(err)
-			c.JSON(iris.StatusOK, resp)
-			return
-		}
-		resp["success"] = true
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	req.UserID = self.ID
-	if err := model.DB.Create(&req).Error; err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	resp["success"] = true
-	c.JSON(iris.StatusOK, resp)
-}
-
-// Delete /exchange
-func (c exchangeHandler) Delete() {
-	resp := iris.Map{
-		"success": false,
-		"msg":     "",
-	}
-	id := c.URLParam("id")
-	db, err := model.NewOrm()
-	if err != nil {
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	defer db.Close()
-	db = db.Begin()
-	self, err := model.GetUser(jwtmid.Get(c.Context).Claims.(jwt.MapClaims)["sub"])
-	if err != nil {
-		db.Rollback()
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	exchange, err := model.GetExchange(self, id)
-	if err != nil {
-		db.Rollback()
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	if err := db.Delete(&exchange).Error; err != nil {
-		db.Rollback()
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	if err := db.Where("exchange_id = ?", id).Delete(&model.TraderExchange{}).Error; err != nil {
-		db.Rollback()
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	if err := db.Commit().Error; err != nil {
-		db.Rollback()
-		resp["msg"] = fmt.Sprint(err)
-		c.JSON(iris.StatusOK, resp)
-		return
-	}
-	resp["success"] = true
-	c.JSON(iris.StatusOK, resp)
 }

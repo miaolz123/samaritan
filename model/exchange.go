@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -33,34 +32,5 @@ func (user User) ExchangeList(size, page int64, order string) (total int64, exch
 		return
 	}
 	err = DB.Where("user_id in (?)", userIDs).Order(toUnderScoreCase(order)).Limit(size).Offset((page - 1) * size).Find(&exchanges).Error
-	return
-}
-
-// GetExchanges ...
-func GetExchanges(self User) (exchanges []Exchange, err error) {
-	users, err := GetUsers(self)
-	if err != nil {
-		return
-	}
-	userIDs := []int64{}
-	for _, u := range users {
-		userIDs = append(userIDs, u.ID)
-	}
-	err = DB.Where("user_id in (?)", userIDs).Order("id").Find(&exchanges).Error
-	return
-}
-
-// GetExchange ...
-func GetExchange(self User, id interface{}) (exchange Exchange, err error) {
-	if err = DB.First(&exchange, id).Error; err != nil {
-		return
-	}
-	user, err := GetUserByID(exchange.UserID)
-	if err != nil {
-		return
-	}
-	if user.Level >= self.Level && user.ID != self.ID {
-		err = fmt.Errorf("Insufficient permissions")
-	}
 	return
 }

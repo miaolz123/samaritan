@@ -37,7 +37,7 @@ func init() {
 			log.Fatalln("Connect to database error:", err)
 		}
 	}
-	DB.AutoMigrate(&User{}, &Exchange{}, &Algorithm{}, &Strategy{}, &TraderExchange{}, &Trader{}, &Log{})
+	DB.AutoMigrate(&User{}, &Exchange{}, &Algorithm{}, &TraderExchange{}, &Trader{}, &Log{})
 	users := []User{}
 	DB.Find(&users)
 	if len(users) == 0 {

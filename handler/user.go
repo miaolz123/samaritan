@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hprose/hprose-golang/rpc"
+	"github.com/miaolz123/samaritan/constant"
 	"github.com/miaolz123/samaritan/model"
 )
 
@@ -35,7 +36,7 @@ func (user) Login(username, password string, ctx rpc.Context) (resp response) {
 func (user) Get(_ string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	user := model.User{
@@ -54,7 +55,7 @@ func (user) Get(_ string, ctx rpc.Context) (resp response) {
 func (user) List(size, page int64, order string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	self, err := model.GetUser(username)
@@ -82,7 +83,7 @@ func (user) List(size, page int64, order string, ctx rpc.Context) (resp response
 func (user) Put(req model.User, password string, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	if req.Username == "" {
@@ -141,7 +142,7 @@ func (user) Put(req model.User, password string, ctx rpc.Context) (resp response
 func (user) Delete(ids []int64, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
-		resp.Message = "Authorization wrong"
+		resp.Message = constant.ErrAuthorizationError
 		return
 	}
 	self, err := model.GetUser(username)

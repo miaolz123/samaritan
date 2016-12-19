@@ -1,4 +1,5 @@
 import * as actions from '../constants/actions';
+import { Client } from 'hprose-html5/dist/hprose-html5';
 
 // List
 
@@ -25,7 +26,7 @@ export function AlgorithmList(size, page, order) {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { Algorithm: ['List'] });
+    const client = Client.create(cluster, { Algorithm: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Algorithm.List(size, page, order, (resp) => {
@@ -66,7 +67,7 @@ export function AlgorithmPut(req) {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { Algorithm: ['Put'] });
+    const client = Client.create(cluster, { Algorithm: ['Put'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Algorithm.Put(req, (resp) => {
@@ -107,7 +108,7 @@ export function AlgorithmDelete(ids, size, page, order) {
       return;
     }
 
-    const client = hprose.Client.create(cluster, { Algorithm: ['Delete'] });
+    const client = Client.create(cluster, { Algorithm: ['Delete'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Algorithm.Delete(ids, (resp) => {

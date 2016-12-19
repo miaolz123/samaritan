@@ -1,9 +1,14 @@
 import { ResetError } from '../actions';
 import { AlgorithmList, AlgorithmCache, AlgorithmDelete } from '../actions/algorithm';
+import { ExchangeList } from '../actions/exchange';
+import { TraderList, TraderPut } from '../actions/trader';
 import React from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { Button, Table, Modal, Badge, notification } from 'antd';
+import { Button, Dropdown, Menu, Table, Modal, Form, Input, Select, Tag, Tooltip, Badge, notification } from 'antd';
+
+const FormItem = Form.Item;
+const Option = Select.Option;
 
 class Algorithm extends React.Component {
   constructor(props) {
@@ -17,13 +22,23 @@ class Algorithm extends React.Component {
         current: 1,
         total: 0,
       },
+      traderModelShow: false,
+      traderInfo: {
+        exchanges: [],
+      },
     };
 
     this.reload = this.reload.bind(this);
     this.onSelectChange = this.onSelectChange.bind(this);
     this.handleTableChange = this.handleTableChange.bind(this);
+    this.handleTableExpand = this.handleTableExpand.bind(this);
     this.handleDelete = this.handleDelete.bind(this);
     this.handleEdit = this.handleEdit.bind(this);
+    this.handleTraderEdit = this.handleTraderEdit.bind(this);
+    this.handleExchangeChange = this.handleExchangeChange.bind(this);
+    this.handleExchangeClose = this.handleExchangeClose.bind(this);
+    this.handleTraderModelOk = this.handleTraderModelOk.bind(this);
+    this.handleTraderModelCancel = this.handleTraderModelCancel.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -83,6 +98,14 @@ class Algorithm extends React.Component {
     this.reload();
   }
 
+  handleTableExpand(expanded, algorithm) {
+    if (expanded) {
+      const { dispatch } = this.props;
+
+      dispatch(TraderList(algorithm.id));
+    }
+  }
+
   handleDelete() {
     Modal.confirm({
       title: 'Are you sure to delete ?',
@@ -119,9 +142,86 @@ class Algorithm extends React.Component {
     browserHistory.push('/algorithm/edit');
   }
 
+  handleTraderEdit(info, algorithm) {
+    const { dispatch } = this.props;
+
+    if (!info) {
+      info = {
+        id: 0,
+        algorithmId: algorithm.id,
+        name: `New Trader @ ${new Date().toLocaleDateString()}`,
+        exchanges: [],
+      };
+    }
+
+    this.setState({
+      traderModelShow: true,
+      traderInfo: info,
+    });
+
+    dispatch(ExchangeList(-1, 1, 'id'));
+  }
+
+  handleExchangeChange(value) {
+    const { exchange } = this.props;
+    const { traderInfo } = this.state;
+
+    if (exchange.list[value] && exchange.list[value].id > 0) {
+      traderInfo.exchanges.push(exchange.list[value]);
+      this.setState({ traderInfo });
+    }
+  }
+
+  handleExchangeClose(i, event) {
+    const { traderInfo } = this.state;
+
+    if (i < traderInfo.exchanges.length) {
+      traderInfo.exchanges.splice(i, 1);
+      this.setState({ traderInfo });
+    }
+    event.preventDefault();
+  }
+
+  handleTraderModelOk() {
+    this.props.form.validateFields((errors, values) => {
+      if (errors) {
+        return;
+      }
+
+      const { traderInfo } = this.state;
+      const { dispatch } = this.props;
+      const info = {
+        id: traderInfo.id,
+        algorithmId: traderInfo.algorithmId,
+        name: values.name,
+        exchanges: traderInfo.exchanges,
+      };
+
+      dispatch(TraderPut(info));
+
+      this.setState({
+        traderModelShow: false,
+        traderInfo: {
+          exchanges: [],
+        },
+      });
+    });
+  }
+
+  handleTraderModelCancel() {
+    this.setState({
+      traderModelShow: false,
+      traderInfo: {
+        exchanges: [],
+      },
+    });
+    this.props.form.resetFields();
+  }
+
   render() {
-    const { selectedRowKeys, pagination } = this.state;
-    const { algorithm } = this.props;
+    const { getFieldDecorator } = this.props.form;
+    const { selectedRowKeys, pagination, traderModelShow, traderInfo } = this.state;
+    const { exchange, algorithm, trader } = this.props;
     const columns = [{
       title: 'Name',
       dataIndex: 'name',
@@ -141,6 +241,18 @@ class Algorithm extends React.Component {
       dataIndex: 'updatedAt',
       sorter: true,
       render: (v) => v.toLocaleString(),
+    }, {
+      title: 'Action',
+      key: 'action',
+      render: (v, r) => (
+        <Dropdown.Button onClick={this.handleTraderEdit.bind(this, null, r)} type="ghost" overlay={
+          <Menu>
+            <Menu.Item key="backtest">
+              <a type="ghost">Backtest</a>
+            </Menu.Item>
+          </Menu>
+        }>Run</Dropdown.Button>
+      ),
     }];
     const rowSelection = {
       selectedRowKeys,
@@ -149,7 +261,7 @@ class Algorithm extends React.Component {
     const expcolumns = [{
       title: 'Name',
       dataIndex: 'name',
-      // render: (v, r) => <a onClick={this.handleEdit.bind(this, r)}>{v}</a>,
+      render: (v, r) => <a onClick={this.handleTraderEdit.bind(this, r, null)}>{v}</a>,
     }, {
       title: 'Status',
       dataIndex: 'status',
@@ -164,16 +276,22 @@ class Algorithm extends React.Component {
       render: (v) => v.toLocaleDateString(),
     }];
     const expandedRowRender = (r) => {
-      if (r.traders.length > 0) {
+      const data = trader.map[r.id];
+
+      if (data && data.length > 0) {
         return (
           <Table className="womende" rowKey="id"
             size="middle"
             pagination={false}
             columns={expcolumns}
-            dataSource={r.traders}
+            dataSource={trader.map[r.id]}
           />
         );
       }
+    };
+    const formItemLayout = {
+      labelCol: { span: 7 },
+      wrapperCol: { span: 12 },
     };
 
     return (
@@ -191,7 +309,53 @@ class Algorithm extends React.Component {
           pagination={pagination}
           loading={algorithm.loading}
           onChange={this.handleTableChange}
+          onExpand={this.handleTableExpand}
         />
+        <Modal closable
+          maskClosable={false}
+          width="50%"
+          title={traderInfo.name || 'New Trader'}
+          visible={traderModelShow}
+          onOk={this.handleTraderModelOk}
+          onCancel={this.handleTraderModelCancel}
+        >
+          <Form horizontal>
+            <FormItem
+              {...formItemLayout}
+              label="Name"
+            >
+              {getFieldDecorator('name', {
+                rules: [{ required: true }],
+                initialValue: traderInfo.name,
+              })(
+                <Input />
+              )}
+            </FormItem>
+            <FormItem
+              {...formItemLayout}
+              label="Exchanges"
+            >
+              <Select
+                onSelect={this.handleExchangeChange}
+                notFoundContent="Please add an exchange at first"
+              >
+                {exchange.list.map((e, i) => <Option key={String(i)} value={String(i)}>{e.name}</Option>)}
+              </Select>
+              {traderInfo.exchanges.length > 0 ? <div style={{ marginTop: 8 }}>
+                {traderInfo.exchanges.map((e, i) => <Tooltip
+                  key={String(i)}
+                  title={`${i > 0 ? '' : 'E / Exchange / '}Es[${i}] / Exchanges[${i}]`}>
+                  <Tag closable
+                    color={i > 0 ? '' : '#108ee9'}
+                    style={{ marginRight: 5 }}
+                    onClose={this.handleExchangeClose.bind(this, i)}>
+                    {e.name}
+                  </Tag>
+                </Tooltip>)}
+              </div> : ''}
+            </FormItem>
+          </Form>
+        </Modal>
       </div>
     );
   }
@@ -199,7 +363,9 @@ class Algorithm extends React.Component {
 
 const mapStateToProps = (state) => ({
   user: state.user,
+  exchange: state.exchange,
   algorithm: state.algorithm,
+  trader: state.trader,
 });
 
-export default connect(mapStateToProps)(Algorithm);
+export default Form.create()(connect(mapStateToProps)(Algorithm));
