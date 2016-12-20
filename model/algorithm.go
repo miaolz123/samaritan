@@ -19,9 +19,9 @@ type Algorithm struct {
 	Traders []Trader `gorm:"-" json:"traders"`
 }
 
-// AlgorithmList ...
-func (user User) AlgorithmList(size, page int64, order string) (total int64, algorithms []Algorithm, err error) {
-	_, users, err := user.UserList(-1, 1, "id")
+// ListAlgorithm ...
+func (user User) ListAlgorithm(size, page int64, order string) (total int64, algorithms []Algorithm, err error) {
+	_, users, err := user.ListUser(-1, 1, "id")
 	if err != nil {
 		return
 	}

@@ -147,8 +147,8 @@ export function UserPut(req, password, size, page, order) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Put(req, password, (resp) => {
       if (resp.success) {
-        dispatch(UserList(size, page, order));
         dispatch(userPutSuccess());
+        dispatch(UserList(size, page, order));
       } else {
         dispatch(userPutFailure(resp.message));
       }
@@ -190,8 +190,8 @@ export function UserDelete(ids, size, page, order) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.User.Delete(ids, (resp) => {
       if (resp.success) {
-        dispatch(UserList(size, page, order));
         dispatch(userDeleteSuccess());
+        dispatch(UserList(size, page, order));
       } else {
         dispatch(userDeleteFailure(resp.message));
       }

@@ -19,12 +19,16 @@ const (
 
 // log types
 const (
-	ERROR  = -1
-	INFO   = 0
-	PROFIT = 1
-	BUY    = 2
-	SELL   = 3
-	CANCEL = 4
+	ERROR      = "ERROR"
+	INFO       = "INFO"
+	PROFIT     = "PROFIT"
+	BUY        = "BUY"
+	SELL       = "SELL"
+	LONG       = "LONG"
+	SHORT      = "SHORT"
+	LONGCLOSE  = "LONG_CLOSE"
+	SHORTCLOSE = "SHORT_CLOSE"
+	CANCEL     = "CANCEL"
 )
 
 // delete log time types

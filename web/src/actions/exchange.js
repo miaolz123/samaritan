@@ -111,8 +111,8 @@ export function ExchangePut(req, size, page, order) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Exchange.Put(req, (resp) => {
       if (resp.success) {
-        dispatch(ExchangeList(size, page, order));
         dispatch(exchangePutSuccess());
+        dispatch(ExchangeList(size, page, order));
       } else {
         dispatch(exchangePutFailure(resp.message));
       }

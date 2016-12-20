@@ -36,23 +36,41 @@ type Global struct {
 	statusLog string
 }
 
-// init ...
-func (trader *Global) init() (err error) {
-	if t := Executor[trader.ID]; t != nil && t.Status > 0 {
+// GetTraderStatus ...
+func GetTraderStatus(id int64) (status int64) {
+	if t, ok := Executor[id]; ok && t != nil {
+		status = t.Status
+	}
+	return
+}
+
+// Switch ...
+func Switch(id int64) (err error) {
+	if GetTraderStatus(id) > 0 {
+		return stop(id)
+	}
+	return run(id)
+}
+
+func initialize(id int64) (trader Global, err error) {
+	if t := Executor[id]; t != nil && t.Status > 0 {
 		return
 	}
-	if err := model.DB.First(&trader.Trader, trader.ID).Error; err != nil {
-		return err
+	err = model.DB.First(&trader.Trader, id).Error
+	if err != nil {
+		return
 	}
 	self, err := model.GetUserByID(trader.UserID)
 	if err != nil {
-		return err
+		return
 	}
 	if trader.AlgorithmID <= 0 {
-		return fmt.Errorf("Please select a algorithm")
+		err = fmt.Errorf("Please select a algorithm")
+		return
 	}
-	if err := model.DB.First(&trader.Algorithm, trader.AlgorithmID).Error; err != nil {
-		return err
+	err = model.DB.First(&trader.Algorithm, trader.AlgorithmID).Error
+	if err != nil {
+		return
 	}
 	es, err := self.GetTraderExchanges(trader.ID)
 	if err != nil {
@@ -82,7 +100,8 @@ func (trader *Global) init() (err error) {
 		}
 	}
 	if len(trader.es) == 0 {
-		return fmt.Errorf("Please add at least one exchange")
+		err = fmt.Errorf("Please add at least one exchange")
+		return
 	}
 	trader.Ctx.Set("Global", &trader)
 	trader.Ctx.Set("G", &trader)
@@ -93,10 +112,11 @@ func (trader *Global) init() (err error) {
 	return
 }
 
-// Run ...
-func Run(trader Global) (err error) {
-	if err := trader.init(); err != nil {
-		return err
+// run ...
+func run(id int64) (err error) {
+	trader, err := initialize(id)
+	if err != nil {
+		return
 	}
 	go func() {
 		defer func() {
@@ -129,16 +149,16 @@ func Run(trader Global) (err error) {
 	return
 }
 
-// GetStatus ...
-func GetStatus(id int64) (status string) {
+// getStatus ...
+func getStatus(id int64) (status string) {
 	if t := Executor[id]; t != nil {
 		status = t.statusLog
 	}
 	return
 }
 
-// Stop ...
-func Stop(id int64) (err error) {
+// stop ...
+func stop(id int64) (err error) {
 	if t, ok := Executor[id]; !ok || t == nil {
 		return fmt.Errorf("Can not found the Trader")
 	}
@@ -146,11 +166,11 @@ func Stop(id int64) (err error) {
 	return
 }
 
-// Clean ...
-func Clean(userID int64) {
+// clean ...
+func clean(userID int64) {
 	for _, t := range Executor {
 		if t != nil && t.UserID == userID {
-			Stop(t.ID)
+			stop(t.ID)
 		}
 	}
 }

@@ -27,8 +27,8 @@ func GetUser(username interface{}) (user User, err error) {
 	return
 }
 
-// UserList ...
-func (user User) UserList(size, page int64, order string) (total int64, users []User, err error) {
+// ListUser ...
+func (user User) ListUser(size, page int64, order string) (total int64, users []User, err error) {
 	err = DB.Model(&User{}).Where("level < ? OR id = ?", user.Level, user.ID).Count(&total).Error
 	if err != nil {
 		return

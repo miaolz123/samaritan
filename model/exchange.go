@@ -17,9 +17,9 @@ type Exchange struct {
 	DeletedAt *time.Time `sql:"index" json:"-"`
 }
 
-// ExchangeList ...
-func (user User) ExchangeList(size, page int64, order string) (total int64, exchanges []Exchange, err error) {
-	_, users, err := user.UserList(-1, 1, "id")
+// ListExchange ...
+func (user User) ListExchange(size, page int64, order string) (total int64, exchanges []Exchange, err error) {
+	_, users, err := user.ListUser(-1, 1, "id")
 	if err != nil {
 		return
 	}

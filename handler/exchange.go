@@ -29,7 +29,7 @@ func (exchange) List(size, page int64, order string, ctx rpc.Context) (resp resp
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	total, exchanges, err := self.ExchangeList(size, page, order)
+	total, exchanges, err := self.ListExchange(size, page, order)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
@@ -96,7 +96,7 @@ func (exchange) Delete(ids []int64, ctx rpc.Context) (resp response) {
 		return
 	}
 	userIds := []int64{}
-	_, users, err := self.UserList(-1, 1, "id")
+	_, users, err := self.ListUser(-1, 1, "id")
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return

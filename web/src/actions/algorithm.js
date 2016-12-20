@@ -113,8 +113,8 @@ export function AlgorithmDelete(ids, size, page, order) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Algorithm.Delete(ids, (resp) => {
       if (resp.success) {
-        dispatch(AlgorithmList(size, page, order));
         dispatch(algorithmDeleteSuccess());
+        dispatch(AlgorithmList(size, page, order));
       } else {
         dispatch(algorithmDeleteFailure(resp.message));
       }

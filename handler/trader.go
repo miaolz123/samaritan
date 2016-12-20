@@ -23,10 +23,13 @@ func (runner) List(algorithmID int64, ctx rpc.Context) (resp response) {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	traders, err := self.TraderList(algorithmID)
+	traders, err := self.ListTrader(algorithmID)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
+	}
+	for i, t := range traders {
+		traders[i].Status = trader.GetTraderStatus(t.ID)
 	}
 	resp.Data = traders
 	resp.Success = true
@@ -53,7 +56,7 @@ func (runner) Put(req model.Trader, ctx rpc.Context) (resp response) {
 	defer db.Close()
 	db = db.Begin()
 	if req.ID > 0 {
-		if err := req.Update(self); err != nil {
+		if err := self.UpdateTrader(req); err != nil {
 			resp.Message = fmt.Sprint(err)
 			return
 		}
@@ -86,8 +89,8 @@ func (runner) Put(req model.Trader, ctx rpc.Context) (resp response) {
 	return
 }
 
-// Run
-func (runner) Run(req model.Trader, ctx rpc.Context) (resp response) {
+// Delete
+func (runner) Delete(req model.Trader, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
 		resp.Message = constant.ErrAuthorizationError
@@ -98,25 +101,20 @@ func (runner) Run(req model.Trader, ctx rpc.Context) (resp response) {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	user, err := model.GetUserByID(req.UserID)
-	if err != nil {
+	if req, err = self.GetTrader(req.ID); err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	if user.Level > self.Level || user.ID != self.ID {
-		resp.Message = constant.ErrInsufficientPermissions
-		return
-	}
-	if err := trader.Run(trader.Global{Trader: req}); err != nil {
+	if err := model.DB.Where("id = ?", req.ID).Delete(&model.Trader{}).Error; err != nil {
 		resp.Message = fmt.Sprint(err)
-		return
+	} else {
+		resp.Success = true
 	}
-	resp.Success = true
 	return
 }
 
-// Stop
-func (runner) Stop(req model.Trader, ctx rpc.Context) (resp response) {
+// Switch
+func (runner) Switch(req model.Trader, ctx rpc.Context) (resp response) {
 	username := ctx.GetString("username")
 	if username == "" {
 		resp.Message = constant.ErrAuthorizationError
@@ -127,16 +125,11 @@ func (runner) Stop(req model.Trader, ctx rpc.Context) (resp response) {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	user, err := model.GetUserByID(req.UserID)
-	if err != nil {
+	if req, err = self.GetTrader(req.ID); err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	if user.Level > self.Level || user.ID != self.ID {
-		resp.Message = constant.ErrInsufficientPermissions
-		return
-	}
-	if err := trader.Stop(req.ID); err != nil {
+	if err := trader.Switch(req.ID); err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
 	}

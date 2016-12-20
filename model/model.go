@@ -26,6 +26,7 @@ func init() {
 	io.Register((*Exchange)(nil), "Exchange", "json")
 	io.Register((*Algorithm)(nil), "Algorithm", "json")
 	io.Register((*Trader)(nil), "Trader", "json")
+	io.Register((*Log)(nil), "Log", "json")
 	var err error
 	DB, err = gorm.Open(strings.ToLower(dbType), dbURL)
 	if err != nil {

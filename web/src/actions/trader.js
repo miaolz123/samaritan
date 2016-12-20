@@ -72,8 +72,8 @@ export function TraderPut(req) {
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Trader.Put(req, (resp) => {
       if (resp.success) {
-        dispatch(TraderList(req.algorithmId));
         dispatch(traderPutSuccess());
+        dispatch(TraderList(req.algorithmId));
       } else {
         dispatch(traderPutFailure(resp.message));
       }
@@ -112,10 +112,10 @@ export function TraderDelete(req) {
     const client = Client.create(cluster, { Trader: ['Delete'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
-    client.Trader.Delete(ids, (resp) => {
+    client.Trader.Delete(req, (resp) => {
       if (resp.success) {
-        dispatch(TraderList(req.algorithmId));
         dispatch(traderDeleteSuccess());
+        dispatch(TraderList(req.algorithmId));
       } else {
         dispatch(traderDeleteFailure(resp.message));
       }
@@ -124,4 +124,53 @@ export function TraderDelete(req) {
       console.log('【Hprose】Trader.Delete Error:', resp, err);
     });
   };
+}
+
+// Switch
+
+function traderSwitchRequest() {
+  return { type: actions.TRADER_SWITCH_REQUEST };
+}
+
+function traderSwitchSuccess() {
+  return { type: actions.TRADER_SWITCH_SUCCESS };
+}
+
+function traderSwitchFailure(message) {
+  return { type: actions.TRADER_SWITCH_FAILURE, message };
+}
+
+export function TraderSwitch(req) {
+  return (dispatch, getState) => {
+    const cluster = localStorage.getItem('cluster');
+    const token = localStorage.getItem('token');
+
+    dispatch(traderSwitchRequest());
+    if (!cluster || !token) {
+      dispatch(traderSwitchFailure('No authorization'));
+      return;
+    }
+
+    const client = Client.create(cluster, { Trader: ['Switch'] });
+
+    client.setHeader('Authorization', `Bearer ${token}`);
+    client.Trader.Switch(req, (resp) => {
+      console.log(158158, resp);
+      if (resp.success) {
+        dispatch(traderSwitchSuccess());
+        dispatch(TraderList(req.algorithmId));
+      } else {
+        dispatch(traderSwitchFailure(resp.message));
+      }
+    }, (resp, err) => {
+      dispatch(traderSwitchFailure('Server error'));
+      console.log('【Hprose】Trader.Switch Error:', resp, err);
+    });
+  };
+}
+
+// Cache
+
+export function TraderCache(cache) {
+  return { type: actions.TRADER_CACHE, cache };
 }

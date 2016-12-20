@@ -22,7 +22,7 @@ func (algorithm) List(size, page int64, order string, ctx rpc.Context) (resp res
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	total, algorithms, err := self.AlgorithmList(size, page, order)
+	total, algorithms, err := self.ListAlgorithm(size, page, order)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return
@@ -89,7 +89,7 @@ func (algorithm) Delete(ids []int64, ctx rpc.Context) (resp response) {
 		return
 	}
 	userIds := []int64{}
-	_, users, err := self.UserList(-1, 1, "id")
+	_, users, err := self.ListUser(-1, 1, "id")
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return

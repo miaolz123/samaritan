@@ -33,8 +33,8 @@ type TraderExchange struct {
 	Exchange `gorm:"-"`
 }
 
-// TraderList ...
-func (user User) TraderList(algorithmID int64) (traders []Trader, err error) {
+// ListTrader ...
+func (user User) ListTrader(algorithmID int64) (traders []Trader, err error) {
 	err = DB.Where("user_id = ? AND algorithm_id = ?", user.ID, algorithmID).Find(&traders).Error
 	for i, t := range traders {
 		if err = DB.Raw(`SELECT e.* FROM exchanges e, trader_exchanges r WHERE r.trader_id
@@ -83,8 +83,8 @@ func (user User) GetTraderExchanges(id interface{}) (traderExchanges []TraderExc
 	return
 }
 
-// Update ...
-func (req Trader) Update(self User) (err error) {
+// UpdateTrader ...
+func (user User) UpdateTrader(req Trader) (err error) {
 	db, err := NewOrm()
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (req Trader) Update(self User) (err error) {
 	}
 	runner.Name = req.Name
 	runner.Environment = req.Environment
-	rs, err := self.GetTraderExchanges(runner.ID)
+	rs, err := user.GetTraderExchanges(runner.ID)
 	if err != nil {
 		db.Rollback()
 		return err

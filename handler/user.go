@@ -63,7 +63,7 @@ func (user) List(size, page int64, order string, ctx rpc.Context) (resp response
 		resp.Message = fmt.Sprint(err)
 		return
 	}
-	total, users, err := self.UserList(size, page, order)
+	total, users, err := self.ListUser(size, page, order)
 	if err != nil {
 		resp.Message = fmt.Sprint(err)
 		return

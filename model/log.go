@@ -11,17 +11,30 @@ import (
 
 // Log struct
 type Log struct {
-	ID           int64 `gorm:"primary_key;AUTO_INCREMENT"`
-	TraderID     int64 `gorm:"index"`
-	Timestamp    int64
-	ExchangeType string `gorm:"type:varchar(50)"`
-	Type         int    // [-1"error", 0"info", 1"profit", 2"buy", 3"sell", 4"cancel", 5"long", 6"short", 7"long_close", 8"short_close"]
-	StockType    string `gorm:"type:varchar(20)"`
-	Price        float64
-	Amount       float64
-	Message      string `gorm:"type:text"`
+	ID           int64   `gorm:"primary_key;AUTO_INCREMENT" json:"id"`
+	TraderID     int64   `gorm:"index" json:"-"`
+	Timestamp    int64   `json:"-"`
+	ExchangeType string  `gorm:"type:varchar(50)" json:"exchangeType"`
+	Type         string  `json:"type"` // [-1"error", 0"info", 1"profit", 2"buy", 3"sell", 4"cancel", 5"long", 6"short", 7"long_close", 8"short_close"]
+	StockType    string  `gorm:"type:varchar(20)" json:"stockType"`
+	Price        float64 `json:"price"`
+	Amount       float64 `json:"amount"`
+	Message      string  `gorm:"type:text" json:"message"`
 
-	Time string `gorm:"-"`
+	Time time.Time `gorm:"-" json:"time"`
+}
+
+// ListLog ...
+func (user User) ListLog(id, size, page int64) (total int64, logs []Log, err error) {
+	err = DB.Model(&Log{}).Where("trader_id = ?", id).Count(&total).Error
+	if err != nil {
+		return
+	}
+	err = DB.Where("trader_id = ?", id).Order("id desc").Limit(size).Offset((page - 1) * size).Find(&logs).Error
+	for i, l := range logs {
+		logs[i].Time = time.Unix(l.Timestamp, 0)
+	}
+	return
 }
 
 // Logger struct
@@ -31,7 +44,7 @@ type Logger struct {
 }
 
 // Log ...
-func (l Logger) Log(method int, stockType string, price, amount float64, messages ...interface{}) {
+func (l Logger) Log(method string, stockType string, price, amount float64, messages ...interface{}) {
 	go func() {
 		message := ""
 		for _, m := range messages {

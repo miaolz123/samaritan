@@ -4,6 +4,7 @@ import assign from 'lodash/assign';
 const TRADER_INIT = {
   loading: false,
   map: {},
+  cache: {},
   message: '',
 };
 
@@ -57,6 +58,23 @@ function trader(state = TRADER_INIT, action) {
       return assign({}, state, {
         loading: false,
         message: action.message,
+      });
+    case actions.TRADER_SWITCH_REQUEST:
+      return assign({}, state, {
+        loading: true,
+      });
+    case actions.TRADER_SWITCH_SUCCESS:
+      return assign({}, state, {
+        loading: false,
+      });
+    case actions.TRADER_SWITCH_FAILURE:
+      return assign({}, state, {
+        loading: false,
+        message: action.message,
+      });
+    case actions.TRADER_CACHE:
+      return assign({}, state, {
+        cache: action.cache,
       });
     default:
       return state;

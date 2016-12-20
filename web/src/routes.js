@@ -7,6 +7,7 @@ import User from './containers/User';
 import Exchange from './containers/Exchange';
 import Algorithm from './containers/Algorithm';
 import AlgorithmEdit from './containers/AlgorithmEdit';
+import AlgorithmLog from './containers/AlgorithmLog';
 
 export default (
   <Route>
@@ -16,6 +17,7 @@ export default (
       <Route path="/exchange" component={Exchange} />
       <Route path="/algorithm" component={Algorithm} />
       <Route path="/algorithm/edit" component={AlgorithmEdit} />
+      <Route path="/algorithm/log" component={AlgorithmLog} />
     </Route>
     <Route path="/login" component={Login} />
   </Route>

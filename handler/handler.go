@@ -33,6 +33,7 @@ func Server() {
 		Exchange  exchange
 		Algorithm algorithm
 		Trader    runner
+		Log       logger
 	}{}
 	service.Event = event{}
 	service.AddBeforeFilterHandler(func(request []byte, ctx rpc.Context, next rpc.NextFilterHandler) (response []byte, err error) {

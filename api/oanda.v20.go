@@ -20,7 +20,7 @@ type OandaV20 struct {
 	stockTypeMap        map[string][2]string
 	tradeTypeMap        map[string]string
 	tradeTypeAntiMap    map[int]string
-	tradeTypeLogMap     map[string]int
+	tradeTypeLogMap     map[string]string
 	contractTypeAntiMap map[string]string
 	leverageMap         map[string]string
 	recordsPeriodMap    map[string]string
@@ -62,11 +62,11 @@ func NewOandaV20(opt Option) Exchange {
 			3: constant.TradeTypeLongClose,
 			4: constant.TradeTypeShortClose,
 		},
-		tradeTypeLogMap: map[string]int{
-			constant.TradeTypeLong:       5,
-			constant.TradeTypeShort:      6,
-			constant.TradeTypeLongClose:  7,
-			constant.TradeTypeShortClose: 8,
+		tradeTypeLogMap: map[string]string{
+			constant.TradeTypeLong:       constant.LONG,
+			constant.TradeTypeShort:      constant.SHORT,
+			constant.TradeTypeLongClose:  constant.LONGCLOSE,
+			constant.TradeTypeShortClose: constant.SHORTCLOSE,
 		},
 		contractTypeAntiMap: map[string]string{
 			"this_week": "WEEK",

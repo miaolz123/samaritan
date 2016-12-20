@@ -1,11 +1,11 @@
 import { ResetError } from '../actions';
 import { AlgorithmList, AlgorithmCache, AlgorithmDelete } from '../actions/algorithm';
 import { ExchangeList } from '../actions/exchange';
-import { TraderList, TraderPut } from '../actions/trader';
+import { TraderList, TraderPut, TraderDelete, TraderSwitch, TraderCache } from '../actions/trader';
 import React from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { Button, Dropdown, Menu, Table, Modal, Form, Input, Select, Tag, Tooltip, Badge, notification } from 'antd';
+import { Badge, Button, Dropdown, Form, Input, Menu, Modal, Select, Table, Tag, Tooltip, notification } from 'antd';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -35,6 +35,9 @@ class Algorithm extends React.Component {
     this.handleDelete = this.handleDelete.bind(this);
     this.handleEdit = this.handleEdit.bind(this);
     this.handleTraderEdit = this.handleTraderEdit.bind(this);
+    this.handleTraderDelete = this.handleTraderDelete.bind(this);
+    this.handleTraderSwitch = this.handleTraderSwitch.bind(this);
+    this.handleTraderLog = this.handleTraderLog.bind(this);
     this.handleExchangeChange = this.handleExchangeChange.bind(this);
     this.handleExchangeClose = this.handleExchangeClose.bind(this);
     this.handleTraderModelOk = this.handleTraderModelOk.bind(this);
@@ -162,6 +165,25 @@ class Algorithm extends React.Component {
     dispatch(ExchangeList(-1, 1, 'id'));
   }
 
+  handleTraderDelete(req) {
+    const { dispatch } = this.props;
+
+    dispatch(TraderDelete(req));
+  }
+
+  handleTraderSwitch(req) {
+    const { dispatch } = this.props;
+
+    dispatch(TraderSwitch(req));
+  }
+
+  handleTraderLog(info) {
+    const { dispatch } = this.props;
+
+    dispatch(TraderCache(info));
+    browserHistory.push('/algorithm/log');
+  }
+
   handleExchangeChange(value) {
     const { exchange } = this.props;
     const { traderInfo } = this.state;
@@ -245,13 +267,7 @@ class Algorithm extends React.Component {
       title: 'Action',
       key: 'action',
       render: (v, r) => (
-        <Dropdown.Button onClick={this.handleTraderEdit.bind(this, null, r)} type="ghost" overlay={
-          <Menu>
-            <Menu.Item key="backtest">
-              <a type="ghost">Backtest</a>
-            </Menu.Item>
-          </Menu>
-        }>Run</Dropdown.Button>
+        <Button onClick={this.handleTraderEdit.bind(this, null, r)} type="ghost">Deploy</Button>
       ),
     }];
     const rowSelection = {
@@ -265,7 +281,7 @@ class Algorithm extends React.Component {
     }, {
       title: 'Status',
       dataIndex: 'status',
-      render: (v) => (v >= 0 ? <Badge status="processing" text="RUN" /> : <Badge status="error" text="HALT" />),
+      render: (v) => (v > 0 ? <Badge status="processing" text="RUN" /> : <Badge status="error" text="HALT" />),
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
@@ -274,6 +290,21 @@ class Algorithm extends React.Component {
       title: 'UpdatedAt',
       dataIndex: 'updatedAt',
       render: (v) => v.toLocaleDateString(),
+    }, {
+      title: 'Action',
+      key: 'action',
+      render: (v, r) => (
+        <Dropdown.Button type="ghost" onClick={this.handleTraderSwitch.bind(this, r)} overlay={
+          <Menu>
+            <Menu.Item key="delete">
+              <a type="ghost" onClick={this.handleTraderDelete.bind(this, r)}>Delete</a>
+            </Menu.Item>
+            <Menu.Item key="log">
+              <a type="ghost" onClick={this.handleTraderLog.bind(this, r)}>Log</a>
+            </Menu.Item>
+          </Menu>
+        }>{r.status > 0 ? 'Stop' : 'Run'}</Dropdown.Button>
+      ),
     }];
     const expandedRowRender = (r) => {
       const data = trader.map[r.id];
@@ -286,6 +317,14 @@ class Algorithm extends React.Component {
             columns={expcolumns}
             dataSource={trader.map[r.id]}
           />
+        );
+      }
+
+      if (!trader.loading) {
+        return (
+          <p>
+            No Trader under this algorithm, <a onClick={this.handleTraderEdit.bind(this, null, r)}>deploy</a> one ?
+          </p>
         );
       }
     };
@@ -314,7 +353,7 @@ class Algorithm extends React.Component {
         <Modal closable
           maskClosable={false}
           width="50%"
-          title={traderInfo.name || 'New Trader'}
+          title={traderInfo.id > 0 ? `Trader - ${traderInfo.name}` : 'New Trader'}
           visible={traderModelShow}
           onOk={this.handleTraderModelOk}
           onCancel={this.handleTraderModelCancel}
