@@ -50,21 +50,21 @@ class App extends Component {
     }
 
     switch (e.key) {
-      case 'trader':
+      case 'dashboard':
         browserHistory.push('/');
-        break;
-      case 'user':
-        browserHistory.push('/user');
-        break;
-      case 'exchange':
-        browserHistory.push('/exchange');
         break;
       case 'algorithm':
         browserHistory.push('/algorithm');
         break;
+      case 'exchange':
+        browserHistory.push('/exchange');
+        break;
+      case 'user':
+        browserHistory.push('/user');
+        break;
       case 'logout':
         Modal.confirm({
-          title: 'Are you sure to log out ?',
+          title: 'Are you sure to logout ?',
           onOk: () => {
             dispatch(Logout());
             browserHistory.push('/login');
@@ -92,12 +92,12 @@ class App extends Component {
             {collapse ? '' : <div className="ant-layout-logo"></div>}
             <Menu theme="dark"
               onClick={this.handleClick}
-              defaultOpenKeys={['trader']}
+              defaultOpenKeys={['dashboard']}
               selectedKeys={[current]}
               mode="inline"
             >
-              <Menu.Item key="trader">
-                <Icon name="tachometer" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Trader</span>
+              <Menu.Item key="dashboard">
+                <Icon name="tachometer" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Dashboard</span>
               </Menu.Item>
               <Menu.Item key="algorithm">
                 <Icon name="file-code-o" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Algorithm</span>

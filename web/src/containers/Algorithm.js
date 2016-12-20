@@ -166,9 +166,15 @@ class Algorithm extends React.Component {
   }
 
   handleTraderDelete(req) {
-    const { dispatch } = this.props;
+    Modal.confirm({
+      title: 'Are you sure to delete ?',
+      onOk: () => {
+        const { dispatch } = this.props;
 
-    dispatch(TraderDelete(req));
+        dispatch(TraderDelete(req));
+      },
+      iconType: 'exclamation-circle',
+    });
   }
 
   handleTraderSwitch(req) {
@@ -281,7 +287,7 @@ class Algorithm extends React.Component {
     }, {
       title: 'Status',
       dataIndex: 'status',
-      render: (v) => (v > 0 ? <Badge status="processing" text="RUN" /> : <Badge status="error" text="HALT" />),
+      render: (v) => (v > 0 ? <Badge status="processing" text="RUN" /> : <Badge status="success" text="HALT" />),
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
@@ -296,11 +302,11 @@ class Algorithm extends React.Component {
       render: (v, r) => (
         <Dropdown.Button type="ghost" onClick={this.handleTraderSwitch.bind(this, r)} overlay={
           <Menu>
-            <Menu.Item key="delete">
-              <a type="ghost" onClick={this.handleTraderDelete.bind(this, r)}>Delete</a>
-            </Menu.Item>
             <Menu.Item key="log">
-              <a type="ghost" onClick={this.handleTraderLog.bind(this, r)}>Log</a>
+              <a type="ghost" onClick={this.handleTraderLog.bind(this, r)}>View Log</a>
+            </Menu.Item>
+            <Menu.Item key="delete">
+              <a type="ghost" onClick={this.handleTraderDelete.bind(this, r)}>Delete It</a>
             </Menu.Item>
           </Menu>
         }>{r.status > 0 ? 'Stop' : 'Run'}</Dropdown.Button>
@@ -315,6 +321,7 @@ class Algorithm extends React.Component {
             size="middle"
             pagination={false}
             columns={expcolumns}
+            loading={trader.loading}
             dataSource={trader.map[r.id]}
           />
         );

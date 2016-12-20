@@ -3,7 +3,7 @@ import { LogList } from '../actions/log';
 import React from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
-import { Button, Table, notification } from 'antd';
+import { Button, Table, Tag, notification } from 'antd';
 
 class Log extends React.Component {
   constructor(props) {
@@ -84,20 +84,33 @@ class Log extends React.Component {
   render() {
     const { pagination } = this.state;
     const { log } = this.props;
+    const colors = {
+      'INFO': '#A9A9A9',
+      'ERROR': '#F50F50',
+      'PROFIT': '#4682B4',
+      'CANCEL': '#5F9EA0',
+    };
     const columns = [{
+      width: 160,
       title: 'Time',
       dataIndex: 'time',
       render: (v) => v.toLocaleString(),
     }, {
+      width: 100,
       title: 'Exchange',
       dataIndex: 'exchangeType',
+      render: (v) => <Tag color={v === 'global' ? '' : '#00BFFF'}>{v}</Tag>,
     }, {
+      width: 100,
       title: 'Type',
       dataIndex: 'type',
+      render: (v) => <Tag color={colors[v] || '#00BFFF'}>{v}</Tag>,
     }, {
       title: 'Price',
       dataIndex: 'price',
+      width: 100,
     }, {
+      width: 100,
       title: 'Amount',
       dataIndex: 'amount',
     }, {
@@ -109,7 +122,7 @@ class Log extends React.Component {
       <div>
         <div className="table-operations">
           <Button type="primary" onClick={this.reload}>Reload</Button>
-          <Button type="ghost" onClick={this.handleCancel}>Cancel</Button>
+          <Button type="ghost" onClick={this.handleCancel}>Back</Button>
         </div>
         <Table rowKey="id"
           columns={columns}
