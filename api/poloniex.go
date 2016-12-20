@@ -35,7 +35,7 @@ type Poloniex struct {
 }
 
 // NewPoloniex : create an exchange struct of poloniex
-func NewPoloniex(opt Option) *Poloniex {
+func NewPoloniex(opt Option) Exchange {
 	return &Poloniex{
 		stockTypeMap: map[string]string{
 			"BTC/1CR":    "BTC_1CR",
@@ -597,7 +597,7 @@ func (e *Poloniex) GetRecords(stockType, period string, sizes ...interface{}) in
 		recordJSON := json.GetIndex(i - 1)
 		recordTime := recordJSON.Get("date").MustInt64()
 		if recordTime > timeLast {
-			recordsNew = append([]Record{Record{
+			recordsNew = append([]Record{{
 				Time:   recordTime,
 				Open:   recordJSON.Get("open").MustFloat64(),
 				High:   recordJSON.Get("high").MustFloat64(),

@@ -33,7 +33,7 @@ type Huobi struct {
 }
 
 // NewHuobi : create an exchange struct of huobi.com
-func NewHuobi(opt Option) *Huobi {
+func NewHuobi(opt Option) Exchange {
 	return &Huobi{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "1",
@@ -503,7 +503,7 @@ func (e *Huobi) GetRecords(stockType, period string, sizes ...interface{}) inter
 		t, _ := time.Parse("20060102150405000", recordJSON.GetIndex(0).MustString("19700101000000000"))
 		recordTime := t.Unix()
 		if recordTime > timeLast {
-			recordsNew = append([]Record{Record{
+			recordsNew = append([]Record{{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
 				High:   recordJSON.GetIndex(2).MustFloat64(),

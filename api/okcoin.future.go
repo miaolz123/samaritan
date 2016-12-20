@@ -36,15 +36,15 @@ type OKCoinFuture struct {
 }
 
 // NewOKCoinFuture : create an exchange struct of okcoin.cn
-func NewOKCoinFuture(opt Option) *OKCoinFuture {
+func NewOKCoinFuture(opt Option) Exchange {
 	return &OKCoinFuture{
 		stockTypeMap: map[string][2]string{
-			"BTC.WEEK/USD":   [2]string{"btc_usd", "this_week"},
-			"BTC.WEEK2/USD":  [2]string{"btc_usd", "next_week"},
-			"BTC.MONTH3/USD": [2]string{"btc_usd", "quarter"},
-			"LTC.WEEK/USD":   [2]string{"ltc_usd", "this_week"},
-			"LTC.WEEK2/USD":  [2]string{"ltc_usd", "next_week"},
-			"LTC.MONTH3/USD": [2]string{"ltc_usd", "quarter"},
+			"BTC.WEEK/USD":   {"btc_usd", "this_week"},
+			"BTC.WEEK2/USD":  {"btc_usd", "next_week"},
+			"BTC.MONTH3/USD": {"btc_usd", "quarter"},
+			"LTC.WEEK/USD":   {"ltc_usd", "this_week"},
+			"LTC.WEEK2/USD":  {"ltc_usd", "next_week"},
+			"LTC.MONTH3/USD": {"ltc_usd", "quarter"},
 		},
 		tradeTypeMap: map[string]string{
 			constant.TradeTypeLong:       "1",
@@ -533,7 +533,7 @@ func (e *OKCoinFuture) GetRecords(stockType, period string, sizes ...interface{}
 		recordJSON := json.GetIndex(i - 1)
 		recordTime := recordJSON.GetIndex(0).MustInt64() / 1000
 		if recordTime > timeLast {
-			recordsNew = append([]Record{Record{
+			recordsNew = append([]Record{{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
 				High:   recordJSON.GetIndex(2).MustFloat64(),

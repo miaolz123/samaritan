@@ -52,61 +52,8 @@ func (runner) Put(req model.Trader, ctx rpc.Context) (resp response) {
 	}
 	defer db.Close()
 	db = db.Begin()
-	runner := req
 	if req.ID > 0 {
-		if err := db.First(&runner, req.ID).Error; err != nil {
-			db.Rollback()
-			resp.Message = fmt.Sprint(err)
-			return
-		}
-		runner.Name = req.Name
-		runner.Environment = req.Environment
-		rs, err := self.GetTraderExchanges(runner.ID)
-		if err != nil {
-			db.Rollback()
-			resp.Message = fmt.Sprint(err)
-			return
-		}
-		for i, r := range rs {
-			if i >= len(req.Exchanges) {
-				if err := db.Delete(&r).Error; err != nil {
-					db.Rollback()
-					resp.Message = fmt.Sprint(err)
-					return
-				}
-				continue
-			}
-			if r.Exchange.ID == req.Exchanges[i].ID {
-				continue
-			}
-			r.ExchangeID = req.Exchanges[i].ID
-			if err := db.Save(&r).Error; err != nil {
-				db.Rollback()
-				resp.Message = fmt.Sprint(err)
-				return
-			}
-		}
-		for i, e := range req.Exchanges {
-			if i < len(rs) {
-				continue
-			}
-			r := model.TraderExchange{
-				TraderID:   runner.ID,
-				ExchangeID: e.ID,
-			}
-			if err := db.Create(&r).Error; err != nil {
-				db.Rollback()
-				resp.Message = fmt.Sprint(err)
-				return
-			}
-		}
-		if err := db.Save(&runner).Error; err != nil {
-			db.Rollback()
-			resp.Message = fmt.Sprint(err)
-			return
-		}
-		if err := db.Commit().Error; err != nil {
-			db.Rollback()
+		if err := req.Update(self); err != nil {
 			resp.Message = fmt.Sprint(err)
 			return
 		}

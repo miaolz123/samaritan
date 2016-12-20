@@ -33,7 +33,7 @@ type OKCoinCn struct {
 }
 
 // NewOKCoinCn : create an exchange struct of okcoin.cn
-func NewOKCoinCn(opt Option) *OKCoinCn {
+func NewOKCoinCn(opt Option) Exchange {
 	return &OKCoinCn{
 		stockTypeMap: map[string]string{
 			"BTC/CNY": "btc",
@@ -501,7 +501,7 @@ func (e *OKCoinCn) GetRecords(stockType, period string, sizes ...interface{}) in
 		recordJSON := json.GetIndex(i - 1)
 		recordTime := recordJSON.GetIndex(0).MustInt64() / 1000
 		if recordTime > timeLast {
-			recordsNew = append([]Record{Record{
+			recordsNew = append([]Record{{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
 				High:   recordJSON.GetIndex(2).MustFloat64(),

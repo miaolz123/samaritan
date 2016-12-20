@@ -507,7 +507,7 @@ func (e *Chbtc) GetRecords(stockType, period string, sizes ...interface{}) inter
 		recordJSON := json.GetIndex(i - 1)
 		recordTime := recordJSON.GetIndex(0).MustInt64() / 1000
 		if recordTime > timeLast {
-			recordsNew = append([]Record{Record{
+			recordsNew = append([]Record{{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
 				High:   recordJSON.GetIndex(2).MustFloat64(),

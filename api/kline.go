@@ -8,7 +8,7 @@ import (
 )
 
 var sosobtcSymbolMap = map[string]map[string]string{
-	constant.Btcc: map[string]string{
+	constant.Btcc: {
 		"BTC/CNY": "btcchinabtccny",
 		"LTC/CNY": "btcchinaltccny",
 	},
@@ -59,7 +59,7 @@ func getSosobtcRecords(recordsOld []Record, exchangeType, stockType, period stri
 		recordJSON := json.GetIndex(i - 1)
 		recordTime := recordJSON.GetIndex(0).MustInt64()
 		if recordTime > timeLast {
-			recordsNew = append([]Record{Record{
+			recordsNew = append([]Record{{
 				Time:   recordTime,
 				Open:   recordJSON.GetIndex(1).MustFloat64(),
 				High:   recordJSON.GetIndex(2).MustFloat64(),
@@ -82,7 +82,7 @@ func getSosobtcRecords(recordsOld []Record, exchangeType, stockType, period stri
 	}
 	records = append(recordsOld, recordsNew...)
 	if len(records) > size {
-		records = records[len(records)-size : len(records)]
+		records = records[len(records)-size:]
 	}
 	return
 }

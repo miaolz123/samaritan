@@ -29,7 +29,8 @@ type TraderExchange struct {
 	ID         int64 `gorm:"primary_key"`
 	TraderID   int64 `gorm:"index"`
 	ExchangeID int64 `gorm:"index"`
-	Exchange   `gorm:"-"`
+
+	Exchange `gorm:"-"`
 }
 
 // TraderList ...
@@ -78,6 +79,67 @@ func (user User) GetTraderExchanges(id interface{}) (traderExchanges []TraderExc
 		if err = DB.Where("id = ?", r.ExchangeID).Find(&traderExchanges[i].Exchange).Error; err != nil {
 			return
 		}
+	}
+	return
+}
+
+// Update ...
+func (req Trader) Update(self User) (err error) {
+	db, err := NewOrm()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	db = db.Begin()
+	runner := Trader{}
+	if err := db.First(&runner, req.ID).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+	runner.Name = req.Name
+	runner.Environment = req.Environment
+	rs, err := self.GetTraderExchanges(runner.ID)
+	if err != nil {
+		db.Rollback()
+		return err
+	}
+	for i, r := range rs {
+		if i >= len(req.Exchanges) {
+			if err := db.Delete(&r).Error; err != nil {
+				db.Rollback()
+				return err
+			}
+			continue
+		}
+		if r.Exchange.ID == req.Exchanges[i].ID {
+			continue
+		}
+		r.ExchangeID = req.Exchanges[i].ID
+		if err := db.Save(&r).Error; err != nil {
+			db.Rollback()
+			return err
+		}
+	}
+	for i, e := range req.Exchanges {
+		if i < len(rs) {
+			continue
+		}
+		r := TraderExchange{
+			TraderID:   runner.ID,
+			ExchangeID: e.ID,
+		}
+		if err := db.Create(&r).Error; err != nil {
+			db.Rollback()
+			return err
+		}
+	}
+	if err := db.Save(&runner).Error; err != nil {
+		db.Rollback()
+		return err
+	}
+	if err := db.Commit().Error; err != nil {
+		db.Rollback()
+		return err
 	}
 	return
 }

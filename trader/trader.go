@@ -10,9 +10,20 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-// Executor ...
-var Executor = make(map[int64]*Global)
-var errHalt = fmt.Errorf("HALT")
+// Trader Variable
+var (
+	Executor      = make(map[int64]*Global)
+	errHalt       = fmt.Errorf("HALT")
+	exchangeMaker = map[string]func(api.Option) api.Exchange{
+		constant.OkCoinCn:     api.NewOKCoinCn,
+		constant.Huobi:        api.NewHuobi,
+		constant.Poloniex:     api.NewPoloniex,
+		constant.Btcc:         api.NewBtcc,
+		constant.Chbtc:        api.NewChbtc,
+		constant.OkcoinFuture: api.NewOKCoinFuture,
+		constant.OandaV20:     api.NewOandaV20,
+	}
+)
 
 // Global ...
 type Global struct {
@@ -25,24 +36,23 @@ type Global struct {
 	statusLog string
 }
 
-// Run ...
-func Run(trader Global) (err error) {
+// init ...
+func (trader *Global) init() (err error) {
 	if t := Executor[trader.ID]; t != nil && t.Status > 0 {
 		return
 	}
-	if err = model.DB.First(&trader.Trader, trader.ID).Error; err != nil {
-		return
+	if err := model.DB.First(&trader.Trader, trader.ID).Error; err != nil {
+		return err
 	}
 	self, err := model.GetUserByID(trader.UserID)
 	if err != nil {
-		return
+		return err
 	}
 	if trader.AlgorithmID <= 0 {
-		err = fmt.Errorf("Please select a algorithm")
-		return
+		return fmt.Errorf("Please select a algorithm")
 	}
-	if err = model.DB.First(&trader.Algorithm, trader.AlgorithmID).Error; err != nil {
-		return
+	if err := model.DB.First(&trader.Algorithm, trader.AlgorithmID).Error; err != nil {
+		return err
 	}
 	es, err := self.GetTraderExchanges(trader.ID)
 	if err != nil {
@@ -55,38 +65,24 @@ func Run(trader Global) (err error) {
 	trader.tasks = []task{}
 	trader.Ctx = otto.New()
 	trader.Ctx.Interrupt = make(chan func(), 1)
-	for _, c := range constant.CONSTS {
+	for _, c := range constant.Consts {
 		trader.Ctx.Set(c, c)
 	}
 	for _, e := range es {
-		opt := api.Option{
-			TraderID:  trader.ID,
-			Type:      e.Type,
-			Name:      e.Name,
-			AccessKey: e.AccessKey,
-			SecretKey: e.SecretKey,
-			// Ctx:       trader.Ctx,
-		}
-		switch opt.Type {
-		case constant.OkCoinCn:
-			trader.es = append(trader.es, api.NewOKCoinCn(opt))
-		case constant.Huobi:
-			trader.es = append(trader.es, api.NewHuobi(opt))
-		case constant.Poloniex:
-			trader.es = append(trader.es, api.NewPoloniex(opt))
-		case constant.Btcc:
-			trader.es = append(trader.es, api.NewBtcc(opt))
-		case constant.Chbtc:
-			trader.es = append(trader.es, api.NewChbtc(opt))
-		case constant.OkcoinFuture:
-			trader.es = append(trader.es, api.NewOKCoinFuture(opt))
-		case constant.OandaV20:
-			trader.es = append(trader.es, api.NewOandaV20(opt))
+		if maker, ok := exchangeMaker[e.Type]; ok {
+			opt := api.Option{
+				TraderID:  trader.ID,
+				Type:      e.Type,
+				Name:      e.Name,
+				AccessKey: e.AccessKey,
+				SecretKey: e.SecretKey,
+				// Ctx:       trader.Ctx,
+			}
+			trader.es = append(trader.es, maker(opt))
 		}
 	}
 	if len(trader.es) == 0 {
-		err = fmt.Errorf("Please add at least one exchange")
-		return
+		return fmt.Errorf("Please add at least one exchange")
 	}
 	trader.Ctx.Set("Global", &trader)
 	trader.Ctx.Set("G", &trader)
@@ -94,6 +90,14 @@ func Run(trader Global) (err error) {
 	trader.Ctx.Set("E", trader.es[0])
 	trader.Ctx.Set("Exchanges", trader.es)
 	trader.Ctx.Set("Es", trader.es)
+	return
+}
+
+// Run ...
+func Run(trader Global) (err error) {
+	if err := trader.init(); err != nil {
+		return err
+	}
 	go func() {
 		defer func() {
 			if err := recover(); err != nil && err != errHalt {
@@ -126,31 +130,26 @@ func Run(trader Global) (err error) {
 }
 
 // GetStatus ...
-func GetStatus(id int64) string {
-	t := Executor[id]
-	if t != nil {
-		return t.statusLog
+func GetStatus(id int64) (status string) {
+	if t := Executor[id]; t != nil {
+		status = t.statusLog
 	}
-	return ""
+	return
 }
 
 // Stop ...
 func Stop(id int64) (err error) {
-	t := Executor[id]
-	if t == nil {
-		err = fmt.Errorf("Can not found the Trader")
-		return
+	if t, ok := Executor[id]; !ok || t == nil {
+		return fmt.Errorf("Can not found the Trader")
 	}
-	Executor[id].Ctx.Interrupt <- func() {
-		panic(errHalt)
-	}
+	Executor[id].Ctx.Interrupt <- func() { panic(errHalt) }
 	return
 }
 
 // Clean ...
 func Clean(userID int64) {
 	for _, t := range Executor {
-		if t.UserID == userID {
+		if t != nil && t.UserID == userID {
 			Stop(t.ID)
 		}
 	}

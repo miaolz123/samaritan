@@ -1,30 +1,12 @@
 package constant
 
-// Error constant
+// error constants
 const (
 	ErrAuthorizationError      = "Authorization Error"
 	ErrInsufficientPermissions = "Insufficient Permissions"
 )
 
-// log type
-const (
-	ERROR  = -1
-	INFO   = 0
-	PROFIT = 1
-	BUY    = 2
-	SELL   = 3
-	CANCEL = 4
-)
-
-// delete log time type
-const (
-	LastTime = "0"
-	Day      = "1"
-	Week     = "2"
-	Month    = "3"
-)
-
-// exchange type
+// exchange types
 const (
 	OkCoinCn     = "okcoin.cn"
 	Huobi        = "huobi"
@@ -35,7 +17,25 @@ const (
 	OandaV20     = "oanda.v20"
 )
 
-// trade type
+// log types
+const (
+	ERROR  = -1
+	INFO   = 0
+	PROFIT = 1
+	BUY    = 2
+	SELL   = 3
+	CANCEL = 4
+)
+
+// delete log time types
+const (
+	LastTime = "0"
+	Day      = "1"
+	Week     = "2"
+	Month    = "3"
+)
+
+// trade types
 const (
 	TradeTypeBuy        = "BUY"
 	TradeTypeSell       = "SELL"
@@ -45,14 +45,14 @@ const (
 	TradeTypeShortClose = "SHORT_CLOSE"
 )
 
-// stock type (will useless)
+// stock types (will useless)
 const (
 	BTC = "BTC"
 	LTC = "LTC"
 )
 
-// CONSTS : Javascript Global Constants
+// some variables
 var (
-	CONSTS        = []string{"BTC", "LTC", "M", "M5", "M15", "M30", "H", "D", "W"}
-	ExchangeTypes = []string{"okcoin.cn", "huobi", "poloniex", "chbtc", "okcoin.future", "oanda.v20"}
+	Consts        = []string{"BTC", "LTC", "M", "M5", "M15", "M30", "H", "D", "W"}
+	ExchangeTypes = []string{OkCoinCn, Huobi, Poloniex, Btcc, Chbtc, OkcoinFuture, OandaV20}
 )
