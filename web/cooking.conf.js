@@ -21,7 +21,7 @@ cooking.set({
   clean: true,
   hash: true,
   chunk: 'vendor',
-  publicPath: '../dist/',
+  publicPath: './',
   assetsPath: 'static',
   sourceMap: true,
   extractCSS: true,

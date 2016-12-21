@@ -2,6 +2,7 @@ package constant
 
 // error constants
 const (
+	Version                    = "0.1.1"
 	ErrAuthorizationError      = "Authorization Error"
 	ErrInsufficientPermissions = "Insufficient Permissions"
 )

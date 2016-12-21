@@ -1,5 +1,5 @@
 import * as actions from '../constants/actions';
-import { Client } from 'hprose-html5/dist/hprose-html5';
+import { Client } from 'hprose-js';
 
 // List
 
@@ -26,7 +26,7 @@ export function TraderList(algorithmId) {
       return;
     }
 
-    const client = Client.create(cluster, { Trader: ['List'] });
+    const client = Client.create(`${cluster}/api`, { Trader: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Trader.List(algorithmId, (resp) => {
@@ -67,7 +67,7 @@ export function TraderPut(req) {
       return;
     }
 
-    const client = Client.create(cluster, { Trader: ['Put'] });
+    const client = Client.create(`${cluster}/api`, { Trader: ['Put'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Trader.Put(req, (resp) => {
@@ -109,7 +109,7 @@ export function TraderDelete(req) {
       return;
     }
 
-    const client = Client.create(cluster, { Trader: ['Delete'] });
+    const client = Client.create(`${cluster}/api`, { Trader: ['Delete'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Trader.Delete(req, (resp) => {
@@ -151,7 +151,7 @@ export function TraderSwitch(req) {
       return;
     }
 
-    const client = Client.create(cluster, { Trader: ['Switch'] });
+    const client = Client.create(`${cluster}/api`, { Trader: ['Switch'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Trader.Switch(req, (resp) => {

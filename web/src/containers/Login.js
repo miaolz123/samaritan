@@ -122,7 +122,7 @@ class Login extends React.Component {
             </Tooltip>
           </Form.Item>
           <Form.Item wrapperCol={{ span: 6, offset: 9 }} style={{ marginTop: 24 }}>
-            <Button type="primary" htmlType="submit" loading={user.loading} className="login-form-button">Login</Button>
+            <Button type="primary" htmlType="submit" className="login-form-button">Login</Button>
           </Form.Item>
         </Form>
       </div>

@@ -1,5 +1,5 @@
 import * as actions from '../constants/actions';
-import { Client } from 'hprose-html5/dist/hprose-html5';
+import { Client } from 'hprose-js';
 
 // Types
 
@@ -25,7 +25,7 @@ export function ExchangeTypes() {
       return;
     }
 
-    const client = Client.create(cluster, { Exchange: ['Types'] });
+    const client = Client.create(`${cluster}/api`, { Exchange: ['Types'] });
 
     client.Exchange.Types(null, (resp) => {
       if (resp.success) {
@@ -65,7 +65,7 @@ export function ExchangeList(size, page, order) {
       return;
     }
 
-    const client = Client.create(cluster, { Exchange: ['List'] });
+    const client = Client.create(`${cluster}/api`, { Exchange: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Exchange.List(size, page, order, (resp) => {
@@ -106,7 +106,7 @@ export function ExchangePut(req, size, page, order) {
       return;
     }
 
-    const client = Client.create(cluster, { Exchange: ['Put'] });
+    const client = Client.create(`${cluster}/api`, { Exchange: ['Put'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Exchange.Put(req, (resp) => {
@@ -148,7 +148,7 @@ export function ExchangeDelete(ids, size, page, order) {
       return;
     }
 
-    const client = Client.create(cluster, { Exchange: ['Delete'] });
+    const client = Client.create(`${cluster}/api`, { Exchange: ['Delete'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Exchange.Delete(ids, (resp) => {

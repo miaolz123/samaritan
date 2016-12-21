@@ -10,6 +10,7 @@ import (
 
 	"github.com/hprose/hprose-golang/rpc"
 	"github.com/miaolz123/samaritan/config"
+	"github.com/miaolz123/samaritan/constant"
 )
 
 type response struct {
@@ -58,6 +59,8 @@ func Server() {
 		return
 	})
 	service.AddAllMethods(handler)
-	log.Printf("Smaritan running at http://0.0.0.0:%v\n", port)
-	http.ListenAndServe(":"+port, service)
+	http.Handle("/api", service)
+	http.Handle("/", http.FileServer(http.Dir("web/dist")))
+	log.Printf("Smaritan v%v running at http://localhost:%v\n", constant.Version, port)
+	http.ListenAndServe(":"+port, nil)
 }

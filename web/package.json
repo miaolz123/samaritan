@@ -1,6 +1,6 @@
 {
   "name": "samaritan",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "description": "A good samaritan ?",
   "private": false,
   "keywords": [],
@@ -11,7 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "antd": "^2.4.3",
-    "hprose-html5": "^2.0.29",
+    "hprose-js": "^2.0.29",
     "lodash.keys": "^4.2.0",
     "react-fa": "^4.1.2",
     "react-monaco-editor": "^0.7.0",

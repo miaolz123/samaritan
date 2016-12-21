@@ -141,18 +141,8 @@ class Algorithm extends React.Component {
         script: `// This is an example algorithm
 
 function main() {
-    G.Log(123456);
-    G.Sleep(10 * 1000);
-}
-
-function main1() {
-    G.Log(123456);
-    G.Sleep(10 * 1000);
-}
-
-function main2() {
-    G.Log(123456);
-    G.Sleep(10 * 1000);
+  G.Log(E.GetAccount());
+  G.Sleep(10 * 1000);
 }
 `,
       };

@@ -1,5 +1,5 @@
 import * as actions from '../constants/actions';
-import { Client } from 'hprose-html5/dist/hprose-html5';
+import { Client } from 'hprose-js';
 
 // List
 
@@ -26,7 +26,7 @@ export function LogList(trader, pagination, filters) {
       return;
     }
 
-    const client = Client.create(cluster, { Log: ['List'] });
+    const client = Client.create(`${cluster}/api`, { Log: ['List'] });
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Log.List(trader, pagination, filters, (resp) => {
