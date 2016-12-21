@@ -1,12 +1,15 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { browserHistory } from 'react-router';
 
-class Home extends Component {
+class Dashboard extends Component {
+  componentWillMount() {
+    browserHistory.push('/algorithm');
+  }
+
   render() {
     return (
-      <div className="container">
-          home!
-      </div>
+      <div>Dashboard</div>
     );
   }
 }
@@ -15,4 +18,4 @@ const mapStateToProps = (state) => ({
   user: state.user,
 });
 
-export default connect(mapStateToProps)(Home);
+export default connect(mapStateToProps)(Dashboard);

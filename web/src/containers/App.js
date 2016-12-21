@@ -96,9 +96,6 @@ class App extends Component {
               selectedKeys={[current]}
               mode="inline"
             >
-              <Menu.Item key="dashboard">
-                <Icon name="tachometer" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Dashboard</span>
-              </Menu.Item>
               <Menu.Item key="algorithm">
                 <Icon name="file-code-o" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Algorithm</span>
               </Menu.Item>

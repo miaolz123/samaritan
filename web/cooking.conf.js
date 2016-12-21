@@ -1,5 +1,6 @@
 var cooking = require('cooking');
 var path = require('path');
+var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 cooking.set({
   entry: {
@@ -32,5 +33,12 @@ cooking.set({
 cooking.add('resolve.alias', {
   'src': path.join(__dirname, 'src')
 });
+
+cooking.add('plugin.copy', new CopyWebpackPlugin([
+  {
+    from: 'node_modules/monaco-editor/min/vs',
+    to: 'vs',
+  }
+]));
 
 module.exports = cooking.resolve();

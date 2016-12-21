@@ -16,8 +16,8 @@ export default (
       <Route path="/user" component={User} />
       <Route path="/exchange" component={Exchange} />
       <Route path="/algorithm" component={Algorithm} />
-      <Route path="/algorithm/edit" component={AlgorithmEdit} />
-      <Route path="/algorithm/log" component={AlgorithmLog} />
+      <Route path="/algorithmEdit" component={AlgorithmEdit} />
+      <Route path="/algorithmLog" component={AlgorithmLog} />
     </Route>
     <Route path="/login" component={Login} />
   </Route>

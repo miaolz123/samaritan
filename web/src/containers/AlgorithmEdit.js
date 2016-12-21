@@ -1,26 +1,10 @@
 import { ResetError } from '../actions';
 import { AlgorithmPut } from '../actions/algorithm';
 import React, { Component } from 'react';
-import { findDOMNode } from 'react-dom';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
 import { Row, Col, Tooltip, Input, Button, notification } from 'antd';
-import CodeMirror from 'codemirror';
-require('codemirror/lib/codemirror.css');
-require('codemirror/mode/javascript/javascript.js');
-require('codemirror/theme/eclipse.css');
-require('codemirror/addon/edit/matchbrackets.js');
-require('codemirror/addon/fold/foldcode.js');
-require('codemirror/addon/fold/foldgutter.js');
-require('codemirror/addon/fold/foldgutter.css');
-require('codemirror/addon/fold/brace-fold.js');
-require('codemirror/addon/fold/comment-fold.js');
-require('codemirror/addon/lint/lint.js');
-require('codemirror/addon/lint/lint.css');
-require('codemirror/addon/lint/javascript-lint.js');
-require('codemirror/addon/selection/active-line.js');
-require('codemirror/addon/scroll/simplescrollbars.js');
-require('codemirror/addon/scroll/simplescrollbars.css');
+import MonacoEditor from 'react-monaco-editor';
 
 class AlgorithmEdit extends Component {
   constructor(props) {
@@ -71,6 +55,10 @@ class AlgorithmEdit extends Component {
     const { name } = this.state;
     const { algorithm } = this.props;
 
+    if (!algorithm.cache.name) {
+      browserHistory.push('/algorithm');
+    }
+
     if (!name) {
       this.setState({
         name: algorithm.cache.name,
@@ -78,24 +66,6 @@ class AlgorithmEdit extends Component {
         script: algorithm.cache.script,
       });
     }
-  }
-
-  componentDidMount() {
-    const textareaNode = findDOMNode(this.refs.script);
-
-    this.codeMirror = CodeMirror.fromTextArea(textareaNode, {
-      theme: 'eclipse',
-      tabSize: 2,
-      lineWrapping: true,
-      lineNumbers: true,
-      matchBrackets: true,
-      foldGutter: true,
-      lint: true,
-      styleActiveLine: true,
-      scrollbarStyle: 'simple',
-      gutters: ['CodeMirror-lint-markers', 'CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
-    });
-    this.codeMirror.on('change', this.handleScriptChange);
   }
 
   componentWillUnmount() {
@@ -110,10 +80,8 @@ class AlgorithmEdit extends Component {
     this.setState({ description: e.target.value });
   }
 
-  handleScriptChange(doc, change) {
-    if (change.origin !== 'setValue') {
-      this.setState({ script: doc.getValue() });
-    }
+  handleScriptChange(script) {
+    this.setState({ script });
   }
 
   handleSubmit() {
@@ -171,8 +139,15 @@ class AlgorithmEdit extends Component {
             />
           </Tooltip>
         </Row>
-        <Row style={{height: innerHeight - 190, marginTop: 18}}>
-          <textarea ref="script" defaultValue={script} />
+        <Row style={{ marginTop: 18 }}>
+          <MonacoEditor
+            width="100%"
+            height={innerHeight - 190}
+            value={script}
+            language="javascript"
+            onChange={this.handleScriptChange}
+            options={{ lineNumbersMinChars: 3, selectOnLineNumbers: true }}
+          />
         </Row>
       </div>
     );

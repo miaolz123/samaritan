@@ -138,11 +138,27 @@ class Algorithm extends React.Component {
         id: 0,
         name: 'New Algorithm Name',
         description: '',
-        script: '',
+        script: `// This is an example algorithm
+
+function main() {
+    G.Log(123456);
+    G.Sleep(10 * 1000);
+}
+
+function main1() {
+    G.Log(123456);
+    G.Sleep(10 * 1000);
+}
+
+function main2() {
+    G.Log(123456);
+    G.Sleep(10 * 1000);
+}
+`,
       };
     }
     dispatch(AlgorithmCache(info));
-    browserHistory.push('/algorithm/edit');
+    browserHistory.push('/algorithmEdit');
   }
 
   handleTraderEdit(info, algorithm) {
@@ -187,7 +203,7 @@ class Algorithm extends React.Component {
     const { dispatch } = this.props;
 
     dispatch(TraderCache(info));
-    browserHistory.push('/algorithm/log');
+    browserHistory.push('/algorithmLog');
   }
 
   handleExchangeChange(value) {
@@ -287,7 +303,7 @@ class Algorithm extends React.Component {
     }, {
       title: 'Status',
       dataIndex: 'status',
-      render: (v) => (v > 0 ? <Badge status="processing" text="RUN" /> : <Badge status="success" text="HALT" />),
+      render: (v) => (v > 0 ? <Badge status="processing" text="RUN" /> : <Badge status="default" text="HALT" />),
     }, {
       title: 'CreatedAt',
       dataIndex: 'createdAt',
