@@ -72,7 +72,6 @@ class Login extends React.Component {
 
   render() {
     const { windowHeight } = this.state;
-    const { user } = this.props;
     const { getFieldDecorator } = this.props.form;
     const formItemLayout = {
       wrapperCol: { offset: 9, span: 6 },
