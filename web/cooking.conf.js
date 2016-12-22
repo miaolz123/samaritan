@@ -26,6 +26,7 @@ cooking.set({
   sourceMap: true,
   extractCSS: true,
   urlLoaderLimit: 10000,
+  postcss: [],
 
   extends: ['react', 'lint', 'less']
 });
