@@ -4,6 +4,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { browserHistory } from 'react-router';
 import { Button, Form, Input, Icon, Tooltip, notification } from 'antd';
+import { trimEnd } from 'lodash';
 
 class Login extends React.Component {
   constructor(props) {
@@ -76,7 +77,7 @@ class Login extends React.Component {
     const formItemLayout = {
       wrapperCol: { offset: 9, span: 6 },
     };
-    const cluster = localStorage.getItem('cluster') || 'http://127.0.0.1:9876';
+    const cluster = localStorage.getItem('cluster') || trimEnd(document.URL, '/login');
 
     return (
       <div style={{ paddingTop: windowHeight > 600 ? (windowHeight - 500) / 2 : windowHeight > 400 ? (windowHeight - 350) / 2 : 25 }}>

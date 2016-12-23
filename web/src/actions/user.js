@@ -1,5 +1,6 @@
 import * as actions from '../constants/actions';
 import { Client } from 'hprose-js';
+import { trimEnd } from 'lodash';
 
 // Login
 
@@ -17,12 +18,13 @@ function userLoginFailure(message) {
 
 export function UserLogin(cluster, username, password) {
   return (dispatch, getState) => {
-    const client = Client.create(`${cluster}/api`, { User: ['Login'] });
+    const uri = trimEnd(cluster, '/');
+    const client = Client.create(`${uri}/api`, { User: ['Login'] });
 
     dispatch(userLoginRequest());
     client.User.Login(username, password, (resp) => {
       if (resp.success) {
-        dispatch(userLoginSuccess(resp.data, cluster));
+        dispatch(userLoginSuccess(resp.data, uri));
       } else {
         dispatch(userLoginFailure(resp.message));
       }

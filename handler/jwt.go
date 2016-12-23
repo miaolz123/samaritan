@@ -14,7 +14,7 @@ var (
 
 func makeToken(sub string) (token string) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
+		ExpiresAt: time.Now().Add(7 * 24 * time.Hour).Unix(),
 		Subject:   sub,
 	})
 	token, _ = t.SignedString(tokenKey)

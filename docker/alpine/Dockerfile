@@ -10,14 +10,15 @@ RUN apk add --no-cache --virtual .build-deps wget gnupg tar ca-certificates && \
     wget -q https://github.com/miaolz123/samaritan/releases/download/v${SAMARITAN_VERSION}/samaritan_linux_amd64.tar.gz && \
     tar -C /usr/src -xzf samaritan_linux_amd64.tar.gz && \
     echo $'#!/bin/sh\n\
-nohup su-exec postgres postgres >/dev/null 2>&1 &\n\
-sleep 5s\n\
+nohup su-exec 999 postgres >/dev/null 2>&1 &\n\
+sleep 10s\n\
 cd /usr/src/samaritan_linux_amd64/\n\
 ./samaritan\n' >> /usr/src/samaritan_linux_amd64/cmd.sh && \
     chmod +x /usr/src/samaritan_linux_amd64/samaritan && \
     chmod +x /usr/src/samaritan_linux_amd64/cmd.sh && \
     rm -f samaritan_linux_amd64.tar.gz glibc-2.23-r3.apk /root/.gnupg && \
-    apk del .build-deps
+    apk del .build-deps && \
+    apk add --no-cache --virtual .fetch-deps su-exec
 
 EXPOSE 9876
 
