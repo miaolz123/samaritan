@@ -26,6 +26,7 @@ _testmain.go
 # Personal
 .vscode
 *.db
+cache*
 web/dist/
 custom/*.ini
 dist.zip
