@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     echo $'#!/bin/sh\n\
 nohup postgres >/dev/null 2>&1 &\n\
 sleep 10s\n\
-/usr/src/samaritan_linux_amd64/samaritan\n' >> /usr/src/samaritan_linux_amd64/cmd.sh && \
+cd /usr/src/samaritan_linux_amd64/\n\
+./samaritan\n' >> /usr/src/samaritan_linux_amd64/cmd.sh && \
     chmod +x /usr/src/samaritan_linux_amd64/samaritan && \
     chmod +x /usr/src/samaritan_linux_amd64/cmd.sh && \
     rm -f samaritan_linux_amd64.tar.gz && \
