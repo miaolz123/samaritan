@@ -23,6 +23,15 @@ for i in 0 1 2 3 4 5; do
   else
     mv cache/${files[${i}]} cache/samaritan_${osarchs[${i}]}/samaritan
   fi
+  cd cache
+  if [ ${i} -lt 3 ]
+  then
+    zip -r samaritan_${osarchs[${i}]}.zip samaritan_${osarchs[${i}]}
+  else
+    tar -zcvf samaritan_${osarchs[${i}]}.tar.gz samaritan_${osarchs[${i}]}
+  fi
+  rm -rf samaritan_${osarchs[${i}]}
+  cd ..
 done
 
 zip -r ./cache.zip ./cache/
