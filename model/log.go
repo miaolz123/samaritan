@@ -30,9 +30,9 @@ func (user User) ListLog(id, size, page int64) (total int64, logs []Log, err err
 	if err != nil {
 		return
 	}
-	err = DB.Where("trader_id = ?", id).Order("timestamp desc").Limit(size).Offset((page - 1) * size).Find(&logs).Error
+	err = DB.Where("trader_id = ?", id).Order("timestamp desc, id desc").Limit(size).Offset((page - 1) * size).Find(&logs).Error
 	for i, l := range logs {
-		logs[i].Time = time.Unix(l.Timestamp, 0)
+		logs[i].Time = time.Unix(0, l.Timestamp)
 	}
 	return
 }
@@ -45,7 +45,8 @@ type Logger struct {
 
 // Log ...
 func (l Logger) Log(method string, stockType string, price, amount float64, messages ...interface{}) {
-	go func() {
+	now := time.Now().UnixNano()
+	go func(now int64) {
 		message := ""
 		for _, m := range messages {
 			if method != constant.ERROR {
@@ -62,7 +63,7 @@ func (l Logger) Log(method string, stockType string, price, amount float64, mess
 		}
 		log := Log{
 			TraderID:     l.TraderID,
-			Timestamp:    time.Now().Unix(),
+			Timestamp:    now,
 			ExchangeType: l.ExchangeType,
 			Type:         method,
 			StockType:    stockType,
@@ -71,5 +72,5 @@ func (l Logger) Log(method string, stockType string, price, amount float64, mess
 			Message:      message,
 		}
 		DB.Create(&log)
-	}()
+	}(now)
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/miaolz123/samaritan/model"
 )
 
-// OandaV20 : the exchange struct of oanda.com v20
+// OandaV20 the exchange struct of oanda.com v20
 type OandaV20 struct {
 	stockTypeMap        map[string][2]string
 	tradeTypeMap        map[string]string
@@ -30,16 +30,12 @@ type OandaV20 struct {
 	logger              model.Logger
 	option              Option
 
-	simulate bool
-	account  map[string]float64
-	orders   map[string]Order
-
 	limit     float64
 	lastSleep int64
 	lastTimes int64
 }
 
-// NewOandaV20 : create an exchange struct of okcoin.cn
+// NewOandaV20 create an exchange struct of okcoin.cn
 func NewOandaV20(opt Option) Exchange {
 	return &OandaV20{
 		stockTypeMap: map[string][2]string{
@@ -101,35 +97,33 @@ func NewOandaV20(opt Option) Exchange {
 		logger:  model.Logger{TraderID: opt.TraderID, ExchangeType: opt.Type},
 		option:  opt,
 
-		account: make(map[string]float64),
-
 		limit:     10.0,
 		lastSleep: time.Now().UnixNano(),
 	}
 }
 
-// Log : print something to console
+// Log print something to console
 func (e *OandaV20) Log(msgs ...interface{}) {
 	e.logger.Log(constant.INFO, "", 0.0, 0.0, msgs...)
 }
 
-// GetType : get the type of this exchange
+// GetType get the type of this exchange
 func (e *OandaV20) GetType() string {
 	return e.option.Type
 }
 
-// GetName : get the name of this exchange
+// GetName get the name of this exchange
 func (e *OandaV20) GetName() string {
 	return e.option.Name
 }
 
-// SetLimit : set the limit calls amount per second of this exchange
+// SetLimit set the limit calls amount per second of this exchange
 func (e *OandaV20) SetLimit(times interface{}) float64 {
 	e.limit = conver.Float64Must(times)
 	return e.limit
 }
 
-// AutoSleep : auto sleep to achieve the limit calls amount per second of this exchange
+// AutoSleep auto sleep to achieve the limit calls amount per second of this exchange
 func (e *OandaV20) AutoSleep() {
 	now := time.Now().UnixNano()
 	interval := 1e+9/e.limit*conver.Float64Must(e.lastTimes) - conver.Float64Must(now-e.lastSleep)
@@ -140,7 +134,7 @@ func (e *OandaV20) AutoSleep() {
 	e.lastSleep = now
 }
 
-// GetMinAmount : get the min trade amonut of this exchange
+// GetMinAmount get the min trade amonut of this exchange
 func (e *OandaV20) GetMinAmount(stock string) float64 {
 	return e.minAmountMap[stock]
 }
@@ -174,13 +168,7 @@ func (e *OandaV20) getAuthJSON(method, url string, body interface{}) (statusCode
 	return
 }
 
-// Simulate : set the account of simulation
-func (e *OandaV20) Simulate() bool {
-	e.host = "https://api-fxpractice.oanda.com"
-	return true
-}
-
-// GetAccount : get the account detail of this exchange
+// GetAccount get the account detail of this exchange
 func (e *OandaV20) GetAccount() interface{} {
 	statusCode, json, err := e.getAuthJSON("GET", "/v3/accounts/11"+e.option.AccessKey+"/summary", nil)
 	if err != nil {
@@ -202,7 +190,7 @@ func (e *OandaV20) GetAccount() interface{} {
 	}
 }
 
-// GetPositions : get the positions detail of this exchange
+// GetPositions get the positions detail of this exchange
 func (e *OandaV20) GetPositions(stockType string) interface{} {
 	stockTypeRaw := strings.ToUpper(stockType)
 	stockType = strings.Replace(stockTypeRaw, "/", "_", -1)
@@ -256,7 +244,7 @@ func (e *OandaV20) GetPositions(stockType string) interface{} {
 	return positions
 }
 
-// Trade : place an order
+// Trade place an order
 func (e *OandaV20) Trade(tradeType string, stockType string, _price, _amount interface{}, msgs ...interface{}) interface{} {
 	tradeType = strings.ToUpper(tradeType)
 	stockType = strings.ToUpper(stockType)
@@ -308,15 +296,12 @@ func (e *OandaV20) Trade(tradeType string, stockType string, _price, _amount int
 	return fmt.Sprint(json.Get("order_id").Interface())
 }
 
-// GetOrder : get details of an order
+// GetOrder get details of an order
 func (e *OandaV20) GetOrder(stockType, id string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrder() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		return Order{ID: id, StockType: stockType}
 	}
 	params := []string{
 		"symbol=" + e.stockTypeMap[stockType][0],
@@ -348,16 +333,13 @@ func (e *OandaV20) GetOrder(stockType, id string) interface{} {
 	return false
 }
 
-// GetOrders : get all unfilled orders
+// GetOrders get all unfilled orders
 func (e *OandaV20) GetOrders(stockType string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetOrders() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		return orders
 	}
 	params := []string{
 		"symbol=" + e.stockTypeMap[stockType][0],
@@ -393,16 +375,13 @@ func (e *OandaV20) GetOrders(stockType string) interface{} {
 	return orders
 }
 
-// GetTrades : get all filled orders recently
+// GetTrades get all filled orders recently
 func (e *OandaV20) GetTrades(stockType string) interface{} {
 	stockType = strings.ToUpper(stockType)
 	orders := []Order{}
 	if _, ok := e.stockTypeMap[stockType]; !ok {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetTrades() error, unrecognized stockType: ", stockType)
 		return false
-	}
-	if e.simulate {
-		return orders
 	}
 	params := []string{
 		"symbol=" + e.stockTypeMap[stockType][0],
@@ -438,12 +417,8 @@ func (e *OandaV20) GetTrades(stockType string) interface{} {
 	return orders
 }
 
-// CancelOrder : cancel an order
+// CancelOrder cancel an order
 func (e *OandaV20) CancelOrder(order Order) bool {
-	if e.simulate {
-		e.logger.Log(constant.CANCEL, order.StockType, order.Price, order.Amount-order.DealAmount, order)
-		return true
-	}
 	params := []string{
 		"symbol=" + e.stockTypeMap[order.StockType][0],
 		"order_id=" + order.ID,
@@ -462,7 +437,7 @@ func (e *OandaV20) CancelOrder(order Order) bool {
 	return true
 }
 
-// getTicker : get market ticker & depth
+// getTicker get market ticker & depth
 func (e *OandaV20) getTicker(stockType string, sizes ...interface{}) (ticker Ticker, err error) {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {
@@ -509,7 +484,7 @@ func (e *OandaV20) getTicker(stockType string, sizes ...interface{}) (ticker Tic
 	return
 }
 
-// GetTicker : get market ticker & depth
+// GetTicker get market ticker & depth
 func (e *OandaV20) GetTicker(stockType string, sizes ...interface{}) interface{} {
 	ticker, err := e.getTicker(stockType, sizes...)
 	if err != nil {
@@ -519,7 +494,7 @@ func (e *OandaV20) GetTicker(stockType string, sizes ...interface{}) interface{}
 	return ticker
 }
 
-// GetRecords : get candlestick data
+// GetRecords get candlestick data
 func (e *OandaV20) GetRecords(stockType, period string, sizes ...interface{}) interface{} {
 	stockType = strings.ToUpper(stockType)
 	if _, ok := e.stockTypeMap[stockType]; !ok {

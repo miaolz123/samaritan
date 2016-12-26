@@ -1,7 +1,7 @@
 FROM postgres:9.6.1
 MAINTAINER <miaolizhao@126.com>
 
-ENV SAMARITAN_VERSION 0.1.1
+ENV SAMARITAN_VERSION 0.1.2
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/* && \
     wget -q https://github.com/miaolz123/samaritan/releases/download/v${SAMARITAN_VERSION}/samaritan_linux_amd64.tar.gz && \
     tar -C /usr/src -xzf samaritan_linux_amd64.tar.gz && \

@@ -85,15 +85,15 @@ Then, samaritan is running at `http://localhost:19876`.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| Balance | Number | balance amount |
-| FrozenBalance | Number | frozen balance amount |
-| BTC | Number | BTC amount |
+| CNY | Number | available CNY amount |
+| FrozenCNY | Number | frozen CNY amount |
+| BTC | Number | available BTC amount |
 | FrozenBTC | Number | frozen BTC amount |
-| LTC | Number | LTC amount |
+| LTC | Number | available LTC amount |
 | FrozenLTC | Number | frozen LTC amount |
-| ... | Number | ... amount |
+| ... | Number | available ... amount |
 | Frozen... | Number | frozen ... amount |
-| Stock | Number | main stock amount |
+| Stock | Number | available main stock amount |
 | FrozenStock | Number | frozen main stock amount |
 
 ### Position
@@ -118,7 +118,7 @@ Then, samaritan is running at `http://localhost:19876`.
 | Amount | Number | total amount |
 | DealAmount | Number | deal amount |
 | Fee | Number | fee of this order |
-| TradeType | Number | trade type |
+| TradeType | String | trade type |
 | StockType | String | stock type |
 
 ### Record

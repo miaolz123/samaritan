@@ -129,11 +129,9 @@ func run(id int64) (err error) {
 				}
 			}
 			trader.Status = 0
-			trader.Logger.Log(constant.INFO, "", 0.0, 0.0, "The Trader stop running")
 		}()
 		trader.LastRunAt = time.Now()
 		trader.Status = 1
-		trader.Logger.Log(constant.INFO, "", 0.0, 0.0, "The Trader is running")
 		if _, err := trader.Ctx.Run(trader.Algorithm.Script); err != nil {
 			trader.Logger.Log(constant.ERROR, "", 0.0, 0.0, err)
 		}

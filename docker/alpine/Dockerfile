@@ -1,7 +1,7 @@
 FROM postgres:9.6.1-alpine
 MAINTAINER <miaolizhao@126.com>
 
-ENV SAMARITAN_VERSION 0.1.1
+ENV SAMARITAN_VERSION 0.1.2
 RUN apk add --no-cache --virtual .build-deps wget gnupg tar ca-certificates && \
     update-ca-certificates && \
     wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub && \

@@ -1,6 +1,6 @@
 package api
 
-// Option : exchange option
+// Option is an exchange option
 type Option struct {
 	TraderID  int64
 	Type      string

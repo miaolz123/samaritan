@@ -62,6 +62,9 @@ class App extends Component {
       case 'user':
         browserHistory.push('/user');
         break;
+      case 'docs':
+        window.location.href = 'http://samaritan.stockdb.org';
+        break;
       case 'logout':
         Modal.confirm({
           title: 'Are you sure to logout ?',
@@ -104,6 +107,9 @@ class App extends Component {
               </Menu.Item>
               <Menu.Item key="user">
                 <Icon name="id-card-o" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">User</span>
+              </Menu.Item>
+              <Menu.Item key="docs">
+                <Icon name="book" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Docs</span>
               </Menu.Item>
               <Menu.Item key="logout">
                 <Icon name="power-off" fixedWidth size={collapse ? '2x' : undefined} /><span className="nav-text">Logout</span>

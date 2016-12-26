@@ -2,7 +2,7 @@ package constant
 
 // error constants
 const (
-	Version                    = "0.1.1"
+	Version                    = "0.1.2"
 	ErrAuthorizationError      = "Authorization Error"
 	ErrInsufficientPermissions = "Insufficient Permissions"
 )
@@ -59,5 +59,5 @@ const (
 // some variables
 var (
 	Consts        = []string{"BTC", "LTC", "M", "M5", "M15", "M30", "H", "D", "W"}
-	ExchangeTypes = []string{OkCoinCn, Huobi, Poloniex, Btcc, Chbtc, OkcoinFuture, OandaV20}
+	ExchangeTypes = []string{OkCoinCn, Huobi, Poloniex, Btcc, Chbtc, OkcoinFuture}
 )
