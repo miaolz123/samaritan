@@ -24,6 +24,6 @@ EXPOSE 9876
 
 VOLUME /var/lib/postgresql/data
 
-COPY docker/config.ini /usr/src/samaritan_linux_amd64/custom/config.ini
+COPY ../config.ini /usr/src/samaritan_linux_amd64/custom/config.ini
 
 CMD ["/usr/src/samaritan_linux_amd64/cmd.sh"]
