@@ -39,21 +39,6 @@ type Order struct {
 	StockType  string
 }
 
-// Ticker struct
-type Ticker struct {
-	Bids []OrderBook
-	Buy  float64
-	Mid  float64
-	Sell float64
-	Asks []OrderBook
-}
-
-// OrderBook struct
-type OrderBook struct {
-	Price  float64
-	Amount float64
-}
-
 // Record struct
 type Record struct {
 	Time   int64
@@ -62,6 +47,21 @@ type Record struct {
 	Low    float64
 	Close  float64
 	Volume float64
+}
+
+// OrderBook struct
+type OrderBook struct {
+	Price  float64
+	Amount float64
+}
+
+// Ticker struct
+type Ticker struct {
+	Bids []OrderBook
+	Buy  float64
+	Mid  float64
+	Sell float64
+	Asks []OrderBook
 }
 
 func base64Encode(data string) string {

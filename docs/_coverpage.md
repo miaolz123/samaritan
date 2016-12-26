@@ -1,4 +1,4 @@
-# Samaritan
+<div style="font-size:2.5rem;">Samaritan</div>
 
 > A quantitative trading framework for auto-trading digital currency.
 

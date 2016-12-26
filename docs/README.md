@@ -1,3 +1,5 @@
+# Samaritan service
+
 ## Installation
 
 You can install samaritan from **installation package** or **docker**.
@@ -9,7 +11,18 @@ You can install samaritan from **installation package** or **docker**.
 3. Enter the extracted samaritan installation directory
 4. Run `samaritan`
 
-Default, samaritan is running at `http://localhost:9876`.
+Then, samaritan is running at `http://localhost:9876`.
+
+**Linux & Mac user quick start command**
+
+```shell
+wget https://github.com/miaolz123/samaritan/releases/download/v{{VERSION}}/samaritan_{{OS}}_{{ARCH}}.tar.gz && \
+tar -xzvf samaritan_{{OS}}_{{ARCH}}.tar.gz.tar.gz && \
+cd samaritan_{{OS}}_{{ARCH}} && \
+./samaritan
+```
+
+Please replace *{{VERSION}}*, *{{OS}}*, *{{ARCH}}* first.
 
 ### From Docker
 
@@ -18,6 +31,18 @@ docker run --name=samaritan -p 19876:9876 miaolz123/samaritan
 ```
 
 Then, samaritan is running at `http://localhost:19876`.
+
+## Supported exchanges
+
+| Exchange | Stock |
+| -------- | ----- |
+| okcoin.cn | `BTC/CNY`, `LTC/CNY` |
+| huobi | `BTC/CNY`, `LTC/CNY` |
+| poloniex | `ETH/BTC`, `XMR/BTC`, `BTC/USDT`, `LTC/BTC`, `ETC/BTC`, `XRP/BTC`, `ETH/USDT`, `ETC/ETH`, ... |
+| btcc | `BTC/CNY`, `LTC/CNY`, `LTC/BTC` |
+| chbtc | `BTC/CNY`, `LTC/CNY`, `ETH/CNY`, `ETC/CNY` |
+| okcoin.future | `BTC.WEEK/USD`, `BTC.WEEK2/USD`, `BTC.MONTH3/USD`, `LTC.WEEK/USD`, ... |
+| oanda.v20 | coming soon ...... |
 
 # Algorithm Reference
 
@@ -31,14 +56,16 @@ Then, samaritan is running at `http://localhost:19876`.
 | Exchange/E | Object | a object with some exchange methods |
 | Exchanges/Es | Object List | an `Exchange/E` list |
 
-### Order type
+### Trade type
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| 1 | Number | buy order |
-| -1 | Number | sell order |
-| 2 | Number | buy market order |
-| -2 | Number | sell market order |
+| BUY | String | buy |
+| SELL | String | sell |
+| LONG | String | long contract |
+| SHORT | String | short contract |
+| LONG_CLOSE | String | close long contract |
+| SHORT_CLOSE | String | close short contract |
 
 ### Records period
 
@@ -58,16 +85,29 @@ Then, samaritan is running at `http://localhost:19876`.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| Total | Number | total asset |
-| Net | Number | net asset |
 | Balance | Number | balance amount |
 | FrozenBalance | Number | frozen balance amount |
 | BTC | Number | BTC amount |
 | FrozenBTC | Number | frozen BTC amount |
 | LTC | Number | LTC amount |
 | FrozenLTC | Number | frozen LTC amount |
+| ... | Number | ... amount |
+| Frozen... | Number | frozen ... amount |
 | Stock | Number | main stock amount |
 | FrozenStock | Number | frozen main stock amount |
+
+### Position
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| Price | Number | price |
+| Leverage | Number | leverage |
+| Amount | Number | total position amount |
+| FrozenAmount | Number | frozen position amount |
+| Profit | Number | profit |
+| ContractType | String | contract type |
+| TradeType | String | trade type |
+| StockType | String | stock type |
 
 ### Order
 
@@ -77,7 +117,8 @@ Then, samaritan is running at `http://localhost:19876`.
 | Price | Number | price |
 | Amount | Number | total amount |
 | DealAmount | Number | deal amount |
-| OrderType | Number | [type reference](#order-type) |
+| Fee | Number | fee of this order |
+| TradeType | Number | trade type |
 | StockType | String | stock type |
 
 ### Record
@@ -95,18 +136,18 @@ Then, samaritan is running at `http://localhost:19876`.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| Price | Number | - |
-| Amount | Number | - |
+| Price | Number | price |
+| Amount | Number | market depth amount |
 
 ### Ticker
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| Bids | OrderBook List | bid `OrderBook` list |
-| Buy | Number | the price of first `Bids` |
+| Bids | OrderBook List | bid market depth list |
+| Buy | Number | the first bid price, `Bids[0].Price` |
 | Mid | Number | `(Buy + Sell) / 2` |
-| Sell | Number | the price of first `Asks` |
-| Asks | OrderBook List | ask `OrderBook` list |
+| Sell | Number | the first ask price, `Asks[0].Price` |
+| Asks | OrderBook List | ask market depth list |
 
 ## Global/G
 
@@ -117,9 +158,9 @@ Then, samaritan is running at `http://localhost:19876`.
 > G.Sleep(Interval: *Any*) => *No Return*
 
 ```javascript
+// the program will sleep for 5 seconds
+// if Interval <= 0, will automatic execute AutoSleep() of all Exchanges
 G.Sleep(5000);
-// The program will sleep for 5 seconds
-// If Interval <= 0, will automatic execute Es[i].AutoSleep()
 ```
 
 ### Log
@@ -127,8 +168,8 @@ G.Sleep(5000);
 > G.Log(Message: *Any*) => *No Return*
 
 ```javascript
+// send a message to web control
 G.Log("I'm running…");
-// Send a message to web control
 ```
 
 ### LogProfit
@@ -136,8 +177,8 @@ G.Log("I'm running…");
 > G.LogProfit(Profit: *Number*, Message: *Any*) => *No Return*
 
 ```javascript
-G.LogProfit(12.345, "Round 1 end");
-// Send a profit message to web control to show profit chart
+// send a profit message to web control to show profit chart
+G.LogProfit(12.345, 'Round 1 end');
 ```
 
 ### LogStatus
@@ -145,8 +186,8 @@ G.LogProfit(12.345, "Round 1 end");
 > G.LogStatus(Message: *Any*) => *No Return*
 
 ```javascript
-G.LogStatus("Latest BTC Ticker: ", E.GetTicker("BTC"));
-// Send a status message to web control to show it real-time
+// send a status message to web control to show it real-time
+G.LogStatus('Latest BTC Ticker: ', E.GetTicker('BTC/USD'));
 ```
 
 ### AddTask
@@ -154,7 +195,7 @@ G.LogStatus("Latest BTC Ticker: ", E.GetTicker("BTC"));
 > G.AddTask(Function: *Function*, Arguments: *Any*) => *Boolean*
 
 ```javascript
-// Work with G.ExecTasks()
+// work with G.ExecTasks()
 ```
 
 ### ExecTasks
@@ -162,11 +203,12 @@ G.LogStatus("Latest BTC Ticker: ", E.GetTicker("BTC"));
 > G.ExecTasks() => *List*
 
 ```javascript
+// send same tasks to task list
 G.AddTask(E.GetAccount);
-G.AddTask(E.GetTicker, "BTC");
-// Send a task to task list
+G.AddTask(E.GetTicker, 'BTC/USD');
+
+// execute all tasks at the same time and return all results
 var results = G.ExecTasks();
-// Execute all tasks at the same time and return all results
 var thisAccount = results[0];
 var thisTicker = results[1];
 ```
@@ -180,8 +222,8 @@ var thisTicker = results[1];
 > E.Log(Message: *Any*) => *No Return*
 
 ```javascript
+// send a message of this exchange to web control
 E.Log("I'm running…");
-// Send a message of this exchange to web control
 ```
 
 ### GetType
@@ -189,8 +231,8 @@ E.Log("I'm running…");
 > E.GetType() => *String*
 
 ```javascript
+// get the type of this exchange
 var thisType = E.GetType();
-// Get the type of this exchange
 ```
 
 ### GetName
@@ -198,8 +240,8 @@ var thisType = E.GetType();
 > E.GetName() => *String*
 
 ```javascript
+// get the name of this exchange
 var thisName = E.GetName();
-// Get the name of this exchange
 ```
 
 ### GetMainStock
@@ -207,8 +249,8 @@ var thisName = E.GetName();
 > E.GetMainStock() => *String*
 
 ```javascript
+// get the main stock type of this exchange
 var thisMainStock = E.GetMainStock();
-// Get the main stock type of this exchange
 ```
 
 ### SetMainStock
@@ -216,8 +258,8 @@ var thisMainStock = E.GetMainStock();
 > E.SetMainStock(StockType: *String*) => *String*
 
 ```javascript
-var newMainStockType = E.SetMainStock("LTC");
-// Set the main stock type of this exchange
+// set the main stock type of this exchange
+var newMainStockType = E.SetMainStock('LTC/USD');
 ```
 
 ### SetLimit
@@ -225,18 +267,9 @@ var newMainStockType = E.SetMainStock("LTC");
 > E.SetLimit(times: *Number*) => *Number*
 
 ```javascript
+// set the limit calls amount per second of this exchange
+// work with E.AutoSleep()
 var newLimit = E.SetLimit(6);
-// Set the limit calls amount per second of this exchange
-```
-
-### SetLimit
-
-> E.SetLimit(times: *Number*) => *Number*
-
-```javascript
-var newLimit = E.SetLimit(6);
-// Set the limit calls amount per second of this exchange
-// Work with E.AutoSleep()
 ```
 
 ### AutoSleep
@@ -244,41 +277,55 @@ var newLimit = E.SetLimit(6);
 > E.AutoSleep() => *No Return*
 
 ```javascript
+// auto sleep to achieve the limit calls amount per second of this exchange
 E.AutoSleep();
-// Auto sleep to achieve the limit calls amount per second of this exchange
 ```
 
 ### GetAccount
 
-> E.GetAccount() => [`Account`](dataStruct.html#account)
+> E.GetAccount() => *Account*
 
 ```javascript
+// get the account info of this exchange
 var thisAccount = E.GetAccount();
-// Get the account info of this exchange
 ```
 
-### Buy
+### GetPositions
 
-> E.Buy(StockType: *String*, Price: *Number*, Amount: *Number*, Message: *Any*) => *String*/*Boolean*
+> E.GetPositions(StockType: *String*) => *Position List*
 
 ```javascript
+// get the position list of this exchange
+var thisPositions = E.GetPositions('BTC/USD');
+```
+
+### GetMinAmount
+
+> E.GetMinAmount(StockType: *String*) => *Number*
+
+```javascript
+// get the min trade amount of this exchange
+var thisMinAmount = E.GetMinAmount('BTC/USD');
+```
+
+### Trade
+
+> E.Trade(TradeType: [*String*](#trade-type), StockType: *String*, Price: *Number*, Amount: *Number*, Message: *Any*) => *String*/*Boolean*
+
+```javascript
+// buy example
 // if Price <= 0, it's a market order, and the Amount will be different
-E.Buy("BTC", 600, 0.5, "I paid $300"); // normal order
-E.Buy("BTC", 0, 300, "I also paid $300"); // market order
-// Return ID of this order if succeed
-// Return false if fail
-```
+// return ID of this order if succeed
+// return false if fail
+E.Trade('BUY', 'BTC/USD', 600, 0.5, 'I paid $300'); // normal order
+E.Trade('BUY', 'BTC/USD', 0, 300, 'I also paid $300'); // market order
 
-### Sell
-
-> E.Sell(StockType: *String*, Price: *Number*, Amount: *Number*, Message: *Any*) => *String*/*Boolean*
-
-```javascript
+// sell example
 // if Price <= 0, it's a market order
-E.Sell("BTC", 600, 0.5); // normal order
-E.Sell("BTC", 0, 0.5); // market order
-// Return ID of this order if succeed
-// Return false if fail
+// return ID of this order if succeed
+// return false if fail
+E.Trade('SELL', 'BTC/USD', 600, 0.5); // normal order
+E.Trade('SELL', 'BTC/USD', 0, 0.5); // market order
 ```
 
 ### GetOrder
@@ -286,9 +333,9 @@ E.Sell("BTC", 0, 0.5); // market order
 > E.GetOrder(StockType: *String*, ID: *String*) => *Order*/*Boolean*
 
 ```javascript
-var thisOrder = E.GetOrder("BTC", "XXXXXX");
-// Return info of this order if succeed
-// Return false if fail
+// return info of this order if succeed
+// return false if fail
+var thisOrder = E.GetOrder('BTC/USD', 'XXXXXX');
 ```
 
 ### GetOrders
@@ -296,8 +343,8 @@ var thisOrder = E.GetOrder("BTC", "XXXXXX");
 > E.GetOrders(StockType: *String*) => *Order List*
 
 ```javascript
-var thisOrders = E.GetOrders("BTC");
-// Return all the undone orders
+// return all the undone orders
+var thisOrders = E.GetOrders('BTC/USD');
 ```
 
 ### GetTrades
@@ -305,8 +352,8 @@ var thisOrders = E.GetOrders("BTC");
 > E.GetTrades(StockType: *String*) => *Order List*
 
 ```javascript
-var thisTrades = E.GetTrades("BTC");
-// Return all the done orders
+// return all the done orders
+var thisTrades = E.GetTrades('BTC/USD');
 ```
 
 ### CancelOrder
@@ -314,10 +361,10 @@ var thisTrades = E.GetTrades("BTC");
 > E.CancelOrder(Order: *Order*) => *Boolean*
 
 ```javascript
-var thisOrders = E.GetOrders("BTC");
+var thisOrders = E.GetOrders('BTC/USD');
 for (var i = 0; i < thisOrders.length; i++) {
-var isCanceled = E.CancelOrder(thisOrders[i]);
-// Return the result
+    // return the result
+    var isCanceled = E.CancelOrder(thisOrders[i]);
 }
 ```
 
@@ -326,8 +373,8 @@ var isCanceled = E.CancelOrder(thisOrders[i]);
 > E.GetTicker(StockType: *String*, Size: *Any*) => *Ticker*
 
 ```javascript
-var thisTicker = E.GetTicker("BTC");
-// Get the latest ticker of this exchange
+// get the latest ticker of this exchange
+var thisTicker = E.GetTicker('BTC/USD');
 ```
 
 ### GetRecords
@@ -335,6 +382,6 @@ var thisTicker = E.GetTicker("BTC");
 > E.GetRecords(StockType: *String*, Period: [*String*](#records-period), Size: *Any*) => *Record List*
 
 ```javascript
-var thisRecords = E.GetRecords("BTC", "M5");
-// Get the latest records of this exchange
+// get the latest records of this exchange
+var thisRecords = E.GetRecords('BTC/USD', 'M5');
 ```

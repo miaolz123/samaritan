@@ -17,17 +17,13 @@ for i in 0 1 2 3 4 5; do
   cp -r web/dist cache/samaritan_${osarchs[${i}]}/web/dist
   cp config.ini cache/samaritan_${osarchs[${i}]}/custom/config.ini
   cp config.ini cache/samaritan_${osarchs[${i}]}/custom/config.default.ini
+  cd cache
   if [ ${i} -lt 2 ]
   then
-    mv cache/${files[${i}]} cache/samaritan_${osarchs[${i}]}/samaritan.exe
-  else
-    mv cache/${files[${i}]} cache/samaritan_${osarchs[${i}]}/samaritan
-  fi
-  cd cache
-  if [ ${i} -lt 3 ]
-  then
+    mv ${files[${i}]} samaritan_${osarchs[${i}]}/samaritan.exe
     zip -r samaritan_${osarchs[${i}]}.zip samaritan_${osarchs[${i}]}
   else
+    mv ${files[${i}]} samaritan_${osarchs[${i}]}/samaritan
     tar -zcvf samaritan_${osarchs[${i}]}.tar.gz samaritan_${osarchs[${i}]}
   fi
   rm -rf samaritan_${osarchs[${i}]}
