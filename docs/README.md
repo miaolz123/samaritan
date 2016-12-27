@@ -18,9 +18,9 @@ Then, samaritan is running at `http://localhost:9876`.
 **Linux & Mac user quick start command**
 
 ```shell
-wget https://github.com/miaolz123/samaritan/releases/download/v{{VERSION}}/samaritan_{{OS}}_{{ARCH}}.tar.gz && \
-tar -xzvf samaritan_{{OS}}_{{ARCH}}.tar.gz.tar.gz && \
-cd samaritan_{{OS}}_{{ARCH}} && \
+wget https://github.com/miaolz123/samaritan/releases/download/v{{VERSION}}/samaritan_{{OS}}_{{ARCH}}.tar.gz
+tar -xzvf samaritan_{{OS}}_{{ARCH}}.tar.gz
+cd samaritan_{{OS}}_{{ARCH}}
 ./samaritan
 ```
 
@@ -115,8 +115,6 @@ Then, samaritan is running at `http://localhost:19876`.
 | FrozenLTC | Number | frozen LTC amount |
 | ... | Number | available ... amount |
 | Frozen... | Number | frozen ... amount |
-| Stock | Number | available main stock amount |
-| FrozenStock | Number | frozen main stock amount |
 
 ### Position
 

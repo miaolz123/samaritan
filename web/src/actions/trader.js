@@ -155,7 +155,6 @@ export function TraderSwitch(req) {
 
     client.setHeader('Authorization', `Bearer ${token}`);
     client.Trader.Switch(req, (resp) => {
-      console.log(158158, resp);
       if (resp.success) {
         dispatch(traderSwitchSuccess());
         dispatch(TraderList(req.algorithmId));
