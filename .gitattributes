@@ -1,2 +1,1 @@
-web/* linguist-vendored
-*.js linguist-vendored
+plugin/* linguist-vendored
