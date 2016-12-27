@@ -4,6 +4,8 @@
 
 You can install samaritan from **installation package** or **docker**.
 
+The default username and password are `admin`, please modify them immediately after login!
+
 ### From installation package
 
 1. Download the samaritan installation package on [this page](https://github.com/miaolz123/samaritan/releases)
@@ -43,6 +45,26 @@ Then, samaritan is running at `http://localhost:19876`.
 | chbtc | `BTC/CNY`, `LTC/CNY`, `ETH/CNY`, `ETC/CNY` |
 | okcoin.future | `BTC.WEEK/USD`, `BTC.WEEK2/USD`, `BTC.MONTH3/USD`, `LTC.WEEK/USD`, ... |
 | oanda.v20 | coming soon ...... |
+
+## Usage
+
+### Add an Exchange
+
+![](http://samaritan.stockdb.org/_media/add-exchange.png)
+
+### Add an Algorithm
+
+![](http://samaritan.stockdb.org/_media/add-algorithm.png)
+
+![](http://samaritan.stockdb.org/_media/edit-algorithm.png)
+
+### Deploy an Algorithm
+
+![](http://samaritan.stockdb.org/_media/add-trader.png)
+
+### Run a Trader
+
+![](http://samaritan.stockdb.org/_media/run-trader.png)
 
 # Algorithm Reference
 

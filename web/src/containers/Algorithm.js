@@ -4,7 +4,7 @@ import { ExchangeList } from '../actions/exchange';
 import { TraderList, TraderPut, TraderDelete, TraderSwitch, TraderCache } from '../actions/trader';
 import React from 'react';
 import { connect } from 'react-redux';
-import { browserHistory } from 'react-router';
+import { Link, browserHistory } from 'react-router';
 import { Badge, Button, Dropdown, Form, Input, Menu, Modal, Select, Table, Tag, Tooltip, notification } from 'antd';
 
 const FormItem = Form.Item;
@@ -223,6 +223,16 @@ function main() {
       }
 
       const { traderInfo } = this.state;
+
+      if (!traderInfo.exchanges || traderInfo.exchanges.length < 1) {
+        notification['error']({
+          key: 'algorithmError',
+          message: 'Error',
+          description: 'Please add at least one Exchange!',
+        });
+        return;
+      }
+
       const { dispatch } = this.props;
       const info = {
         id: traderInfo.id,
@@ -389,7 +399,7 @@ function main() {
             >
               <Select
                 onSelect={this.handleExchangeChange}
-                notFoundContent="Please add an exchange at first"
+                notFoundContent={<Link to="/exchange">Please add an Exchange at first!</Link>}
               >
                 {exchange.list.map((e, i) => <Option key={String(i)} value={String(i)}>{e.name}</Option>)}
               </Select>

@@ -12,7 +12,7 @@ cd /usr/src/samaritan_linux_amd64/\n\
     chmod +x /usr/src/samaritan_linux_amd64/samaritan && \
     chmod +x /usr/src/samaritan_linux_amd64/cmd.sh && \
     rm -f samaritan_linux_amd64.tar.gz && \
-    apt-get purge -y --auto-remove ca-certificates wget
+    apt-get purge -y --auto-remove wget
 
 EXPOSE 9876
 

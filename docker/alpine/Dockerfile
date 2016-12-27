@@ -17,7 +17,9 @@ cd /usr/src/samaritan_linux_amd64/\n\
     chmod +x /usr/src/samaritan_linux_amd64/samaritan && \
     chmod +x /usr/src/samaritan_linux_amd64/cmd.sh && \
     rm -f samaritan_linux_amd64.tar.gz glibc-2.23-r3.apk /root/.gnupg && \
-    apk del .build-deps
+    apk del .build-deps && \
+    apk add --no-cache --virtual ca-certificates && \
+    update-ca-certificates
 
 EXPOSE 9876
 
