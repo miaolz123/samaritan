@@ -61,6 +61,7 @@ func Server() {
 	service.AddAllMethods(handler)
 	http.Handle("/api", service)
 	http.Handle("/", http.FileServer(http.Dir("web/dist")))
-	log.Printf("Smaritan v%v running at http://localhost:%v\n", constant.Version, port)
+	fmt.Printf("%v  Version %v\n", constant.Banner, constant.Version)
+	log.Printf("Running at http://localhost:%v\n", port)
 	http.ListenAndServe(":"+port, nil)
 }

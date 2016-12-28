@@ -2,6 +2,11 @@ package constant
 
 // error constants
 const (
+	Banner = `   _____                            _ __            
+  / ___/____ _____ ___  ____ ______(_/ /_____ _____ 
+  \__ \/ __ ` + "`/ __ `__ \\/ __ `/ ___/ / __/ __ `" + `/ __ \
+ ___/ / /_/ / / / / / / /_/ / /  / / /_/ /_/ / / / /
+/____/\__,_/_/ /_/ /_/\__,_/_/  /_/\__/\__,_/_/ /_/`
 	Version                    = "0.1.2"
 	ErrAuthorizationError      = "Authorization Error"
 	ErrInsufficientPermissions = "Insufficient Permissions"
