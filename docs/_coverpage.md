@@ -4,7 +4,7 @@
 
 <br>
 
-> A quantitative trading framework for auto-trading digital currency.
+> An Algorithmic Trading Framework for Digital Currency.
 
 <br>
 

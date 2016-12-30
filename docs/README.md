@@ -2,7 +2,7 @@
 
 ## Installation
 
-You can install samaritan from **installation package** or **docker**.
+You can install samaritan from **installation package** or **Docker**.
 
 The default username and password are `admin`, please modify them immediately after login!
 
@@ -50,21 +50,21 @@ Then, samaritan is running at `http://localhost:19876`.
 
 ### Add an Exchange
 
-![](http://samaritan.stockdb.org/_media/add-exchange.png)
+![](https://raw.githubusercontent.com/miaolz123/samaritan/master/docs/_media/add-exchange.png)
 
 ### Add an Algorithm
 
-![](http://samaritan.stockdb.org/_media/add-algorithm.png)
+![](https://raw.githubusercontent.com/miaolz123/samaritan/master/docs/_media/add-algorithm.png)
 
-![](http://samaritan.stockdb.org/_media/edit-algorithm.png)
+![](https://raw.githubusercontent.com/miaolz123/samaritan/master/docs/_media/edit-algorithm.png)
 
 ### Deploy an Algorithm
 
-![](http://samaritan.stockdb.org/_media/add-trader.png)
+![](https://raw.githubusercontent.com/miaolz123/samaritan/master/docs/_media/add-trader.png)
 
 ### Run a Trader
 
-![](http://samaritan.stockdb.org/_media/run-trader.png)
+![](https://raw.githubusercontent.com/miaolz123/samaritan/master/docs/_media/run-trader.png)
 
 # Algorithm Reference
 

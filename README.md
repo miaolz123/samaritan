@@ -2,9 +2,11 @@
 
 [![Travis](https://img.shields.io/travis/miaolz123/samaritan.svg)](https://travis-ci.org/miaolz123/samaritan) [![Go Report Card](https://goreportcard.com/badge/github.com/miaolz123/samaritan)](https://goreportcard.com/report/github.com/miaolz123/samaritan) [![Github All Releases](https://img.shields.io/github/downloads/miaolz123/samaritan/total.svg)](https://github.com/miaolz123/samaritan/releases) [![Docker Pulls](https://img.shields.io/docker/pulls/miaolz123/samaritan.svg)](https://hub.docker.com/r/miaolz123/samaritan/) [![license](https://img.shields.io/github/license/miaolz123/samaritan.svg)](https://github.com/miaolz123/samaritan/blob/master/LICENSE)
 
+[中文文档](http://samaritan.stockdb.org/#/zh-cn)
+
 ## Installation
 
-You can install samaritan from **installation package** or **docker**.
+You can install samaritan from **installation package** or **Docker**.
 
 The default username and password are `admin`, please modify them immediately after login!
 
@@ -20,9 +22,9 @@ Then, samaritan is running at `http://localhost:9876`.
 **Linux & Mac user quick start command**
 
 ```shell
-wget https://github.com/miaolz123/samaritan/releases/download/v{{VERSION}}/samaritan_{{OS}}_{{ARCH}}.tar.gz && \
-tar -xzvf samaritan_{{OS}}_{{ARCH}}.tar.gz.tar.gz && \
-cd samaritan_{{OS}}_{{ARCH}} && \
+wget https://github.com/miaolz123/samaritan/releases/download/v{{VERSION}}/samaritan_{{OS}}_{{ARCH}}.tar.gz
+tar -xzvf samaritan_{{OS}}_{{ARCH}}.tar.gz
+cd samaritan_{{OS}}_{{ARCH}}
 ./samaritan
 ```
 
