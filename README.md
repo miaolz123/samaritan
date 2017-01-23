@@ -1,6 +1,6 @@
 # Samaritan
 
-[![Travis](https://img.shields.io/travis/miaolz123/samaritan.svg)](https://travis-ci.org/miaolz123/samaritan) [![Go Report Card](https://goreportcard.com/badge/github.com/miaolz123/samaritan)](https://goreportcard.com/report/github.com/miaolz123/samaritan) [![Github All Releases](https://img.shields.io/github/downloads/miaolz123/samaritan/total.svg)](https://github.com/miaolz123/samaritan/releases) [![Docker Pulls](https://img.shields.io/docker/pulls/miaolz123/samaritan.svg)](https://hub.docker.com/r/miaolz123/samaritan/) [![license](https://img.shields.io/github/license/miaolz123/samaritan.svg)](https://github.com/miaolz123/samaritan/blob/master/LICENSE)
+[![Travis](https://img.shields.io/travis/miaolz123/samaritan.svg)](https://travis-ci.org/miaolz123/samaritan) [![Go Report Card](https://goreportcard.com/badge/github.com/miaolz123/samaritan)](https://goreportcard.com/report/github.com/miaolz123/samaritan) [![Github All Releases](https://img.shields.io/github/downloads/miaolz123/samaritan/total.svg)](https://github.com/miaolz123/samaritan/releases) [![Gitter](https://img.shields.io/gitter/room/miaolz123/samaritan.svg)](https://gitter.im/miaolz123-samaritan/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link) [![Docker Pulls](https://img.shields.io/docker/pulls/miaolz123/samaritan.svg)](https://hub.docker.com/r/miaolz123/samaritan/) [![license](https://img.shields.io/github/license/miaolz123/samaritan.svg)](https://github.com/miaolz123/samaritan/blob/master/LICENSE)
 
 [中文文档](http://samaritan.stockdb.org/#/zh-cn)
 
