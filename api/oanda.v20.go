@@ -170,7 +170,7 @@ func (e *OandaV20) getAuthJSON(method, url string, body interface{}) (statusCode
 
 // GetAccount get the account detail of this exchange
 func (e *OandaV20) GetAccount() interface{} {
-	statusCode, json, err := e.getAuthJSON("GET", "/v3/accounts/11"+e.option.AccessKey+"/summary", nil)
+	statusCode, json, err := e.getAuthJSON("GET", "/v3/accounts/"+e.option.AccessKey+"/summary", nil)
 	if err != nil {
 		e.logger.Log(constant.ERROR, "", 0.0, 0.0, "GetAccount() error, ", err)
 		return false
