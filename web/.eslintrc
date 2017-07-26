@@ -9,7 +9,7 @@
   "rules": {
     "react/jsx-uses-react": "error",
     "react/jsx-uses-vars": "error",
-    "no-unused-vars": "warn",
+    "no-unused-vars": 0,
     "comma-dangle": 0,
     "no-undef": 0
   }

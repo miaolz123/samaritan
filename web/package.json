@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "babel-plugin-import": "^1.0.1",
-    "copy-webpack-plugin": "^4.0.1"
+    "copy-webpack-plugin": "^4.0.1",
+    "loglevel": "^1.4.1"
   }
 }
